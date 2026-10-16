@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Mobile Cart</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/1eae57ba8869e16afbb85811e06f3b0b">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="sw sw-m">
+
+  <div class="sw-m-scroll" aria-hidden="true">
+    <header class="sw-m-hdr">
+      <div class="sw-m-top">
+        <span class="sw-logo"><i class="ph ph-leaf"></i>sariwa</span>
+        <i class="ph ph-shopping-cart" style="font-size:24px"></i>
+      </div>
+      <div class="sw-search"><i class="ph ph-magnifying-glass" style="font-size:22px"></i><span>Search groceries and recipes</span></div>
+    </header>
+    <div style="padding:20px 16px">
+      <div class="sw-h1" style="font-size:34px;line-height:38px">Fresh groceries, delivered today.</div>
+      <div class="sw-slot sw-r43" style="margin-top:20px;border-radius:var(--r-card)"><i class="ph ph-basket"></i></div>
+    </div>
+  </div>
+
+  <div class="sw-scrim"></div>
+
+  <section class="sw-sheet" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+    <div class="sw-grab"></div>
+    <div class="sw-sheet-hd">
+      <div style="display:flex;align-items:baseline;gap:10px"><h2 id="cart-title">Your cart</h2><span class="sw-muted">8 items</span></div>
+      <button type="button" class="sw-iconbtn" aria-label="Close cart" style="border:0;background:var(--surface-2);width:44px;height:44px;border-radius:var(--r-pill)"><i class="ph ph-x" aria-hidden="true"></i></button>
+    </div>
+
+    <div class="sw-sheet-body">
+      <div class="sw-deliv" style="padding:12px 14px">
+        <i class="ph ph-truck" aria-hidden="true"></i>
+        <div style="flex:1"><b style="font-weight:600;font-size:15px">Today, 2:00 to 4:00 PM</b><div class="sw-muted" style="font-size:13px;line-height:18px">To Pasig 1600</div></div>
+        <a class="sw-link" href="#slot">Change</a>
+      </div>
+      <p class="sw-fine" style="margin:10px 0 0">Add ₱454.50 more for free delivery.</p>
+
+      <div>
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="6">
+          <div class="sw-mline">
+            <div class="sw-slot"><i class="ph {{l.icon}}" aria-hidden="true"></i></div>
+            <div>
+              <b>{{l.name}}</b>
+              <small>{{l.meta}}</small>
+              <a class="sw-sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i> {{l.sub}}</a>
+              <div class="sw-mline-row">
+                <div class="sw-step sw-step-lt" role="group" aria-label="Quantity of {{l.name}}"><button type="button" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>{{l.qty}}</output><button type="button" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+                <span class="sw-price sw-num" style="font-size:16px">{{l.amt}}</span>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div class="sw-sheet-ft">
+      <div class="sw-tot">
+        <div><span>Subtotal</span><span>₱1,045.50</span></div>
+        <div><span>Delivery</span><span>₱59.00</span></div>
+        <div class="is-grand" style="padding-top:8px"><span>Estimated total</span><span>₱1,104.50</span></div>
+      </div>
+      <a class="sw-btn sw-btn-primary sw-btn-block" href="Checkout.dc.html">Checkout, ₱1,104.50</a>
+      <p class="sw-fine" style="text-align:center">Add a voucher code at checkout. Two weighed items can change the final total.</p>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const lines = [
+      { name: 'Carabao Mangoes', meta: 'approx. 1 kg, ₱160.00 per kg', qty: 1, amt: '₱160.00', icon: 'ph-orange-slice', sub: 'Pick a similar item' },
+      { name: 'Eggs, Large', meta: '12 pcs', qty: 1, amt: '₱112.00', icon: 'ph-egg', sub: 'No substitute' },
+      { name: 'Fresh Milk', meta: '1 L', qty: 2, amt: '₱196.00', icon: 'ph-drop', sub: 'Pick a similar item' },
+      { name: 'Chicken Breast Fillet', meta: 'approx. 500 g, ₱285.00 per kg', qty: 1, amt: '₱142.50', icon: 'ph-cow', sub: 'Pick a similar item' },
+      { name: 'Jasmine Rice', meta: '5 kg', qty: 1, amt: '₱345.00', icon: 'ph-grains', sub: 'Pick a similar item' },
+      { name: 'Pandesal', meta: '10 pcs', qty: 2, amt: '₱90.00', icon: 'ph-bread', sub: 'I will choose' }
+    ];
+    return { lines };
+  }
+}
+</script>
+</body>
+</html>

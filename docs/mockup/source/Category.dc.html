@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Fruit</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/1eae57ba8869e16afbb85811e06f3b0b">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="sw">
+
+  <div class="sw-util">
+    <div class="sw-wrap">
+      <a href="#area"><i class="ph ph-map-pin" aria-hidden="true"></i> Delivering to Pasig 1600. <u>Change area</u></a>
+      <span style="display:inline-flex;align-items:center;gap:8px"><i class="ph ph-clock" aria-hidden="true"></i> Next window today, 2:00 to 4:00 PM</span>
+    </div>
+  </div>
+
+  <header class="sw-hdr">
+    <div class="sw-wrap">
+      <div class="sw-hdr-main">
+        <a class="sw-logo" href="Main.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+        <form class="sw-search" role="search">
+          <i class="ph ph-magnifying-glass" aria-hidden="true" style="font-size:22px"></i>
+          <label class="sw-sr" for="q">Search groceries</label>
+          <input id="q" type="search" placeholder="Search groceries, brands and recipes">
+        </form>
+        <div class="sw-acts">
+          <a class="sw-iconbtn" href="#account" aria-label="Account"><i class="ph ph-user" aria-hidden="true"></i></a>
+          <a class="sw-btn sw-btn-primary" href="Checkout.dc.html"><i class="ph ph-shopping-cart" aria-hidden="true" style="font-size:22px"></i><span class="sw-num">₱1,045.50</span><span class="sw-tag sw-tag-soft" style="background:var(--on-accent);color:var(--accent)">8</span></a>
+        </div>
+      </div>
+      <nav class="sw-catnav" aria-label="Categories">
+        <a href="Category.dc.html"><i class="ph ph-list" aria-hidden="true"></i> All categories</a>
+        <a href="Category.dc.html" class="is-on">Fresh</a>
+        <a href="Category.dc.html">Meat and fish</a>
+        <a href="Category.dc.html">Dairy and eggs</a>
+        <a href="Category.dc.html">Bakery</a>
+        <a href="Category.dc.html">Frozen</a>
+        <a href="Category.dc.html">Pantry</a>
+        <a href="Category.dc.html">Drinks</a>
+        <a href="Category.dc.html">Household</a>
+        <a href="Main.dc.html#recipes">Recipes</a>
+        <a href="Category.dc.html" class="sw-deal">Deals</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="sw-wrap" style="padding-bottom:24px">
+    <nav class="sw-crumb" aria-label="Breadcrumb">
+      <a href="Main.dc.html">Home</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+      <a href="Category.dc.html">Fresh</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+      <span aria-current="page">Fruit</span>
+    </nav>
+
+    <div class="sw-title-row">
+      <div>
+        <h1>Fruit</h1>
+        <p class="sw-muted" style="margin-top:4px">48 products</p>
+      </div>
+      <div class="sw-tools">
+        <button type="button" class="sw-chip is-on"><i class="ph ph-check" aria-hidden="true"></i> In stock</button>
+        <button type="button" class="sw-chip">On sale</button>
+        <button type="button" class="sw-chip">Sold by weight</button>
+        <label class="sw-sr" for="sort">Sort by</label>
+        <select id="sort" class="sw-select"><option>Sort: Relevance</option><option>Price, low to high</option><option>Unit price, low to high</option></select>
+      </div>
+    </div>
+
+    <div class="sw-list-layout">
+      <aside class="sw-filters" aria-label="Filters">
+        <div class="sw-fgroup">
+          <h2>Dietary and sourcing</h2>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Locally grown</label>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Organic</label>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Pre-packed</label>
+        </div>
+        <div class="sw-fgroup">
+          <h2>Price</h2>
+          <div class="sw-range">
+            <div><label class="sw-sr" for="pmin">Minimum price</label><input id="pmin" class="sw-input sw-num" placeholder="Min ₱"></div>
+            <span class="sw-muted">to</span>
+            <div><label class="sw-sr" for="pmax">Maximum price</label><input id="pmax" class="sw-input sw-num" placeholder="Max ₱"></div>
+          </div>
+        </div>
+        <div class="sw-fgroup">
+          <h2>Brand</h2>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Sariwa Farms</label>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Davao Harvest</label>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Benguet Direct</label>
+          <label class="sw-fopt"><input type="checkbox" style="width:22px;height:22px;accent-color:var(--accent)"> Cebu Orchard</label>
+          <a class="sw-link" href="#brands" style="min-height:40px">Show more brands</a>
+        </div>
+        <button type="button" class="sw-btn sw-btn-secondary" style="margin-top:12px"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i> Clear filters</button>
+      </aside>
+
+      <section aria-label="Products">
+        <div class="sw-g4">
+          <sc-for list="{{products}}" as="p" hint-placeholder-count="12">
+            <article class="sw-card">
+              <a class="sw-slot sw-sq" href="Product.dc.html" aria-label="{{p.name}}"><i class="ph {{p.icon}}" aria-hidden="true"></i></a>
+              <div class="sw-card-body">
+                <sc-if value="{{p.sale}}" hint-placeholder-val="{{false}}"><span class="sw-tag sw-tag-sale">{{p.sale}}</span></sc-if>
+                <sc-if value="{{p.low}}" hint-placeholder-val="{{false}}"><span class="sw-low">Only a few left</span></sc-if>
+                <sc-if value="{{p.oos}}" hint-placeholder-val="{{false}}"><span class="sw-low" style="color:var(--muted)">Out of stock today</span></sc-if>
+                <a class="sw-pname" href="Product.dc.html">{{p.name}}</a>
+                <span class="sw-psize">{{p.size}}</span>
+              </div>
+              <div class="sw-card-foot">
+                <div><div class="sw-price">{{p.price}}<s class="sw-was">{{p.was}}</s></div><div class="sw-unit">{{p.unit}}</div></div>
+                <sc-if value="{{p.inCart}}" hint-placeholder-val="{{false}}">
+                  <div class="sw-step" role="group" aria-label="Quantity of {{p.name}}"><button type="button" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>{{p.qty}}</output><button type="button" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+                </sc-if>
+                <sc-if value="{{p.canAdd}}" hint-placeholder-val="{{true}}">
+                  <button type="button" class="sw-add" aria-label="Add {{p.name}} to cart"><i class="ph ph-plus" aria-hidden="true"></i></button>
+                </sc-if>
+                <sc-if value="{{p.oos}}" hint-placeholder-val="{{false}}">
+                  <button type="button" class="sw-btn sw-btn-secondary" style="height:44px;padding:0 14px;font-size:14px">Notify me</button>
+                </sc-if>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+        <div class="sw-more">
+          <span>Showing 12 of 48</span>
+          <button type="button" class="sw-btn sw-btn-secondary">Load more fruit</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="sw-foot">
+    <div class="sw-wrap">
+      <div class="sw-foot-grid">
+        <div>
+          <a class="sw-logo" href="Main.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+          <p class="sw-muted" style="margin-top:12px;max-width:34ch;font-size:15px">Groceries picked at our Pasig hub and delivered the same day across Metro Manila.</p>
+        </div>
+        <div>
+          <h3>Shop</h3>
+          <ul><li><a href="Category.dc.html">Fresh produce</a></li><li><a href="Category.dc.html">Meat and fish</a></li><li><a href="Category.dc.html">Pantry</a></li><li><a href="Main.dc.html#recipes">Recipes</a></li></ul>
+        </div>
+        <div>
+          <h3>Help</h3>
+          <ul><li><a href="#area">Delivery areas</a></li><li><a href="#refund">Refund policy</a></li><li><a href="#contact">Contact us</a></li></ul>
+        </div>
+        <div>
+          <h3>Company</h3>
+          <ul><li><a href="#tax">Tax and business details</a></li><li><a href="#privacy">Privacy policy</a></li><li><a href="#terms">Terms of service</a></li></ul>
+        </div>
+      </div>
+      <div class="sw-foot-base">
+        <span>© 2026 Sariwa</span>
+        <span>We accept GCash, cards and cash on delivery</span>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2050}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const base = [
+      { name: 'Carabao Mangoes', size: 'approx. 1 kg', price: '₱160.00', unit: '₱160.00 per kg', icon: 'ph-orange-slice', qty: 1 },
+      { name: 'Fuji Apples', size: '4 pcs', price: '₱148.00', was: '₱174.00', sale: '-15%', unit: '₱37.00 per piece', icon: 'ph-orange' },
+      { name: 'Saba Bananas', size: '1 kg', price: '₱72.00', unit: '₱72.00 per kg', icon: 'ph-plant' },
+      { name: 'Calamansi', size: '250 g', price: '₱45.00', unit: '₱18.00 per 100 g', icon: 'ph-leaf' },
+      { name: 'Hass Avocado', size: '2 pcs', price: '₱120.00', unit: '₱60.00 per piece', icon: 'ph-avocado', low: true },
+      { name: 'Seedless Grapes', size: 'approx. 500 g', price: '₱225.00', unit: '₱450.00 per kg', icon: 'ph-cherries' },
+      { name: 'Pineapple', size: '1 pc, approx. 1.2 kg', price: '₱85.00', unit: '₱70.83 per kg', icon: 'ph-plant' },
+      { name: 'Papaya', size: 'approx. 1 kg', price: '₱68.00', unit: '₱68.00 per kg', icon: 'ph-orange-slice' },
+      { name: 'Navel Oranges', size: '6 pcs', price: '₱189.00', was: '₱215.00', sale: '-12%', unit: '₱31.50 per piece', icon: 'ph-orange' },
+      { name: 'Dragon Fruit', size: '2 pcs', price: '₱160.00', unit: '₱80.00 per piece', icon: 'ph-cherries', oos: true },
+      { name: 'Watermelon, half', size: 'approx. 2 kg', price: '₱130.00', unit: '₱65.00 per kg', icon: 'ph-orange-slice' },
+      { name: 'Strawberries', size: '250 g', price: '₱210.00', unit: '₱84.00 per 100 g', icon: 'ph-cherries', low: true }
+    ];
+    const products = base.map((p) => ({
+      ...p,
+      was: p.was || '',
+      sale: p.sale || '',
+      low: !!p.low,
+      oos: !!p.oos,
+      qty: p.qty || 0,
+      inCart: (p.qty || 0) > 0,
+      canAdd: !p.oos && !((p.qty || 0) > 0)
+    }));
+    return { products };
+  }
+}
+</script>
+</body>
+</html>

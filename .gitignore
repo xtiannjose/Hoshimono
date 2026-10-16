@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+next-env.d.ts
+
+# env (keep the example)
+.env
+.env.*
+!.env.example
+
+# test output
+coverage/
+playwright-report/
+test-results/
+
+# logs and OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# build artefacts
+*.tsbuildinfo
+dist/
+.vercel/

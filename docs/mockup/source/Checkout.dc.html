@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Checkout</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/1eae57ba8869e16afbb85811e06f3b0b">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="sw">
+
+  <header class="sw-co-hdr">
+    <div class="sw-wrap">
+      <a class="sw-logo" href="Main.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+      <span class="sw-secure"><i class="ph ph-lock" aria-hidden="true" style="font-size:20px"></i> Secure checkout</span>
+      <a class="sw-link" href="Main.dc.html"><i class="ph ph-caret-left" aria-hidden="true"></i> Back to shopping</a>
+    </div>
+  </header>
+
+  <main class="sw-wrap">
+    <div class="sw-co">
+      <div class="sw-co-main">
+
+        <section class="sw-panel" aria-labelledby="h-addr">
+          <h2 id="h-addr"><i class="ph ph-map-pin" aria-hidden="true"></i> Delivery address</h2>
+          <div class="sw-addr">
+            <i class="ph ph-house" aria-hidden="true"></i>
+            <div style="flex:1">
+              <b style="font-weight:600">Marites Santos</b>
+              <div>Unit 12B, Rosewood Residences, Brgy. Kapitolyo, Pasig City 1600</div>
+              <div class="sw-muted" style="font-size:14px;line-height:20px;margin-top:4px">We deliver here from the Pasig hub. Delivery fee ₱59.00.</div>
+            </div>
+            <a class="sw-link" href="#change-address">Change</a>
+          </div>
+          <div class="sw-fields" style="margin-top:16px">
+            <div class="sw-field">
+              <label for="landmark">Landmark</label>
+              <input id="landmark" class="sw-input" value="Across from the barangay hall">
+              <small>Helps the rider find you.</small>
+            </div>
+            <div class="sw-field">
+              <label for="phone">Mobile number</label>
+              <input id="phone" class="sw-input sw-num" value="+63 917 555 0142" inputmode="tel">
+              <small>The rider calls this number on arrival.</small>
+            </div>
+            <div class="sw-field is-wide">
+              <label for="notes">Note for the rider (optional)</label>
+              <input id="notes" class="sw-input" value="Call when you reach the lobby.">
+            </div>
+          </div>
+        </section>
+
+        <section class="sw-panel" aria-labelledby="h-slot">
+          <h2 id="h-slot"><i class="ph ph-calendar-blank" aria-hidden="true"></i> Delivery window</h2>
+          <div class="sw-days" role="group" aria-label="Delivery day">
+            <button type="button" class="sw-day is-on" aria-pressed="true">Today<b>Fri 16 Oct</b></button>
+            <button type="button" class="sw-day" aria-pressed="false">Tomorrow<b>Sat 17 Oct</b></button>
+            <button type="button" class="sw-day" aria-pressed="false">Sun<b>18 Oct</b></button>
+            <button type="button" class="sw-day" aria-pressed="false">Mon<b>19 Oct</b></button>
+            <button type="button" class="sw-day" aria-pressed="false">Tue<b>20 Oct</b></button>
+          </div>
+          <div class="sw-slots" role="group" aria-label="Delivery time">
+            <button type="button" class="sw-slotbtn is-full" disabled>12:00 to 2:00 PM<small>Full</small></button>
+            <button type="button" class="sw-slotbtn is-on" aria-pressed="true">2:00 to 4:00 PM<small>Selected, held for 10 minutes</small></button>
+            <button type="button" class="sw-slotbtn is-few" aria-pressed="false">4:00 to 6:00 PM<small>Only a few left</small></button>
+            <button type="button" class="sw-slotbtn" aria-pressed="false">6:00 to 8:00 PM<small>Available</small></button>
+            <button type="button" class="sw-slotbtn" aria-pressed="false">8:00 to 10:00 PM<small>Available</small></button>
+          </div>
+        </section>
+
+        <section class="sw-panel" aria-labelledby="h-pay">
+          <h2 id="h-pay"><i class="ph ph-wallet" aria-hidden="true"></i> Payment</h2>
+          <fieldset class="sw-pay" style="border:0;padding:0;margin:0">
+            <legend class="sw-sr">Payment method</legend>
+            <label class="sw-payopt is-on">
+              <i class="ph ph-device-mobile" aria-hidden="true"></i>
+              <div><b>GCash</b><small>You will approve the payment in the GCash app</small></div>
+              <input type="radio" name="pay" checked style="margin-left:auto;accent-color:var(--accent);width:20px;height:20px">
+            </label>
+            <label class="sw-payopt">
+              <i class="ph ph-credit-card" aria-hidden="true"></i>
+              <div><b>Credit or debit card</b><small>Visa and Mastercard, entered on our payment partner's secure page</small></div>
+              <input type="radio" name="pay" style="margin-left:auto;accent-color:var(--accent);width:20px;height:20px">
+            </label>
+            <label class="sw-payopt">
+              <i class="ph ph-money" aria-hidden="true"></i>
+              <div><b>Cash on delivery</b><small>Pay the rider when your order arrives</small></div>
+              <input type="radio" name="pay" style="margin-left:auto;accent-color:var(--accent);width:20px;height:20px">
+            </label>
+          </fieldset>
+          <div class="sw-note" style="margin-top:16px">
+            <i class="ph ph-info" aria-hidden="true" style="color:var(--accent)"></i>
+            <span>Two items are sold by weight. We charge the weight we actually pack, and refund any difference to your GCash within one day.</span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sw-sum" aria-labelledby="h-sum">
+        <h2 id="h-sum">Order summary</h2>
+        <div class="sw-lines">
+          <sc-for list="{{lines}}" as="l" hint-placeholder-count="6">
+            <div class="sw-line">
+              <div class="sw-slot"><i class="ph {{l.icon}}" aria-hidden="true"></i></div>
+              <div>
+                <b>{{l.name}}</b>
+                <small>{{l.meta}}</small>
+                <a class="sw-sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i> {{l.sub}}</a>
+              </div>
+              <span class="sw-amt">{{l.amt}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="sw-voucher">
+          <div>
+            <label class="sw-sr" for="voucher">Voucher code</label>
+            <input id="voucher" class="sw-input" value="FRESH50">
+          </div>
+          <button type="button" class="sw-btn sw-btn-secondary" style="height:44px">Apply</button>
+        </div>
+        <div class="sw-fine" style="margin-top:-8px;color:var(--accent);display:flex;align-items:center;gap:6px"><i class="ph ph-check-circle" aria-hidden="true" style="font-size:18px"></i> FRESH50 applied: ₱50.00 off orders over ₱1,000</div>
+
+        <div class="sw-tot">
+          <div><span>Subtotal</span><span>₱1,045.50</span></div>
+          <div class="is-disc"><span>Voucher FRESH50</span><span>-₱50.00</span></div>
+          <div><span>Delivery</span><span>₱59.00</span></div>
+          <div class="is-grand"><span>Total</span><span>₱1,054.50</span></div>
+          <div class="sw-fine" style="justify-content:flex-start">VAT included.</div>
+        </div>
+
+        <a class="sw-btn sw-btn-primary sw-btn-block" href="#place">Place order, ₱1,054.50</a>
+        <p class="sw-fine">Two weighed items can change your final total by up to ₱30.25. By placing your order you agree to our terms of service and refund policy.</p>
+      </aside>
+    </div>
+  </main>
+
+  <footer style="border-top:1px solid var(--border);background:var(--surface)">
+    <div class="sw-wrap" style="display:flex;gap:24px;align-items:center;justify-content:space-between;min-height:64px;font-size:14px;color:var(--muted);flex-wrap:wrap">
+      <span>© 2026 Sariwa</span>
+      <span style="display:flex;gap:20px"><a href="#refund">Refund policy</a><a href="#privacy">Privacy policy</a><a href="#terms">Terms of service</a><a href="#contact">Contact us</a></span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const lines = [
+      { name: 'Carabao Mangoes', meta: 'approx. 1 kg, ₱160.00 per kg', amt: '₱160.00', icon: 'ph-orange-slice', sub: 'Pick a similar item' },
+      { name: 'Eggs, Large', meta: '12 pcs, quantity 1', amt: '₱112.00', icon: 'ph-egg', sub: 'No substitute' },
+      { name: 'Fresh Milk', meta: '1 L, quantity 2', amt: '₱196.00', icon: 'ph-drop', sub: 'Pick a similar item' },
+      { name: 'Chicken Breast Fillet', meta: 'approx. 500 g, ₱285.00 per kg', amt: '₱142.50', icon: 'ph-cow', sub: 'Pick a similar item' },
+      { name: 'Jasmine Rice', meta: '5 kg, quantity 1', amt: '₱345.00', icon: 'ph-grains', sub: 'Pick a similar item' },
+      { name: 'Pandesal', meta: '10 pcs, quantity 2', amt: '₱90.00', icon: 'ph-bread', sub: 'I will choose' }
+    ];
+    return { lines };
+  }
+}
+</script>
+</body>
+</html>

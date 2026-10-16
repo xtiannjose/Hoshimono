@@ -1,0 +1,34 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-16T12:20:00Z" },
+  "title": "Sariwa Storefront Mockup",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 3300, "title": "Home", "expand": "fill", "is_interactive": true },
+    "Category.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 2050, "title": "Category", "expand": "fill", "is_interactive": true },
+    "Product.dc.html": { "x": 3040, "y": 0, "w": 1440, "h": 2250, "title": "Product", "expand": "fill", "is_interactive": true },
+    "Checkout.dc.html": { "x": 4560, "y": 0, "w": 1440, "h": 1400, "title": "Checkout", "expand": "fill", "is_interactive": true },
+    "MobileHome.dc.html": { "x": 0, "y": 3420, "w": 390, "h": 844, "title": "Mobile Home", "is_interactive": true },
+    "MobileCart.dc.html": { "x": 470, "y": 3420, "w": 390, "h": 844, "title": "Mobile Cart" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Category.dc.html",
+    "Product.dc.html",
+    "Checkout.dc.html",
+    "MobileHome.dc.html",
+    "MobileCart.dc.html"
+  ],
+  "notes": {
+    "title": { "x": 0, "y": -300, "text": "Sariwa storefront mockup", "kind": "title1", "maxW": 6000 },
+    "sample": {
+      "x": 940,
+      "y": 3420,
+      "w": 380,
+      "fill": "green",
+      "text": "Sample products and prices. Photo areas are placeholders until real photography exists. Colours and type follow docs/05-DESIGN-SYSTEM.md."
+    }
+  },
+  "designSystems": []
+}

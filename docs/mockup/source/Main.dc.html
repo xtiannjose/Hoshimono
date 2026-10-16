@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Home</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/1eae57ba8869e16afbb85811e06f3b0b">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div class="sw">
+
+  <div class="sw-util">
+    <div class="sw-wrap">
+      <a href="#area"><i class="ph ph-map-pin" aria-hidden="true"></i> Delivering to Pasig 1600. <u>Change area</u></a>
+      <span style="display:inline-flex;align-items:center;gap:8px"><i class="ph ph-clock" aria-hidden="true"></i> Next window today, 2:00 to 4:00 PM</span>
+    </div>
+  </div>
+
+  <header class="sw-hdr">
+    <div class="sw-wrap">
+      <div class="sw-hdr-main">
+        <a class="sw-logo" href="Main.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+        <form class="sw-search" role="search">
+          <i class="ph ph-magnifying-glass" aria-hidden="true" style="font-size:22px"></i>
+          <label class="sw-sr" for="q">Search groceries</label>
+          <input id="q" type="search" placeholder="Search groceries, brands and recipes">
+        </form>
+        <div class="sw-acts">
+          <a class="sw-iconbtn" href="#account" aria-label="Account"><i class="ph ph-user" aria-hidden="true"></i></a>
+          <a class="sw-btn sw-btn-primary" href="Checkout.dc.html"><i class="ph ph-shopping-cart" aria-hidden="true" style="font-size:22px"></i><span class="sw-num">₱1,045.50</span><span class="sw-tag sw-tag-soft" style="background:var(--on-accent);color:var(--accent)">8</span></a>
+        </div>
+      </div>
+      <nav class="sw-catnav" aria-label="Categories">
+        <a href="Category.dc.html" class="is-on"><i class="ph ph-list" aria-hidden="true"></i> All categories</a>
+        <a href="Category.dc.html">Fresh</a>
+        <a href="Category.dc.html">Meat and fish</a>
+        <a href="Category.dc.html">Dairy and eggs</a>
+        <a href="Category.dc.html">Bakery</a>
+        <a href="Category.dc.html">Frozen</a>
+        <a href="Category.dc.html">Pantry</a>
+        <a href="Category.dc.html">Drinks</a>
+        <a href="Category.dc.html">Household</a>
+        <a href="#recipes">Recipes</a>
+        <a href="Category.dc.html" class="sw-deal">Deals</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="sw-hero">
+      <div class="sw-wrap">
+        <div class="sw-hero-grid">
+          <div>
+            <h1 class="sw-h1">Fresh groceries, delivered today.</h1>
+            <p class="sw-lead">Order before noon from our Pasig hub. Pick a delivery window, pay with GCash or cash on delivery.</p>
+            <div class="sw-cta">
+              <a class="sw-btn sw-btn-primary" href="Category.dc.html">Start shopping</a>
+              <a class="sw-btn sw-btn-secondary" href="#area">Check my area</a>
+            </div>
+          </div>
+          <div class="sw-slot sw-hero-slot">
+            <div class="sw-slot-cap">
+              <i class="ph ph-basket" aria-hidden="true"></i>
+              <span>Photo slot, 1200 x 900<br>Produce basket on a market table, natural light</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div class="sw-wrap">
+        <div class="sw-facts" style="border:0;background:transparent">
+          <div class="sw-fact"><i class="ph ph-truck" aria-hidden="true"></i><div><b>Delivery from ₱59</b><span>Flat fee, free over ₱1,500</span></div></div>
+          <div class="sw-fact"><i class="ph ph-seal-check" aria-hidden="true"></i><div><b>Freshness checked</b><span>Every order inspected at pick</span></div></div>
+          <div class="sw-fact"><i class="ph ph-wallet" aria-hidden="true"></i><div><b>Pay your way</b><span>GCash, card or cash on delivery</span></div></div>
+        </div>
+      </div>
+    </div>
+
+    <section class="sw-sec">
+      <div class="sw-wrap">
+        <div class="sw-sec-head">
+          <h2 class="sw-h2">Shop by category</h2>
+          <a class="sw-link" href="Category.dc.html">All categories <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="sw-cats">
+          <sc-for list="{{cats}}" as="c" hint-placeholder-count="8">
+            <a class="sw-cat" href="Category.dc.html">
+              <div class="sw-slot sw-r43"><i class="ph {{c.icon}}" aria-hidden="true"></i></div>
+              <span>{{c.name}} <i class="ph ph-caret-right" aria-hidden="true" style="color:var(--muted)"></i></span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section class="sw-sec" style="padding-top:0">
+      <div class="sw-wrap">
+        <div class="sw-sec-head">
+          <h2 class="sw-h2">Fresh picks today</h2>
+          <a class="sw-link" href="Category.dc.html">See all fruit and vegetables <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <div class="sw-rail">
+          <sc-for list="{{fresh}}" as="p" hint-placeholder-count="6">
+            <article class="sw-card">
+              <a class="sw-slot sw-sq" href="Product.dc.html" aria-label="{{p.name}}"><i class="ph {{p.icon}}" aria-hidden="true"></i></a>
+              <div class="sw-card-body">
+                <sc-if value="{{p.low}}" hint-placeholder-val="{{false}}"><span class="sw-low">Only a few left</span></sc-if>
+                <a class="sw-pname" href="Product.dc.html">{{p.name}}</a>
+                <span class="sw-psize">{{p.size}}</span>
+              </div>
+              <div class="sw-card-foot">
+                <div><div class="sw-price">{{p.price}}</div><div class="sw-unit">{{p.unit}}</div></div>
+                <sc-if value="{{p.inCart}}" hint-placeholder-val="{{false}}">
+                  <div class="sw-step" role="group" aria-label="Quantity of {{p.name}}"><button type="button" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>{{p.qty}}</output><button type="button" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+                </sc-if>
+                <sc-if value="{{p.notInCart}}" hint-placeholder-val="{{true}}">
+                  <button type="button" class="sw-add" aria-label="Add {{p.name}} to cart"><i class="ph ph-plus" aria-hidden="true"></i></button>
+                </sc-if>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section class="sw-sec" id="recipes" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div class="sw-wrap">
+        <div class="sw-recipe">
+          <div class="sw-slot sw-recipe-slot">
+            <div class="sw-slot-cap">
+              <i class="ph ph-cooking-pot" aria-hidden="true"></i>
+              <span>Photo slot, 1000 x 1100<br>Chicken adobo over rice, steam rising</span>
+            </div>
+          </div>
+          <div>
+            <h2 class="sw-h2" style="font-size:34px;line-height:38px;letter-spacing:-.03em">Chicken adobo for four</h2>
+            <p class="sw-muted" style="margin-top:10px;max-width:46ch">Add what you need in one tap. Ingredients you already have stay out of the cart.</p>
+            <div class="sw-serv">
+              <span style="font-weight:500">Servings</span>
+              <div class="sw-step sw-step-lt" role="group" aria-label="Servings"><button type="button" aria-label="Fewer servings"><i class="ph ph-minus" aria-hidden="true"></i></button><output>4</output><button type="button" aria-label="More servings"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+            <ul class="sw-ing">
+              <sc-for list="{{ingredients}}" as="i" hint-placeholder-count="7">
+                <li>
+                  <input type="checkbox" defaultChecked="{{i.on}}" aria-label="Include {{i.name}}" style="width:22px;height:22px;accent-color:var(--accent)">
+                  <div class="{{i.cls}}"><span class="nm">{{i.name}}</span><small>{{i.note}}</small></div>
+                  <span class="sw-price sw-num" style="font-size:16px">{{i.price}}</span>
+                </li>
+              </sc-for>
+            </ul>
+            <a class="sw-btn sw-btn-primary sw-btn-block" href="Checkout.dc.html" style="margin-top:20px"><i class="ph ph-shopping-cart" aria-hidden="true" style="font-size:22px"></i> Add 5 items for ₱423.00</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="sw-sec">
+      <div class="sw-wrap">
+        <div class="sw-sec-head">
+          <h2 class="sw-h2">This week's savings</h2>
+        </div>
+        <div class="sw-bento">
+          <div class="sw-promo">
+            <i class="ph ph-orange-slice sw-deco" aria-hidden="true"></i>
+            <div>
+              <h3>Weekend savings</h3>
+              <p>Up to 16% off selected fruit, seafood and pantry staples, until Sunday.</p>
+            </div>
+            <div><a class="sw-btn sw-btn-primary" href="Category.dc.html">Shop the sale</a></div>
+          </div>
+          <sc-for list="{{deals}}" as="p" hint-placeholder-count="4">
+            <article class="sw-card">
+              <a class="sw-slot sw-r54" href="Product.dc.html" aria-label="{{p.name}}"><i class="ph {{p.icon}}" aria-hidden="true"></i></a>
+              <div class="sw-card-body">
+                <span class="sw-tag sw-tag-sale">{{p.sale}}</span>
+                <a class="sw-pname" href="Product.dc.html">{{p.name}}</a>
+                <span class="sw-psize">{{p.size}}</span>
+              </div>
+              <div class="sw-card-foot">
+                <div><div class="sw-price">{{p.price}}<s class="sw-was">{{p.was}}</s></div><div class="sw-unit">{{p.unit}}</div></div>
+                <button type="button" class="sw-add" aria-label="Add {{p.name}} to cart"><i class="ph ph-plus" aria-hidden="true"></i></button>
+              </div>
+            </article>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="sw-foot">
+    <div class="sw-wrap">
+      <div class="sw-foot-grid">
+        <div>
+          <a class="sw-logo" href="Main.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+          <p class="sw-muted" style="margin-top:12px;max-width:34ch;font-size:15px">Groceries picked at our Pasig hub and delivered the same day across Metro Manila.</p>
+        </div>
+        <div>
+          <h3>Shop</h3>
+          <ul><li><a href="Category.dc.html">Fresh produce</a></li><li><a href="Category.dc.html">Meat and fish</a></li><li><a href="Category.dc.html">Pantry</a></li><li><a href="#recipes">Recipes</a></li></ul>
+        </div>
+        <div>
+          <h3>Help</h3>
+          <ul><li><a href="#area">Delivery areas</a></li><li><a href="#refund">Refund policy</a></li><li><a href="#contact">Contact us</a></li></ul>
+        </div>
+        <div>
+          <h3>Company</h3>
+          <ul><li><a href="#tax">Tax and business details</a></li><li><a href="#privacy">Privacy policy</a></li><li><a href="#terms">Terms of service</a></li></ul>
+        </div>
+      </div>
+      <div class="sw-foot-base">
+        <span>© 2026 Sariwa</span>
+        <span>We accept GCash, cards and cash on delivery</span>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cats = [
+      { name: 'Fruit', icon: 'ph-orange-slice' },
+      { name: 'Vegetables', icon: 'ph-carrot' },
+      { name: 'Meat', icon: 'ph-cow' },
+      { name: 'Seafood', icon: 'ph-fish-simple' },
+      { name: 'Dairy and eggs', icon: 'ph-egg' },
+      { name: 'Bakery', icon: 'ph-bread' },
+      { name: 'Pantry', icon: 'ph-grains' },
+      { name: 'Drinks', icon: 'ph-coffee' }
+    ];
+    const fresh = [
+      { name: 'Carabao Mangoes', size: 'approx. 1 kg', price: '₱160.00', unit: '₱160.00 per kg', icon: 'ph-orange-slice', qty: 1 },
+      { name: 'Baguio Carrots', size: '500 g', price: '₱58.00', unit: '₱11.60 per 100 g', icon: 'ph-carrot', qty: 0 },
+      { name: 'Hass Avocado', size: '2 pcs', price: '₱120.00', unit: '₱60.00 per piece', icon: 'ph-avocado', qty: 0, low: true },
+      { name: 'Fresh Milk', size: '1 L', price: '₱98.00', unit: '₱9.80 per 100 ml', icon: 'ph-drop', qty: 2 },
+      { name: 'Eggs, Large', size: '12 pcs', price: '₱112.00', unit: '₱9.33 per piece', icon: 'ph-egg', qty: 1 },
+      { name: 'Pandesal', size: '10 pcs', price: '₱45.00', unit: '₱4.50 per piece', icon: 'ph-bread', qty: 2 }
+    ].map((p) => ({ ...p, low: !!p.low, inCart: p.qty > 0, notInCart: p.qty === 0 }));
+    const deals = [
+      { name: 'Fuji Apples', size: '4 pcs', price: '₱148.00', was: '₱174.00', sale: '-15%', unit: '₱37.00 per piece', icon: 'ph-orange' },
+      { name: 'Bangus Belly', size: 'approx. 500 g, priced by weight', price: '₱190.00', was: '₱225.00', sale: '-16%', unit: '₱380.00 per kg', icon: 'ph-fish-simple' },
+      { name: 'Jasmine Rice', size: '5 kg', price: '₱345.00', was: '₱389.00', sale: '-11%', unit: '₱69.00 per kg', icon: 'ph-grains' },
+      { name: 'Cheddar Cheese', size: '165 g', price: '₱129.00', was: '₱149.00', sale: '-13%', unit: '₱78.18 per 100 g', icon: 'ph-cheese' }
+    ];
+    const ingredients = [
+      { name: 'Chicken thighs, 1 kg', note: '', price: '₱245.00', on: true, cls: '' },
+      { name: 'Soy sauce, 500 ml', note: '', price: '₱38.00', on: true, cls: '' },
+      { name: 'Cane vinegar, 500 ml', note: '', price: '₱36.00', on: true, cls: '' },
+      { name: 'Garlic, 100 g', note: 'Have at home', price: '₱28.00', on: false, cls: 'sw-have' },
+      { name: 'Bay leaves, 10 g', note: 'Have at home', price: '₱22.00', on: false, cls: 'sw-have' },
+      { name: 'Whole peppercorns, 25 g', note: '', price: '₱32.00', on: true, cls: '' },
+      { name: 'Jasmine rice, 1 kg', note: '', price: '₱72.00', on: true, cls: '' }
+    ];
+    return { cats, fresh, deals, ingredients };
+  }
+}
+</script>
+</body>
+</html>

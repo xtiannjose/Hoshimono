@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Mobile Home</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="/_blob/1eae57ba8869e16afbb85811e06f3b0b">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sw-m .sw-card-foot{flex-direction:column;align-items:stretch}
+.sw-m .sw-add{width:100%}
+.sw-m .sw-step{width:100%;justify-content:space-between}
+</style>
+</helmet>
+<div class="sw sw-m">
+  <div class="sw-m-scroll">
+
+    <div class="sw-util">
+      <div class="sw-wrap" style="font-size:13px">
+        <a href="#area"><i class="ph ph-map-pin" aria-hidden="true"></i> Pasig 1600. <u>Change</u></a>
+        <span style="display:inline-flex;align-items:center;gap:6px"><i class="ph ph-clock" aria-hidden="true"></i> Today, 2:00 to 4:00 PM</span>
+      </div>
+    </div>
+
+    <header class="sw-m-hdr">
+      <div class="sw-m-top">
+        <a class="sw-logo" href="MobileHome.dc.html"><i class="ph ph-leaf" aria-hidden="true"></i>sariwa</a>
+        <div class="sw-acts">
+          <a class="sw-iconbtn" href="#account" aria-label="Account" style="border:0;background:transparent"><i class="ph ph-user" aria-hidden="true"></i></a>
+          <a class="sw-iconbtn" href="MobileCart.dc.html" aria-label="Cart, 8 items" style="position:relative;border:0;background:transparent"><i class="ph ph-shopping-cart" aria-hidden="true"></i><span class="sw-tag" style="position:absolute;top:2px;right:0;background:var(--accent);color:var(--on-accent);padding:0 6px;font-size:11px;line-height:16px">8</span></a>
+        </div>
+      </div>
+      <form class="sw-search" role="search">
+        <i class="ph ph-magnifying-glass" aria-hidden="true" style="font-size:22px"></i>
+        <label class="sw-sr" for="mq">Search groceries</label>
+        <input id="mq" type="search" placeholder="Search groceries and recipes">
+      </form>
+    </header>
+
+    <div class="sw-m-chips" role="list" aria-label="Categories">
+      <sc-for list="{{chips}}" as="c" hint-placeholder-count="8">
+        <a class="{{c.cls}}" role="listitem" href="#cat">{{c.name}}</a>
+      </sc-for>
+    </div>
+
+    <section class="sw-m-hero sw-wrap" style="padding:20px 16px 8px">
+      <h1 class="sw-h1">Fresh groceries, delivered today.</h1>
+      <p class="sw-lead">Order before noon from our Pasig hub. Pick a window, pay with GCash or cash.</p>
+      <div class="sw-cta"><a class="sw-btn sw-btn-primary sw-btn-block" href="#shop">Start shopping</a></div>
+      <div class="sw-slot sw-r43" style="margin-top:20px;border-radius:var(--r-card)">
+        <div class="sw-slot-cap">
+          <i class="ph ph-basket" aria-hidden="true"></i>
+          <span>Photo slot, 1200 x 900<br>Produce basket on a market table</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sw-sec sw-wrap" style="padding-left:16px;padding-right:16px">
+      <div class="sw-sec-head" style="margin-bottom:16px">
+        <h2 class="sw-h2">Fresh picks today</h2>
+        <a class="sw-link" href="#fruit">See all</a>
+      </div>
+      <div class="sw-m-g2">
+        <sc-for list="{{fresh}}" as="p" hint-placeholder-count="4">
+          <article class="sw-card" style="padding:10px">
+            <a class="sw-slot sw-sq" href="#product" aria-label="{{p.name}}"><i class="ph {{p.icon}}" aria-hidden="true"></i></a>
+            <div class="sw-card-body">
+              <sc-if value="{{p.low}}" hint-placeholder-val="{{false}}"><span class="sw-low">Only a few left</span></sc-if>
+              <a class="sw-pname" href="#product">{{p.name}}</a>
+              <span class="sw-psize">{{p.size}}</span>
+            </div>
+            <div class="sw-card-foot">
+              <div><div class="sw-price">{{p.price}}</div><div class="sw-unit">{{p.unit}}</div></div>
+              <sc-if value="{{p.inCart}}" hint-placeholder-val="{{false}}">
+                <div class="sw-step" role="group" aria-label="Quantity of {{p.name}}"><button type="button" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>{{p.qty}}</output><button type="button" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+              </sc-if>
+              <sc-if value="{{p.notInCart}}" hint-placeholder-val="{{true}}">
+                <button type="button" class="sw-add" aria-label="Add {{p.name}} to cart"><i class="ph ph-plus" aria-hidden="true"></i></button>
+              </sc-if>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+    </section>
+
+    <section class="sw-sec sw-wrap" style="padding:0 16px 24px">
+      <div class="sw-card" style="padding:12px">
+        <div class="sw-slot sw-r43"><div class="sw-slot-cap"><i class="ph ph-cooking-pot" aria-hidden="true"></i><span>Photo slot, 1000 x 750<br>Chicken adobo over rice</span></div></div>
+        <div>
+          <h2 class="sw-h2" style="font-size:22px;line-height:28px">Chicken adobo for four</h2>
+          <p class="sw-muted" style="margin-top:6px;font-size:15px;line-height:22px">Add what you need in one tap. Ingredients you have at home stay out.</p>
+        </div>
+        <a class="sw-btn sw-btn-secondary sw-btn-block" href="#recipe">Add 5 items for ₱423.00</a>
+      </div>
+    </section>
+  </div>
+
+  <a class="sw-cartbar" href="MobileCart.dc.html">
+    <span style="display:inline-flex;align-items:center;gap:8px"><i class="ph ph-shopping-cart" aria-hidden="true" style="font-size:22px"></i> 8 items</span>
+    <span>View cart</span>
+    <span class="sw-num">₱1,045.50</span>
+  </a>
+
+  <nav class="sw-tabbar" aria-label="Main">
+    <a class="is-on" href="MobileHome.dc.html" aria-current="page"><i class="ph ph-house" aria-hidden="true"></i>Home</a>
+    <a href="#shop"><i class="ph ph-squares-four" aria-hidden="true"></i>Shop</a>
+    <a href="#recipes"><i class="ph ph-cooking-pot" aria-hidden="true"></i>Recipes</a>
+    <a href="#orders"><i class="ph ph-receipt" aria-hidden="true"></i>Orders</a>
+    <a href="#account"><i class="ph ph-user" aria-hidden="true"></i>Account</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['Fruit', 'Vegetables', 'Meat', 'Seafood', 'Dairy', 'Bakery', 'Pantry', 'Drinks'];
+    const chips = names.map((name, i) => ({ name, cls: i === 0 ? 'sw-chip is-on' : 'sw-chip' }));
+    const fresh = [
+      { name: 'Carabao Mangoes', size: 'approx. 1 kg', price: '₱160.00', unit: '₱160.00 per kg', icon: 'ph-orange-slice', qty: 1 },
+      { name: 'Baguio Carrots', size: '500 g', price: '₱58.00', unit: '₱11.60 per 100 g', icon: 'ph-carrot', qty: 0 },
+      { name: 'Hass Avocado', size: '2 pcs', price: '₱120.00', unit: '₱60.00 per piece', icon: 'ph-avocado', qty: 0, low: true },
+      { name: 'Fresh Milk', size: '1 L', price: '₱98.00', unit: '₱9.80 per 100 ml', icon: 'ph-drop', qty: 2 }
+    ].map((p) => ({ ...p, low: !!p.low, inCart: p.qty > 0, notInCart: p.qty === 0 }));
+    return { chips, fresh };
+  }
+}
+</script>
+</body>
+</html>
