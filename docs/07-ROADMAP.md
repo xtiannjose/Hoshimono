@@ -18,8 +18,8 @@ Business tracks run in parallel and gate the technical ones: see the end of this
 
 - [ ] Scaffold Next.js app and merge into repo ([06-SETUP.md](06-SETUP.md) section 3)
 - [ ] Install Phase 0 libraries; configure Tailwind v4 with design tokens (light and dark)
-- [ ] `src/config/brand.ts`, `z.ts`, layout shell: header, footer, `DeliveryBanner` placeholder, theme toggle
-- [ ] Geist fonts via `next/font`; Phosphor icons; Motion installed
+- [ ] `src/config/brand.ts`, `z.ts`, layout shell: header, footer, `DeliveryButton` placeholder, theme toggle
+- [ ] Bricolage Grotesque and Plus Jakarta Sans via `next/font` (`latin` + `latin-ext` for the peso sign), Geist Mono for codes; Phosphor icons; Motion installed
 - [ ] Prisma schema v0 from [04-DATA-MODEL.md](04-DATA-MODEL.md); first migration with `pg_trgm`, `unaccent`
 - [ ] Seed script (deterministic): 1 Hub, 3 Zones, ~40 categories, ~150 Products, staff and test Customers
 - [ ] `lib/money.ts` with tests (parse, format, add, percentage) per [ADR 0002](adr/0002-money-as-integer-centavos.md)
@@ -35,7 +35,7 @@ Business tracks run in parallel and gate the technical ones: see the end of this
 ## Phase 1: Catalogue
 
 - [ ] `catalog` module: `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`
-- [ ] Home page v1 following the [mockup](mockup/README.md): hero, categories, rails, delivery banner
+- [ ] Home page v1 following [mockup v2](mockup-v2/README.md): hero, service strip, category mosaic, product grid, delivery button
 - [ ] Category page with filters and sort; Unit Price computed and shown
 - [ ] Product page with images, details, allergens, related Products, structured data
 - [ ] Search: full-text plus trigram, suggestions, zero-result state

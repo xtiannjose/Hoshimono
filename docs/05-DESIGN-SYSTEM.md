@@ -1,65 +1,74 @@
 # Design System
 
-Status: draft v0.1. Source of truth for the look and feel of the storefront. Admin and Picker screens reuse the same tokens but follow the denser rules in section 9. The visual reference is the [mockup](mockup/README.md).
+Status: draft v0.2, 2026-10-17. Source of truth for the look and feel of the storefront. Admin and Picker screens reuse the same tokens but follow the denser rules in section 9. The visual reference is [mockup v2](mockup-v2/README.md).
+
+v0.2 is a visual overhaul of v0.1 (leaf green accent, Geist). Content, information architecture, domain rules and component responsibilities are unchanged; colour, type, shape and several layouts are new. The v0.1 mockup stays in [mockup/](mockup/README.md) for reference only.
 
 ## 1. Design read
 
-> Reading this as: **consumer grocery storefront for Filipino households, mostly on mid-range phones, with a clean, fresh and utilitarian language, leaning toward Tailwind v4 + shadcn/ui (customised, never default) + Motion + Phosphor icons.**
+> Reading this as: **consumer grocery storefront for Filipino households, mostly on mid-range phones, with a bright, market-fresh and price-forward language, leaning toward Tailwind v4 + shadcn/ui (customised, never default) + Motion + Phosphor icons.**
 
-Dials (from the `design-taste-frontend` skill): **DESIGN_VARIANCE 4, MOTION_INTENSITY 4, VISUAL_DENSITY 6.** A shop is a utility: predictable grids, fast scanning, dense product rails, motion only where it confirms an action. Expressive layout is reserved for the Home page hero and Recipe pages.
+Dials (from the `design-taste-frontend` skill): **DESIGN_VARIANCE 6, MOTION_INTENSITY 4, VISUAL_DENSITY 6.** Variance rose from 4 because Home now uses a category mosaic, a savings row with a promo tile and large display type. Motion stays at 4: a shop is a utility on mid-range phones, so motion only confirms actions. Density is unchanged; product grids stay dense.
 
 ## 2. Principles
 
-1. **Speed to basket.** Every Product card can add to Cart without leaving the page.
-2. **Price clarity.** Price, Unit Price and any weight caveat are always visible together.
+1. **Speed to basket.** Every Product card can add to Cart without leaving the page. On mobile the first Products appear above the fold.
+2. **Price clarity.** Price, Unit Price and any weight caveat are always visible together. Prices are the loudest numbers on the screen.
 3. **Trust through honesty.** Say plainly when stock is low, when weight is approximate, when a Slot is nearly full.
-4. **Fresh, not fancy.** Real photography, generous white space, one green accent. No gradients-for-decoration, no glassmorphism, no stock-photo smiles.
+4. **Bright, not loud.** One lime accent, deep ink for actions, real photography. No decorative gradients, no glassmorphism. Translucency is allowed only on the sticky header and tab bar, where content scrolls underneath.
 5. **Works on a bad day.** Weak network, small screen, bright sunlight, one hand.
 
 ## 3. Colour tokens
 
-One accent (leaf green) used identically everywhere. Status colours are semantic and appear only to convey state. Neutrals carry a faint green tint so the palette reads as one family. No pure black or pure white.
+Two brand colours do all the work: **ink** (deep green-black) for text and actions, and **lime** (calamansi) as the single accent. Status colours are semantic and appear only to convey state. Neutrals carry a faint lime tint so the palette reads as one family. No pure black or pure white.
 
 Define as CSS variables, mapped into Tailwind v4's `@theme`. Switch modes with `prefers-color-scheme` plus a manual `data-theme` override.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--bg` | `#F7F9F6` | `#0E1611` | Page background |
-| `--surface` | `#FDFEFC` | `#152019` | Cards, sheets, inputs |
-| `--surface-2` | `#EEF3EE` | `#1C2A21` | Quiet fills, image placeholders |
-| `--border` | `#DDE5DD` | `#27382D` | Dividers, input borders |
-| `--text` | `#14231B` | `#E6EEE8` | Body and headings |
-| `--text-muted` | `#4B5D52` | `#A3B5A9` | Secondary text (4.5:1 or better on `--bg`) |
-| `--accent` | `#1F7A4D` | `#4DBE86` | Primary buttons, links, active states, focus ring |
-| `--accent-hover` | `#186340` | `#6FD0A0` | Hover and pressed |
-| `--on-accent` | `#F7F9F6` | `#08130D` | Text on accent fills |
-| `--accent-soft` | `#E1F1E7` | `#163526` | Selected chips, subtle highlights |
-| `--sale` | `#C8341E` | `#FF7A63` | Price drops and Promotion tags only |
-| `--sale-soft` | `#FBE9E5` | `#3A1C16` | Promotion tag background |
-| `--warning` | `#8A5200` | `#F2B35C` | Low stock, approximate weight |
-| `--error` | `#B42318` | `#FF8A7E` | Validation and failures |
+| `--bg` | `#F6F8EE` | `#0B1610` | Page background |
+| `--surface` | `#FCFDF7` | `#122019` | Cards, sheets, inputs |
+| `--surface-2` | `#EBF0DC` | `#1A2C22` | Quiet fills, image placeholders, footer |
+| `--border` | `#DCE3CB` | `#253A2E` | Dividers and card edges (decorative) |
+| `--border-strong` | `#7E8F6E` | `#6F8A78` | Input, chip and option-card edges (3:1 UI boundary) |
+| `--ink` | `#10261A` | `#EDF3E3` | Body text, headings, selected states |
+| `--muted` | `#4B5A4C` | `#A6B8A5` | Secondary text |
+| `--accent` | `#C9E84E` | `#D3EE62` | Lime surfaces: service strip, promo tile, logo mark, highlight |
+| `--accent-soft` | `#E4F2A8` | `#2C3A10` | Add button, selected option cards, "In stock" |
+| `--on-accent` | `#10261A` | `#0B1610` | Text on lime surfaces (always dark) |
+| `--btn-bg` / `--btn-fg` | `#10261A` / `#C9E84E` | `#D3EE62` / `#0B1610` | Primary buttons, filled stepper, cart bar |
+| `--hl` | `#C9E84E` | `#3F5414` | Marker highlight behind one word of display type |
+| `--ring` | `#10261A` | `#D3EE62` | Focus ring |
+| `--sale` | `#C4301B` | `#FF8A70` | Promotion prices and "Save" tags only |
+| `--sale-soft` | `#FBE3DD` | `#3B1D16` | Promotion tag background |
+| `--warn` | `#7A4E00` | `#F2C063` | Low stock, approximate weight, "Only a few left" |
+| `--warn-soft` | `#FFF1C9` | `#3A2E10` | Weighed-item note background |
+| `--err` | `#B3261E` | `#FF8F85` | Validation and failures |
 
-Verify every text and fill pair with a contrast checker when the tokens are implemented; adjust the values, not the rule (AA minimum, body text 4.5:1, large text 3:1).
+**The primary button flips between modes.** Lime on the light background is only 1.3:1, too weak to mark a button edge. So in light mode a primary button is ink with lime text (11.5:1), and in dark mode it is lime with dark text (14.2:1). Never use lime as a boundary-only element on a light surface; lime surfaces always carry `--on-accent` text.
+
+Measured contrast (WCAG 2.x): ink on bg 14.9 light and 16.3 dark; muted on surface-2 6.3 and 7.0; sale on its soft tag 4.5 and 6.6; warn on its soft note 6.4 and 7.9; border-strong on surface 3.4 and 4.5. Re-measure any token change; adjust the value, not the rule (AA minimum, body text 4.5:1, large text and UI boundaries 3:1).
 
 ## 4. Typography
 
 | Role | Font | Notes |
 |---|---|---|
-| UI and headings | **Geist** via `next/font` | Variable; weights 400, 500, 600 |
-| Codes and numerals in tables | **Geist Mono** | Order numbers, voucher codes, admin tables |
+| Display, headings, prices | **Bricolage Grotesque** via `next/font/google` | Variable, weights 500 to 800; `opsz` axis on |
+| UI and body | **Plus Jakarta Sans** via `next/font/google` | Variable, weights 400 to 700 |
+| Codes in admin tables | **Geist Mono** | Order numbers, voucher codes |
 
-- Prices use `font-variant-numeric: tabular-nums` so columns align.
-- The peso sign (U+20B1) may be missing from some fonts; confirm Geist coverage at setup and let the system font stack supply the glyph if not.
-- Scale (px / line height): 12/16 caption, 14/20 small, 16/24 body, 18/28 lead, 22/28 h3, 28/34 h2, 36/40 h1, 48/52 hero (desktop only). Hero headline at most two lines and five words wherever possible.
-- Body text never smaller than 14 px on mobile; inputs 16 px to prevent iOS zoom.
-- Line length for prose 65 characters.
+- Both families were checked on 2026-10-17: each contains the peso sign (U+20B1) and tabular figures (`tnum`). The peso sign lives in the `latin-ext` subset, so load `subsets: ['latin', 'latin-ext']`.
+- Prices use Bricolage 700 with `font-variant-numeric: tabular-nums`. Centavos stay visible but render at 0.66em on cards (`₱160` + `.00`). Product and Cart pages show the full amount at one size.
+- Scale (px / line height): 12/16 caption, 13/18 fine print, 14/20 small, 16/24 body, 18/28 lead, 24/28 h3, 32/36 h2, 44/46 h1, display `clamp(44px, 5.2vw, 76px)` / 0.98. Tracking tightens with size: display -0.04em, h1 -0.03em, h2 -0.025em, body 0.
+- Emphasis in display type uses the lime highlight (`--hl`, a marker band behind the word), never a second font.
+- Body text never smaller than 14 px on mobile; inputs 16 px to prevent iOS zoom. Prose line length at most 65 characters.
 
 ## 5. Shape, space, elevation
 
-- **Spacing:** 4 px base; common steps 4, 8, 12, 16, 24, 32, 48, 64.
-- **Radius rule (one system):** controls (buttons, inputs, selects) **12 px**; cards and sheets **16 px**; images inside cards **12 px**; chips, badges and the quantity stepper **full pill**. No other radii.
-- **Elevation:** prefer borders and spacing. Where a shadow is needed, tint it to the background hue: `0 1px 2px rgb(20 35 27 / .06), 0 8px 24px rgb(20 35 27 / .08)`. Cards in grids have a 1 px border, no shadow.
-- **Layout:** content width `max-w-7xl` (1280 px) centred, 16 px side gutter on mobile, 24 px from `md`. Use CSS Grid for all grids. Breakpoints: 640, 768, 1024, 1280, 1536.
+- **Radius rule (one system, three steps):** everything you press is a **pill** (buttons, chips, quantity stepper, search, tags, cart bar). Fields and things inside cards are **14 px** (inputs, selects, image slots, option cards, notes). Containers are **20 px** (cards, panels, category tiles, sheets). No other radii.
+- **Spacing:** 4 px base; common steps 4, 8, 12, 16, 24, 32, 48, 56, 80.
+- **Elevation:** borders and tinted surfaces first. Only floating layers get a shadow: the mobile cart bar and bottom sheets (`--shadow-float`, tinted to the ink hue). Cards in grids have a 1 px border, no shadow; hover darkens the border.
+- **Layout:** content width 1280 px centred (`max-w-7xl` plus 24 px gutters), 16 px gutter on mobile. CSS Grid for all grids. Breakpoints: 640, 768, 1024, 1280, 1536. Every multi-column layout declares its collapse below 860 px and 640 px.
 - **Z-index scale** (single file `src/config/z.ts`): `base 0`, `sticky 10`, `header 20`, `drawer 30`, `modal 40`, `toast 50`.
 - Hero and full-height sections use `min-h-[100dvh]`, never `h-screen`.
 
@@ -73,66 +82,73 @@ Built on shadcn/ui primitives with the tokens above applied. None ship in defaul
 
 | Component | Notes |
 |---|---|
-| `ProductCard` | Image (4:5), name (2 lines max), pack size, `PriceTag`, add button that morphs into `QuantityStepper`. Out-of-stock and low-stock states. |
-| `PriceTag` | Current price, optional compare-at strikethrough, Unit Price line, "approx." marker for Weighed Products |
-| `QuantityStepper` | Pill; minus, count, plus; 44 px targets; long-press repeat; announces count to screen readers |
-| `CategoryTile` | Image + name; grid on Home and category index |
-| `CartDrawer` | Sheet on desktop, bottom drawer on mobile; line list, Substitution Preference per line, totals, Checkout button |
-| `SubstitutionSelect` | Three options: "Pick a similar item", "I'll choose", "No substitute" |
-| `SlotPicker` | Day tabs and time chips; shows "Few left" when under 20% capacity; disabled when full |
+| `ProductCard` | Square image, optional tags row (sale, stock, "By weight"), name (2 lines max), pack size, `PriceTag`, then a full-width **Add** pill (`--accent-soft`). Once the Product is in the Cart the pill becomes a filled `QuantityStepper`, so "in Cart" reads at a glance across a grid. Out-of-stock: greyed image, "Out of stock today" tag, **Notify me** button. |
+| `PriceTag` | Current price (sale price in `--sale`), compare-at strikethrough, Unit Price line, "approx." marker for Weighed Products |
+| `QuantityStepper` | Pill; minus, count, plus; 44 px targets; long-press repeat; announces "Name, 2 in cart" to screen readers. **Filled** variant on cards; **ghost** variant for servings, trays and Cart Lines. Cart Lines stop at 1 and offer Remove separately. |
+| `CategoryMosaic` | Home only. 8 Categories in a 4 x 3 grid with no empty cell: Fruit 2 x 2 on `--accent-soft` with a photo, Vegetables 2 x 1 on `--surface-2` with a photo, six 1 x 1 tiles |
+| `ServiceStrip` | Lime band under the hero: delivery fee, freshness check, payment methods |
+| `DeliveryButton` | Header pill with area and next Slot (replaces v0.1's separate top strip); opens the address and Zone picker |
+| `CartButton` | Desktop header: primary pill with running total and count. Mobile: `CartBar` floating above the tab bar with count, "View cart" and total |
+| `CartDrawer` | Sheet on desktop, bottom sheet on mobile; delivery Slot row, free-delivery hint, Cart Lines with Substitution Preference, totals, Checkout button |
+| `SubstitutionSelect` | Three radio cards: "Pick a similar item", "I'll choose", "No substitute" |
+| `SlotPicker` | Day radio cards, then time radio cards. States: Available, "Only a few left" (under 20% capacity, `--warn`), Full (dashed, struck through, disabled), selected ("Held for you for 10 minutes") |
 | `AddressForm` | Landmark required; map pin; Zone coverage check inline |
-| `DeliveryBanner` | Sticky strip with area and next available Slot; opens address/zone picker |
-| `OrderTimeline` | Vertical steps with timestamps and Rider contact |
-| `RecipeCard` | Photo, time, servings, "Add all to cart" |
-| `StockBadge` | "In stock", "Only a few left", "Out of stock" |
+| `OrderTimeline` | Vertical steps with timestamps and Rider contact (not in the mockup yet) |
+| `RecipePanel` | Photo, servings stepper, time, two-column ingredient checklist, "Add 5 items, ₱423.00" total that updates as items are ticked |
+| `PromoTile` | Lime tile spanning two grid cells in the savings row; one headline figure taken from real Promotion data |
+| `StockBadge` | "In stock" (`--accent-soft`), "Only a few left" (`--warn`), "Out of stock today" (quiet) |
 
-**Every component documents and implements:** default, hover, focus-visible, active (`scale-[0.98]` push), disabled, loading (skeleton shaped like the final layout), empty and error states. No generic spinners.
+**Every component documents and implements:** default, hover, focus-visible, active (`scale(0.97)` push), disabled, loading (skeleton shaped like the final layout), empty and error states. No generic spinners.
 
 ## 7. Motion
 
-Library: **Motion** (`import { motion } from "motion/react"`). Do not mix GSAP in the same tree. Motion lives only in small `"use client"` leaf components. Use springs (`stiffness 300, damping 30` for sheets; `stiffness 500, damping 32` for the stepper), never linear easing.
+Library: **Motion** (`import { motion } from "motion/react"`). Do not mix GSAP in the same tree. Motion lives only in small `"use client"` leaf components. Use springs, never linear easing, and prefer Motion's `visualDuration` and `bounce` form so values match the `apple-design` guidance (critically damped by default; a little bounce only after a gesture with momentum).
 
 Every animation must answer "what does it communicate?"
 
 | Motion | Communicates | Spec |
 |---|---|---|
-| Add button morphs into stepper | Feedback: item added | 150 ms spring, `layout` animation on the control only |
-| Cart badge bump | Feedback: count changed | scale 1 to 1.15 to 1, 200 ms |
-| Cart drawer / bottom sheet | State change; spatial origin | Spring slide; bottom sheet is draggable with velocity-based dismiss (see the `apple-design` skill) |
-| Skeleton shimmer | Loading | Opacity pulse only, 1.2 s |
-| Home sections fade-up | Hierarchy, once | `whileInView`, `once: true`, 24 px, 400 ms, stagger 60 ms; Home only |
+| Add pill becomes stepper | Feedback: item added | `layout` on the control only; spring `visualDuration 0.2, bounce 0.1` |
+| Count bump (stepper, cart badge) | Feedback: count changed | scale 1 to 1.18 to 1, same spring |
+| Bottom sheet / cart drawer | State change; spatial origin | Spring `visualDuration 0.3, bounce 0.2`. Drag tracks the finger 1:1; on release, project the end point from velocity and snap to the nearest detent; rubber-band past the top. Enters and leaves along the same edge. |
+| Skeleton | Loading | Opacity pulse only, 1.2 s |
+| Home sections fade-up | Hierarchy, once | `whileInView`, `once: true`, 24 px, stagger 60 ms; Home only |
 | Toast | Transient confirmation | Slide and fade, 200 ms |
 
-Rules: animate only `transform` and `opacity`; no scroll-jacking, parallax, marquees or infinite loops; use `useMotionValue` for pointer or drag values, never `useState`; wrap everything with `useReducedMotion()` and degrade to instant. Search the Motion docs through the `mcp__motion__search-motion-docs` tool before writing animation code, and audit finished work with the `motion` skill's MotionScore.
+Rules: animate only `transform` and `opacity`; no scroll-jacking, parallax, marquees or infinite loops; use `useMotionValue` for pointer or drag values, never `useState`; wrap everything with `useReducedMotion()` and degrade to cross-fades. Search the Motion docs through the `motion` MCP tools before writing animation code, and audit finished work with the `motion` skill's MotionScore.
+
+The static mockup uses CSS `linear()` approximations of the same springs (`--spring-snap`, `--spring-sheet` in `mockup-v2/sariwa.css`). Do not copy them into the app: a sampled curve cannot be interrupted mid-flight, and a Motion spring can.
 
 ## 8. Imagery, icons, copy
 
-- **Photography:** Products on a neutral background, square master, natural light for produce. Hero and category imagery shows real food and real Philippine pantry staples. Placeholders in the mockup are labelled slots; replace with real shots before launch.
+- **Photography:** Products on a neutral background, square master, natural light for produce. Hero and category imagery shows real food and real Philippine pantry staples. The mockup's photo slots are labelled with size and subject; replace them with real shots before launch. Never use stock-photo people.
 - **Icons:** `@phosphor-icons/react`, `regular` weight, 20 or 24 px, one family only. No emoji anywhere in UI. No hand-drawn SVG icons.
-- **Formatting:** `₱1,249.00` on Product and Cart pages; whole pesos are acceptable in compact tiles (`₱249`). Weights `500 g`, `1.5 kg`. Dates `Sat, 18 Oct`; times `2:00 to 4:00 PM`. Use a hyphen or "to" for ranges, never an en or em dash.
+- **Logo:** placeholder lime circle with a lowercase "s" plus the "sariwa" wordmark in Bricolage 800. Both live in `src/config/brand.ts` so renaming stays a five-minute job.
+- **Formatting:** `₱1,249.00` everywhere (centavos smaller on cards, never dropped). Weights `500 g`, `1.5 kg`. Dates `Sat, 18 Oct`; times `2:00 to 4:00 PM`. Use a hyphen or "to" for ranges, never an en or em dash.
 - **Voice:** plain, warm, concrete. Say "Delivery today, 2:00 to 4:00 PM", not "Seamless same-day experience". Avoid "elevate", "seamless", "unleash". Filipino phrases only where natural and only after the Filipino language pass in Phase 5.
 - **Empty states** explain how to fill them ("Your cart is empty. Start with today's fresh picks.").
 - **Error messages** say what happened and what to do next, next to the field.
 
 ## 9. Admin and Picker screens
 
-Dense and functional, same tokens and fonts, no Motion beyond focus and state transitions.
+Dense and functional, same tokens and fonts, no Motion beyond focus and state transitions. Lime appears only in the logo mark and selected states; actions use ink.
 
-- Tables use TanStack Table with sticky headers, row hover, keyboard navigation and numeric columns in Geist Mono.
+- Tables use TanStack Table with sticky headers, row hover, keyboard navigation and numeric columns in tabular figures (Geist Mono for codes).
 - The Picker view is **mobile-first and one-handed**: large tap rows (56 px), aisle-ordered list, big "Short" and "Substitute" buttons, final weight keypad, haptic-friendly confirmations.
 - Charts use the `dataviz` skill's palette rules; never colour-only encodings.
 
 ## 10. Accessibility checklist (per component and per page)
 
-- Contrast: text 4.5:1, large text and UI boundaries 3:1.
-- Fully operable by keyboard; visible `:focus-visible` ring (2 px `--accent`, 2 px offset).
-- Real `<button>`, `<a>`, `<input>` with `<label>`; `aria-label` on icon-only buttons; errors linked with `aria-describedby`.
+- Contrast: text 4.5:1, large text and UI boundaries 3:1. Lime is never the only edge of a control on a light surface.
+- Fully operable by keyboard; visible `:focus-visible` ring (2 px `--ring`, 2 px offset; ink in light mode, lime in dark).
+- Real `<button>`, `<a>`, `<input>` with `<label>`; option cards are labelled native radios; `aria-label` on icon-only buttons; errors linked with `aria-describedby`.
+- When Add and the stepper swap places, focus moves to the stepper's plus button, and back to Add when the count reaches 0.
 - Quantity changes and cart updates announced through a polite live region.
 - Touch targets at least 44 px; at least 8 px between adjacent targets.
 - Pinch-zoom never disabled.
-- Honour `prefers-reduced-motion` and `prefers-color-scheme`.
+- Honour `prefers-reduced-motion`, `prefers-reduced-transparency` and `prefers-color-scheme`.
 - Images have meaningful alt text; decorative images use `alt=""`.
-- Automated `axe` check on Home, Category, Product, Cart, Checkout in CI; manual screen-reader pass (TalkBack, VoiceOver) before launch.
+- Automated `axe` check on Home, Category, Product, Cart, Checkout in CI; manual screen-reader pass (TalkBack, VoiceOver) before launch. Mockup v2 passed axe-core 4.10 (WCAG 2.2 AA and best-practice rules) on all six screens in both themes on 2026-10-17.
 
 ## 11. Performance budget
 
@@ -143,5 +159,36 @@ Dense and functional, same tokens and fonts, no Motion beyond focus and state tr
 | INP | under 200 ms |
 | JavaScript on a Category page | under 170 KB gzipped |
 | Product image on a card | under 40 KB (AVIF/WebP, correct `sizes`) |
+| Web fonts | under 110 KB woff2 in total (both families, `latin` + `latin-ext`) |
 
-The hero image uses `next/image` with `priority`; below-the-fold images lazy-load; every image reserves its aspect ratio.
+The hero image uses `next/image` with `priority`; below-the-fold images lazy-load; every image reserves its aspect ratio. If fonts hurt LCP on real devices, self-host files subset to Latin plus U+20B1 with `next/font/local`.
+
+## 12. Tailwind v4 mapping (Phase 0)
+
+```css
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-btn: var(--btn-bg);
+  --color-btn-fg: var(--btn-fg);
+  --color-sale: var(--sale);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+  --radius-field: 14px;
+  --radius-card: 20px;
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-jakarta);
+}
+```
+
+Token values live once in `:root` and the dark blocks (copy them from `mockup-v2/sariwa.css`); components use the semantic utilities (`bg-btn text-btn-fg`, `rounded-card`), never raw hex.

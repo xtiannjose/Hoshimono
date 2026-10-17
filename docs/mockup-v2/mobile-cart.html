@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sariwa Mobile Cart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Plus+Jakarta+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="sariwa.css">
+<script src="sariwa.js" defer></script>
+</head>
+<body>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<!-- The page behind the sheet; inert while the Cart is open -->
+<div class="m" inert>
+  <header class="m-hdr">
+    <div class="wrap">
+      <div class="m-top">
+        <span class="logo"><span class="logo-mark" aria-hidden="true">s</span>sariwa</span>
+        <span class="m-deliv"><i class="ph ph-map-pin" aria-hidden="true"></i><span>Pasig 1600<br><span class="muted" style="font-weight:500">Today, 2 to 4 PM</span></span></span>
+      </div>
+      <div class="search"><i class="ph ph-magnifying-glass" aria-hidden="true"></i><span class="muted">Search groceries and recipes</span></div>
+    </div>
+  </header>
+  <div class="wrap m-hero">
+    <p class="display">Fresh groceries, delivered <span class="hl">today.</span></p>
+  </div>
+</div>
+
+<div class="scrim" aria-hidden="true"></div>
+
+<section class="sheet" role="dialog" aria-modal="true" aria-labelledby="cart-title" data-cart data-count="8" data-total="104550">
+  <div class="grab" aria-hidden="true"></div>
+  <div class="sheet-hd">
+    <div style="display:flex;align-items:baseline;gap:10px"><h2 id="cart-title" class="h3">Your cart</h2><span class="muted small"><span data-cart-count>8</span> items</span></div>
+    <a class="iconbtn" href="mobile-home.html" aria-label="Close cart"><i class="ph ph-x" aria-hidden="true"></i></a>
+  </div>
+
+  <div class="sheet-body">
+    <div class="deliv-card">
+      <i class="ph ph-truck" aria-hidden="true"></i>
+      <div><b>Today, 2:00 to 4:00 PM</b><span>To Pasig 1600</span></div>
+      <a class="link" href="checkout.html">Change</a>
+    </div>
+    <p class="freebar"><i class="ph ph-gift" aria-hidden="true"></i><span data-free-left>Add ₱454.50 more for free delivery.</span></p>
+
+    <div class="mline">
+      <div class="slot"><i class="ph ph-orange-slice" aria-hidden="true"></i></div>
+      <div>
+        <b>Carabao Mangoes</b><small>approx. 1 kg, ₱160.00 per kg</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a>
+        <div class="mline-row">
+          <div class="qty" id="l1" data-qty="1" data-min="1" data-price="16000" data-name="Carabao Mangoes" data-line-total="lt1">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Carabao Mangoes"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt1">₱160.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="mline">
+      <div class="slot"><i class="ph ph-egg" aria-hidden="true"></i></div>
+      <div>
+        <b>Eggs, Large</b><small>12 pcs</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>No substitute</a>
+        <div class="mline-row">
+          <div class="qty" id="l2" data-qty="1" data-min="1" data-price="11200" data-name="Eggs, Large" data-line-total="lt2">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Eggs, Large"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt2">₱112.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="mline">
+      <div class="slot"><i class="ph ph-drop" aria-hidden="true"></i></div>
+      <div>
+        <b>Fresh Milk</b><small>1 L</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a>
+        <div class="mline-row">
+          <div class="qty" id="l3" data-qty="2" data-min="1" data-price="9800" data-name="Fresh Milk" data-line-total="lt3">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Fresh Milk"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>2</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt3">₱196.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="mline">
+      <div class="slot"><i class="ph ph-cow" aria-hidden="true"></i></div>
+      <div>
+        <b>Chicken Breast Fillet</b><small>approx. 500 g, ₱285.00 per kg</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a>
+        <div class="mline-row">
+          <div class="qty" id="l4" data-qty="1" data-min="1" data-price="14250" data-name="Chicken Breast Fillet" data-line-total="lt4">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Chicken Breast Fillet"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt4">₱142.50</span>
+        </div>
+      </div>
+    </div>
+    <div class="mline">
+      <div class="slot"><i class="ph ph-grains" aria-hidden="true"></i></div>
+      <div>
+        <b>Jasmine Rice</b><small>5 kg</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a>
+        <div class="mline-row">
+          <div class="qty" id="l5" data-qty="1" data-min="1" data-price="34500" data-name="Jasmine Rice" data-line-total="lt5">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Jasmine Rice"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt5">₱345.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="mline">
+      <div class="slot"><i class="ph ph-bread" aria-hidden="true"></i></div>
+      <div>
+        <b>Pandesal</b><small>10 pcs</small>
+        <a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>I'll choose</a>
+        <div class="mline-row">
+          <div class="qty" id="l6" data-qty="2" data-min="1" data-price="4500" data-name="Pandesal" data-line-total="lt6">
+            <div class="stepper stepper-ghost" role="group" aria-label="Quantity of Pandesal"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>2</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+          <span class="price" id="lt6">₱90.00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-ft">
+    <div class="tot">
+      <div><span>Subtotal</span><span data-cart-total>₱1,045.50</span></div>
+      <div><span>Delivery</span><span data-cart-fee>₱59.00</span></div>
+      <div class="is-grand"><span>Estimated total</span><span data-cart-grand>₱1,104.50</span></div>
+    </div>
+    <a class="btn btn-primary btn-lg btn-block" href="checkout.html"><span>Checkout, <span data-cart-grand>₱1,104.50</span></span></a>
+    <p class="fine" style="text-align:center">Add a voucher code at checkout. Two weighed items can change the final total.</p>
+  </div>
+</section>
+</body>
+</html>

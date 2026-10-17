@@ -53,7 +53,7 @@ Read in this order the first time.
 | - | [GLOSSARY.md](GLOSSARY.md) | The exact words we use for domain concepts. |
 | - | [CLAUDE.md](CLAUDE.md) | Instructions for AI agents working in this repo. |
 | - | [docs/adr/](docs/adr/) | Architecture decisions that are hard to reverse. |
-| - | [docs/mockup/](docs/mockup/README.md) | Storefront mockup and how to view it. |
+| - | [docs/mockup-v2/](docs/mockup-v2/README.md) | Storefront mockup (v2, current) and how to view it. v1 is in [docs/mockup/](docs/mockup/README.md). |
 
 ## Planned repository layout
 

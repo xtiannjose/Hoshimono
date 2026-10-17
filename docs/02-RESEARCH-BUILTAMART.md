@@ -76,7 +76,7 @@ Product slugs combine category prefix, name, size, brand and a numeric id (for e
 | Delivery slot visibility | "Instant" / same-day | Real slots with capacity | Same |
 | Native app | Yes (iOS, likely Android) | PWA | Evaluate |
 | Aggregator channels | GrabMart, Lazada, Pick-a-Roo | No | Evaluate after traction |
-| Nav, filters, product card, checkout UX | **Not observed** | Designed in [mockup](mockup/README.md) | Validate against real screenshots |
+| Nav, filters, product card, checkout UX | **Not observed** | Designed in [mockup v2](mockup-v2/README.md) | Validate against real screenshots |
 
 ## 6. Lessons applied to the plan
 

@@ -61,7 +61,7 @@ npm run dev
 
 Open http://localhost:3000. You should see the default Next.js page. Stop the server (Ctrl+C).
 
-Delete any default content you will not use (`src/app/page.tsx` body, `public/*.svg`). Keep `src/app/layout.tsx`; it already loads Geist through `next/font`.
+Delete any default content you will not use (`src/app/page.tsx` body, `public/*.svg`). Keep `src/app/layout.tsx`, but swap its default Geist fonts for Bricolage Grotesque and Plus Jakarta Sans ([05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) section 4).
 
 ## 4. Install the libraries
 
