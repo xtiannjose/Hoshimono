@@ -362,10 +362,57 @@ describe("searchProducts: review cases", () => {
   });
 
   it("a parent Category still finds its Products when no child is meant", async () => {
-    expect(await names("meat")).toEqual(
-      expect.arrayContaining(["Pork Belly (Liempo)", "Ground Beef"])
+    const meat = await names("meat");
+    expect(meat).toEqual(
+      expect.arrayContaining([
+        "Pork Belly (Liempo)",
+        "Ground Beef",
+        "Whole Chicken",
+      ])
     );
-    expect((await names("dairy")).length).toBe(16);
+    // The fish child owns "fish", so the parent's "meat" is not lent to it.
+    expect(meat).not.toContain("Tahong");
+    // Milk 6, Cheese and butter 4, Yogurt 3; eggs are not dairy.
+    const dairy = await names("dairy");
+    expect(dairy).toHaveLength(13);
+    expect(dairy).not.toContain("Large Eggs, 12 pack");
+  });
+
+  // Round two of the review: an extra word must not bring the other topic back.
+  it("keeps a two-topic parent out of two-word queries", async () => {
+    expect(await names("fresh fish")).toEqual([]);
+    expect(await names("fish fillet")).toEqual([]);
+    expect(await names("salted eggs")).toEqual(["Salted Eggs, 6 pack"]);
+    expect(await names("fresh eggs")).toEqual([]);
+  });
+
+  it("finds 3-in-1 coffee however it is typed", async () => {
+    for (const q of ["3 in 1", "3-in-1 coffee", "nescafe 3 in 1"]) {
+      expect(await names(q), q).toContain("3-in-1 Coffee, 30 sachets");
+    }
+  });
+
+  it("ignores decimal, fraction and dozen sizes", async () => {
+    expect(await names("1.5 kg chicken")).toContain("Whole Chicken");
+    expect(await names("1/2 kilo pork")).toContain("Pork Belly (Liempo)");
+    expect(await names("1 dozen eggs")).toContain("Large Eggs, 12 pack");
+    expect(await names("eggs 30s")).toContain("Medium Eggs, 30 pack");
+  });
+
+  it("matches two-word synonyms such as bitter gourd", async () => {
+    expect(await names("bitter gourd")).toContain("Ampalaya");
+    expect(await names("string beans")).toContain("Sitaw");
+    expect(await names("water spinach")).toContain("Kangkong");
+  });
+
+  it("corrects a typo in any word, up to three corrections", async () => {
+    const result = await searchProducts("fresh milk magnolia mlik");
+    expect(result.correctedQuery).toBe("fresh milk magnolia milk");
+    expect(result.items.map((p) => p.name)).toEqual(["Fresh Milk"]);
+  });
+
+  it("still uses trigram matching when the query has a short word", async () => {
+    expect(await names("a kong")).toContain("Kangkong");
   });
 
   it("ranks whole-word matches above prefix-only matches", async () => {
@@ -425,6 +472,11 @@ describe("suggestSearch", () => {
     expect(
       (await suggestSearch("fru")).categories.map((c) => c.slug)
     ).toContain("fruit");
+  });
+
+  it("suggests the same Products search would find", async () => {
+    const tuna = await suggestSearch("canned tuna");
+    expect(tuna.products.map((p) => p.name)).toContain("Tuna Flakes in Oil");
   });
 
   it("suggests nothing for an empty query", async () => {

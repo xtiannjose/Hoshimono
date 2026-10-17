@@ -121,8 +121,8 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 1.1 Catalogue core and search** (W2). Stack: Prisma, Postgres full-text, `pg_trgm`, `unaccent`. Skills: `codebase-design`, `tdd`.
 
-- [ ] `catalog` module: `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`
-- [ ] Search: full-text plus trigram, suggestions, zero-result state (backend and `SearchIndex` interface)
+- [x] `catalog` module: `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`
+- [x] Search: full-text plus trigram, suggestions, zero-result state (backend and `SearchIndex` interface); Filipino synonyms and typo correction, see [03-ARCHITECTURE.md](03-ARCHITECTURE.md) section 10
 
 **Batch 1.2 Storefront shell and Home** (W2 to W3). Stack: Server Components, Tailwind, shadcn/ui, Motion, `next/image`. Skills: `design-taste-frontend`, `motion`.
 

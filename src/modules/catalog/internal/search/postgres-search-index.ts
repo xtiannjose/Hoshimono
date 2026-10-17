@@ -14,16 +14,18 @@ const VOCABULARY_TTL_MS = 10 * 60 * 1000;
  * Active Products matching `query`, with the facts used to rank them.
  * A Product is matched on its own words (search_vector: name, brand,
  * description) plus the words its Category lends it: the Category's own
- * name, and the parent's name unless the parent joins two topics
- * ("Meat and fish") and one of its children already matches the query.
- * So "fish" means the Fish and seafood aisle, not every pork chop, while
- * "meat" and "frozen chicken" still work.
+ * name, and its parent's name. A parent that joins two topics
+ * ("Meat and fish") lends only the topic none of its children owns:
+ * Pork, Chicken and Beef get "meat"; Fish and seafood gets nothing more.
+ * So "fish" and "fresh fish" mean the fish aisle, not chicken, while
+ * "meat", "dairy" and "frozen chicken" still work.
  */
-function matches(query: string, exact: string) {
+function matches(query: string, exact: string, any: string) {
   return Prisma.sql`
     WITH q AS (
       SELECT to_tsquery('simple', ${query}) AS query,
-             to_tsquery('simple', ${exact}) AS exact
+             to_tsquery('simple', ${exact}) AS exact,
+             to_tsquery('simple', ${any}) AS any
     ),
     cat AS (
       SELECT c.id, c.parent_id,
@@ -35,11 +37,15 @@ function matches(query: string, exact: string) {
       SELECT c.id, c.v AS own,
              c.v || CASE
                WHEN par.id IS NULL THEN ''::tsvector
-               WHEN par.joins_topics AND EXISTS (
-                 SELECT 1 FROM cat ch CROSS JOIN q
-                 WHERE ch.parent_id = par.id AND ch.v @@ q.query
-               ) THEN ''::tsvector
-               ELSE par.v
+               WHEN NOT par.joins_topics THEN par.v
+               -- This child is one of the parent's topics: nothing more.
+               WHEN tsvector_to_array(c.v) && tsvector_to_array(ts_delete(par.v, ARRAY['and']))
+                 THEN ''::tsvector
+               -- Otherwise only the parent's words no sibling owns.
+               ELSE ts_delete(par.v, ARRAY['and'] || coalesce((
+                 SELECT array_agg(w) FROM cat ch, unnest(tsvector_to_array(ch.v)) AS w
+                 WHERE ch.parent_id = par.id
+               ), '{}'))
              END AS v
       FROM cat c LEFT JOIN cat par ON par.id = c.parent_id
     ),
@@ -52,36 +58,51 @@ function matches(query: string, exact: string) {
       FROM products p
       JOIN lent ON lent.id = p.category_id
       CROSS JOIN q
-      WHERE p.status = 'active' AND (p.search_vector || lent.v) @@ q.query
+      WHERE p.status = 'active'
+        -- Candidates first: one word hits the Product (GIN index) or its Category.
+        AND (p.search_vector @@ q.any
+             OR p.category_id IN (SELECT l.id FROM lent l WHERE l.v @@ q.any))
+        AND (p.search_vector || lent.v) @@ q.query
     )`;
 }
 
-async function run(terms: string[], limit: number, offset: number) {
-  const cte = matches(
+const RANKED = Prisma.sql`whole_word DESC, own_words DESC, own_category DESC, rank DESC, name ASC, id ASC`;
+
+function matchesFor(terms: string[]) {
+  return matches(
     toTsQuery(terms, { prefix: true }),
-    toTsQuery(terms, { prefix: false })
+    toTsQuery(terms, { prefix: false }),
+    toTsQuery(terms, { prefix: true, any: true })
   );
-  const [rows, counted] = await Promise.all([
-    db.$queryRaw<{ id: string }[]>`
-      ${cte}
-      SELECT id FROM matched
-      ORDER BY whole_word DESC, own_words DESC, own_category DESC, rank DESC, name ASC, id ASC
-      LIMIT ${limit} OFFSET ${offset}`,
-    db.$queryRaw<{ total: number }[]>`
-      ${cte}
-      SELECT count(*)::int AS total FROM matched`,
-  ]);
-  return { ids: rows.map((r) => r.id), total: counted[0]?.total ?? 0 };
+}
+
+async function run(terms: string[], limit: number, offset: number) {
+  const cte = matchesFor(terms);
+  // One pass returns the page and the total; only a page past the end
+  // (no rows, so no window total) needs a separate count.
+  const rows = await db.$queryRaw<{ id: string; total: number }[]>`
+    ${cte}
+    SELECT id, count(*) OVER ()::int AS total FROM matched
+    ORDER BY ${RANKED}
+    LIMIT ${limit} OFFSET ${offset}`;
+  if (rows.length > 0 || offset === 0) {
+    return { ids: rows.map((r) => r.id), total: rows[0]?.total ?? 0 };
+  }
+  const counted = await db.$queryRaw<{ total: number }[]>`
+    ${cte}
+    SELECT count(*)::int AS total FROM matched`;
+  return { ids: [], total: counted[0]?.total ?? 0 };
 }
 
 /**
  * Last resort for part of a word ("kong") or a near brand: pg_trgm word
  * similarity (`<%`, threshold pg_trgm.word_similarity_threshold, 0.6 by
- * default). Every word must match, so one good word cannot carry junk.
+ * default). Every word of 3 or more letters must match, so one good word
+ * cannot carry junk; shorter words carry no trigram signal and are skipped.
  */
 async function runTrigram(terms: string[], limit: number, offset: number) {
   const words = terms.filter((t) => t.length >= MIN_TRIGRAM_TERM);
-  if (words.length === 0 || words.length !== terms.length) return EMPTY;
+  if (words.length === 0) return EMPTY;
   const text = Prisma.sql`(coalesce(p.brand, '') || ' ' || p.name)`;
   const where = Prisma.join(
     words.map((w) => Prisma.sql`${w} <% ${text}`),
@@ -148,11 +169,15 @@ export function createPostgresSearchIndex(): SearchIndex {
       const found = await run(terms, limit, offset);
       if (found.total > 0) return { ...found, correctedQuery: null };
 
-      // Nothing matched. 1: the closest known word for up to 3 terms.
+      // Nothing matched. 1: the closest known word, at most 3 corrections.
       const vocabulary = await loadVocabulary();
-      const corrected = terms.map((t, i) =>
-        i < MAX_CORRECTED_TERMS ? correctTerm(t, vocabulary) : t
-      );
+      let left = MAX_CORRECTED_TERMS;
+      const corrected = terms.map((t) => {
+        if (left === 0) return t;
+        const c = correctTerm(t, vocabulary);
+        if (c !== t) left--;
+        return c;
+      });
       if (corrected.some((t, i) => t !== terms[i])) {
         const retried = await run(corrected, limit, offset);
         if (retried.total > 0) {
@@ -181,12 +206,10 @@ export function createPostgresSearchIndex(): SearchIndex {
       ) q`;
 
       const [products, brands, categories] = await Promise.all([
+        // The same match and order as search, so the two never disagree.
         db.$queryRaw<{ id: string }[]>`
-          SELECT p.id FROM products p CROSS JOIN ${q}
-          WHERE p.status = 'active' AND p.search_vector @@ q.query
-          ORDER BY p.search_vector @@ q.exact DESC,
-                   ts_rank_cd(p.search_vector, q.query) DESC, p.name ASC
-          LIMIT ${limit}`,
+          ${matchesFor(terms)}
+          SELECT id FROM matched ORDER BY ${RANKED} LIMIT ${limit}`,
         // search_vector already holds the brand, so its index narrows this first.
         db.$queryRaw<{ brand: string }[]>`
           SELECT p.brand FROM products p CROSS JOIN ${q}
