@@ -1,4 +1,4 @@
-/* Sariwa storefront mockup v2. Tokens and components mirror docs/05-DESIGN-SYSTEM.md (v0.2).
+/* Hoshimono storefront mockup v2. Tokens and components mirror docs/05-DESIGN-SYSTEM.md (v0.2).
    Static reference only: the app rebuilds these as React components with Tailwind v4 @theme tokens. */
 
 /* ---------- Tokens ---------- */
@@ -29,7 +29,7 @@
   --hatch: rgb(16 38 26 / .045);
   --shadow-float: 0 1px 2px rgb(16 38 26 / .06), 0 12px 32px rgb(16 38 26 / .14);
 
-  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-display: "Epilogue", "Plus Jakarta Sans", system-ui, sans-serif;
   --font-ui: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --r-pill: 999px;
@@ -145,16 +145,16 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
 /* ---------- Type ---------- */
 .display {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 500;
   font-size: clamp(44px, 5.2vw, 76px);
-  line-height: .98;
-  letter-spacing: -0.04em;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
   text-wrap: balance;
 }
 .hl { background: linear-gradient(transparent 58%, var(--hl) 58%, var(--hl) 92%, transparent 92%); padding: 0 .04em; }
-.h1 { font-family: var(--font-display); font-weight: 750; font-size: 44px; line-height: 46px; letter-spacing: -0.03em; }
-.h2 { font-family: var(--font-display); font-weight: 750; font-size: 32px; line-height: 36px; letter-spacing: -0.025em; }
-.h3 { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 28px; letter-spacing: -0.02em; }
+.h1 { font-family: var(--font-display); font-weight: 500; font-size: 44px; line-height: 48px; letter-spacing: -0.035em; }
+.h2 { font-family: var(--font-display); font-weight: 500; font-size: 32px; line-height: 38px; letter-spacing: -0.035em; }
+.h3 { font-family: var(--font-display); font-weight: 600; font-size: 24px; line-height: 30px; letter-spacing: -0.025em; }
 .lead { font-size: 18px; line-height: 28px; color: var(--muted); max-width: 44ch; }
 .small { font-size: 14px; line-height: 20px; }
 .fine { font-size: 13px; line-height: 18px; color: var(--muted); }
@@ -239,7 +239,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
 }
 .stepper button:hover { background: rgb(255 255 255 / .1); }
 .stepper button .ph { font-size: 20px; }
-.stepper output { text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; }
+.stepper output { text-align: center; font-family: var(--font-display); font-weight: 600; font-size: 18px; font-variant-numeric: tabular-nums; }
 .stepper-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--border-strong); }
 .stepper-ghost button:hover { background: var(--surface-2); }
 .bump { animation: bump var(--spring-snap); }
@@ -275,7 +275,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
 .hdr-row { display: flex; align-items: center; gap: 16px; height: 72px; }
 .logo {
   display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
-  font-family: var(--font-display); font-weight: 800; font-size: 26px; letter-spacing: -0.045em;
+  font-family: var(--font-display); font-weight: 700; font-size: 26px; letter-spacing: -0.05em;
 }
 .logo-mark {
   width: 36px; height: 36px; border-radius: var(--r-pill); display: grid; place-items: center;
@@ -340,7 +340,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
   transition: border-color .15s ease;
 }
 .tile:hover { border-color: var(--border-strong); }
-.tile-name { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 26px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
+.tile-name { font-family: var(--font-display); font-weight: 600; font-size: 22px; line-height: 26px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 6px; }
 .tile-name .ph { font-size: 18px; }
 .tile-sub { font-size: 14px; line-height: 20px; color: var(--muted); max-width: 30ch; margin-top: 6px; }
 .tile > .ph { position: absolute; right: 18px; bottom: 14px; font-size: 56px; color: var(--muted); opacity: .55; }
@@ -373,7 +373,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
 .card-foot { display: grid; gap: 10px; padding: 0 2px; }
 .pricing { padding: 0 2px; }
 .price {
-  font-family: var(--font-display); font-weight: 700; font-size: 21px; line-height: 24px;
+  font-family: var(--font-display); font-weight: 600; font-size: 21px; line-height: 24px;
   letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
 }
 .price .c { font-size: .66em; letter-spacing: 0; }
@@ -423,7 +423,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
   grid-column: span 2; display: flex; flex-direction: column; justify-content: space-between; gap: 24px;
   padding: 28px; border-radius: var(--r-card); background: var(--accent); color: var(--on-accent);
 }
-.promo-big { font-family: var(--font-display); font-weight: 800; font-size: 64px; line-height: .95; letter-spacing: -0.045em; }
+.promo-big { font-family: var(--font-display); font-weight: 600; font-size: 64px; line-height: .95; letter-spacing: -0.045em; }
 .promo-big small { display: block; font-size: 22px; line-height: 28px; letter-spacing: -0.02em; font-weight: 700; margin-bottom: 10px; }
 .promo p { max-width: 32ch; font-size: 16px; line-height: 24px; }
 .promo .btn-primary { background: var(--on-accent); color: var(--accent); }
@@ -561,7 +561,7 @@ label:has(> input.sr-only) { position: relative; } /* keeps hidden inputs inside
 .tot { display: grid; gap: 8px; font-variant-numeric: tabular-nums; }
 .tot div { display: flex; justify-content: space-between; gap: 12px; }
 .tot .is-disc span:last-child { color: var(--ink); font-weight: 600; }
-.tot .is-grand { padding-top: 12px; border-top: 1px solid var(--border); font-family: var(--font-display); font-weight: 750; font-size: 24px; line-height: 30px; letter-spacing: -0.02em; }
+.tot .is-grand { padding-top: 12px; border-top: 1px solid var(--border); font-family: var(--font-display); font-weight: 600; font-size: 24px; line-height: 30px; letter-spacing: -0.02em; }
 
 /* ---------- Mobile ---------- */
 .m { max-width: 430px; margin: 0 auto; min-height: 100dvh; background: var(--bg); padding-bottom: 156px; }

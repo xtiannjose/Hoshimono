@@ -53,13 +53,14 @@ Measured contrast (WCAG 2.x): ink on bg 14.9 light and 16.3 dark; muted on surfa
 
 | Role | Font | Notes |
 |---|---|---|
-| Display, headings, prices | **Bricolage Grotesque** via `next/font/google` | Variable, weights 500 to 800; `opsz` axis on |
+| Display, headings, prices | **Epilogue** via `next/font/google` | Variable, weights 400 to 700; headings at 500, prices and h3 at 600, wordmark at 700 |
 | UI and body | **Plus Jakarta Sans** via `next/font/google` | Variable, weights 400 to 700 |
 | Codes in admin tables | **Geist Mono** | Order numbers, voucher codes |
 
+- Epilogue replaced Bricolage Grotesque on 2026-10-17 for a more elegant, lighter heading voice (option C of the font comparison).
 - Both families were checked on 2026-10-17: each contains the peso sign (U+20B1) and tabular figures (`tnum`). The peso sign lives in the `latin-ext` subset, so load `subsets: ['latin', 'latin-ext']`.
-- Prices use Bricolage 700 with `font-variant-numeric: tabular-nums`. Centavos stay visible but render at 0.66em on cards (`₱160` + `.00`). Product and Cart pages show the full amount at one size.
-- Scale (px / line height): 12/16 caption, 13/18 fine print, 14/20 small, 16/24 body, 18/28 lead, 24/28 h3, 32/36 h2, 44/46 h1, display `clamp(44px, 5.2vw, 76px)` / 0.98. Tracking tightens with size: display -0.04em, h1 -0.03em, h2 -0.025em, body 0.
+- Prices use Epilogue 600 with `font-variant-numeric: tabular-nums`. Centavos stay visible but render at 0.66em on cards (`₱160` + `.00`). Product and Cart pages show the full amount at one size.
+- Scale (px / line height): 12/16 caption, 13/18 fine print, 14/20 small, 16/24 body, 18/28 lead, 24/30 h3, 32/38 h2, 44/48 h1, display `clamp(44px, 5.2vw, 76px)` / 1.02. Tracking tightens with size: display -0.045em, h1 and h2 -0.035em, h3 -0.025em, body 0.
 - Emphasis in display type uses the lime highlight (`--hl`, a marker band behind the word), never a second font.
 - Body text never smaller than 14 px on mobile; inputs 16 px to prevent iOS zoom. Prose line length at most 65 characters.
 
@@ -117,13 +118,13 @@ Every animation must answer "what does it communicate?"
 
 Rules: animate only `transform` and `opacity`; no scroll-jacking, parallax, marquees or infinite loops; use `useMotionValue` for pointer or drag values, never `useState`; wrap everything with `useReducedMotion()` and degrade to cross-fades. Search the Motion docs through the `motion` MCP tools before writing animation code, and audit finished work with the `motion` skill's MotionScore.
 
-The static mockup uses CSS `linear()` approximations of the same springs (`--spring-snap`, `--spring-sheet` in `mockup-v2/sariwa.css`). Do not copy them into the app: a sampled curve cannot be interrupted mid-flight, and a Motion spring can.
+The static mockup uses CSS `linear()` approximations of the same springs (`--spring-snap`, `--spring-sheet` in `mockup-v2/hoshimono.css`). Do not copy them into the app: a sampled curve cannot be interrupted mid-flight, and a Motion spring can.
 
 ## 8. Imagery, icons, copy
 
 - **Photography:** Products on a neutral background, square master, natural light for produce. Hero and category imagery shows real food and real Philippine pantry staples. The mockup's photo slots are labelled with size and subject; replace them with real shots before launch. Never use stock-photo people.
 - **Icons:** `@phosphor-icons/react`, `regular` weight, 20 or 24 px, one family only. No emoji anywhere in UI. No hand-drawn SVG icons.
-- **Logo:** placeholder lime circle with a lowercase "s" plus the "sariwa" wordmark in Bricolage 800. Both live in `src/config/brand.ts` so renaming stays a five-minute job.
+- **Logo:** lime circle with a lowercase "h" plus the "hoshimono" wordmark in Epilogue 700. Both live in `src/config/brand.ts` so renaming stays a five-minute job.
 - **Formatting:** `₱1,249.00` everywhere (centavos smaller on cards, never dropped). Weights `500 g`, `1.5 kg`. Dates `Sat, 18 Oct`; times `2:00 to 4:00 PM`. Use a hyphen or "to" for ranges, never an en or em dash.
 - **Voice:** plain, warm, concrete. Say "Delivery today, 2:00 to 4:00 PM", not "Seamless same-day experience". Avoid "elevate", "seamless", "unleash". Filipino phrases only where natural and only after the Filipino language pass in Phase 5.
 - **Empty states** explain how to fill them ("Your cart is empty. Start with today's fresh picks.").
@@ -159,7 +160,7 @@ Dense and functional, same tokens and fonts, no Motion beyond focus and state tr
 | INP | under 200 ms |
 | JavaScript on a Category page | under 170 KB gzipped |
 | Product image on a card | under 40 KB (AVIF/WebP, correct `sizes`) |
-| Web fonts | under 110 KB woff2 in total (both families, `latin` + `latin-ext`) |
+| Web fonts | under 120 KB woff2 in total (both families, `latin` + `latin-ext`; measured 118 KB on 2026-10-17) |
 
 The hero image uses `next/image` with `priority`; below-the-fold images lazy-load; every image reserves its aspect ratio. If fonts hurt LCP on real devices, self-host files subset to Latin plus U+20B1 with `next/font/local`.
 
@@ -186,9 +187,9 @@ The hero image uses `next/image` with `priority`; below-the-fold images lazy-loa
   --color-err: var(--err);
   --radius-field: 14px;
   --radius-card: 20px;
-  --font-display: var(--font-bricolage);
+  --font-display: var(--font-epilogue);
   --font-sans: var(--font-jakarta);
 }
 ```
 
-Token values live once in `:root` and the dark blocks (copy them from `mockup-v2/sariwa.css`); components use the semantic utilities (`bg-btn text-btn-fg`, `rounded-card`), never raw hex.
+Token values live once in `:root` and the dark blocks (copy them from `mockup-v2/hoshimono.css`); components use the semantic utilities (`bg-btn text-btn-fg`, `rounded-card`), never raw hex.

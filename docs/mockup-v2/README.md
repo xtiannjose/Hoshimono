@@ -1,6 +1,6 @@
 # Storefront mockup v2
 
-A clickable static mockup of the Sariwa storefront: six screens built to [05-DESIGN-SYSTEM.md](../05-DESIGN-SYSTEM.md) v0.2. It replaces the v0.1 canvas mockup in [../mockup/](../mockup/README.md) as the visual spec.
+A clickable static mockup of the Hoshimono storefront: six screens built to [05-DESIGN-SYSTEM.md](../05-DESIGN-SYSTEM.md) v0.2. It replaces the v0.1 canvas mockup in [../mockup/](../mockup/README.md) as the visual spec.
 
 ## View it
 
@@ -25,7 +25,7 @@ python -m http.server 8765 --directory docs/mockup-v2
 | `mobile-home.html` | 390 x 844 | Compact header, category chips, hero, first Products above the fold, recipe teaser, floating cart bar, tab bar |
 | `mobile-cart.html` | 390 x 844 | Cart as a bottom sheet: Slot row, free-delivery hint, Cart Lines with steppers and Substitution Preference, live totals |
 
-Shared files: `sariwa.css` holds all tokens and components; `sariwa.js` holds the small amount of mockup behaviour.
+Shared files: `hoshimono.css` holds all tokens and components; `hoshimono.js` holds the small amount of mockup behaviour.
 
 ## What works when you click
 
@@ -34,13 +34,13 @@ Shared files: `sariwa.css` holds all tokens and components; `sariwa.js` holds th
 - In the mobile Cart, steppers update line totals, subtotal, delivery fee, the free-delivery hint and the Checkout button. Cart Lines stop at 1.
 - Chips, Slots, days, payment options and Substitution Preference are native radios and checkboxes styled with `:has()`, so they work without script.
 
-Money in `sariwa.js` is integer centavos, formatted only when painted, as [ADR 0002](../adr/0002-money-as-integer-centavos.md) requires.
+Money in `hoshimono.js` is integer centavos, formatted only when painted, as [ADR 0002](../adr/0002-money-as-integer-centavos.md) requires.
 
 ## Reading it correctly
 
 - **All Products, prices and the Customer are sample data**, kept identical to v1 so totals still reconcile. Cart lines add to ₱1,045.50; voucher -₱50.00; delivery ₱59.00; total ₱1,054.50. The two weighed lines (₱160.00 and ₱142.50) explain the "up to ₱30.25" note, which is 10% of ₱302.50.
 - **Motion is partly shown.** The Add-to-stepper pop, count bump and sheet spring are CSS approximations. The Home fade-up and the draggable sheet are specified in the design system but not mocked.
-- **Fonts and icons** match the build stack: Bricolage Grotesque, Plus Jakarta Sans and Phosphor Regular.
+- **Fonts and icons** match the build stack: Epilogue, Plus Jakarta Sans and Phosphor Regular.
 
 ## Photography needed
 

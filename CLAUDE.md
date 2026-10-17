@@ -1,4 +1,4 @@
-# Sariwa
+# Hoshimono
 
 Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning docs are complete; code is built phase by phase from `docs/07-ROADMAP.md`.
 
@@ -27,6 +27,7 @@ Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning 
 - **Server Components by default.** `"use client"` only for leaf components with state, Motion or browser APIs.
 - **Prices, stock and totals are always recomputed on the server.** Treat client-sent totals as untrusted.
 - **Dates:** store UTC, display `Asia/Manila`. Delivery Slots are defined in Manila local time.
+- **`docs/concepts/` is frozen.** It holds design concepts kept for reference only (v3 "shelf tag", v4 "calm and premium", v5 "warm and homey"). Read it, never edit, move or delete it, and never build the app from it; the app follows v2 (`docs/05-DESIGN-SYSTEM.md`, `docs/mockup-v2/`).
 
 ## Environment
 

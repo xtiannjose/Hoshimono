@@ -1,10 +1,10 @@
-# Product Requirements: Sariwa
+# Product Requirements: Hoshimono
 
 Status: draft v0.1, 2026-10-16. Owner: project lead. Update this document before changing scope.
 
 ## 1. Summary
 
-Sariwa is an online supermarket. Customers browse a full grocery range, build a cart, choose a delivery slot and pay online or in cash. Orders are picked at a Sariwa-run Hub and delivered the same day by Riders.
+Hoshimono is an online supermarket. Customers browse a full grocery range, build a cart, choose a delivery slot and pay online or in cash. Orders are picked at a Hoshimono-run Hub and delivered the same day by Riders.
 
 **Goals**
 
@@ -28,7 +28,7 @@ Change a row here and every other document should follow. Anything marked "confi
 | Minimum order | Configurable per Zone, default PHP 500 | confirm |
 | Payments at launch | Cash on delivery first, then GCash and cards | confirm |
 | Range at launch | 2,000 to 5,000 Products imported from supplier price lists | confirm |
-| Brand name | "Sariwa" is a placeholder | confirm |
+| Brand name | "Hoshimono" (replaced the working name "Sariwa") | confirmed 2026-10-17 |
 
 ## 3. Personas
 
@@ -48,7 +48,7 @@ Change a row here and every other document should follow. Anything marked "confi
 |---|---|
 | **MVP (Phases 0 to 4)** | Catalogue browse and search, Cart, Checkout with Slots, COD and online payment, Orders, accounts, admin for Products/Orders/Zones/Slots, Picker view, Rider handoff, email and SMS notices |
 | **V1 (Phase 5)** | Recipes with one-tap add-to-cart, Reorder and saved lists, Referral rewards, Promotions and Vouchers, Freshness Claims, PWA install, Filipino language |
-| **Later** | Multiple Hubs with per-Hub stock, aggregator channel sync, loyalty tiers, native apps, scheduled repeat orders, AI-assisted substitutions |
+| **Later** | Multiple Hubs with per-Hub stock, aggregator channel sync, loyalty tiers, native app in Flutter (plan frozen in [concepts/flutter-mobile](concepts/flutter-mobile/README.md)), scheduled repeat orders, AI-assisted substitutions |
 
 ## 5. Functional requirements
 
@@ -109,7 +109,7 @@ Priority: **M** must (MVP), **S** should (V1), **C** could (later). IDs are stab
 | ADM-10 | Daily report: orders, revenue, average basket, substitution rate, late deliveries | S |
 | ADM-11 | Staff roles: Admin, Merchandiser, Picker, Dispatcher with least-privilege access | M |
 
-## 6. What makes Sariwa different
+## 6. What makes Hoshimono different
 
 Chosen because each is visible to a customer, cheap to build on our stack, and absent or unclear in the reference site (see [02-RESEARCH-BUILTAMART.md](02-RESEARCH-BUILTAMART.md)).
 
