@@ -191,7 +191,7 @@ Phase 0 is only done when all of these pass:
 - [x] `GET /api/health` returns `{ "ok": true }` and confirms the database connection
 - [x] `npm run check` passes with at least one real test
 - [x] A commit triggers the pre-commit hook
-- [ ] A pull request produces a green CI run and a Vercel preview URL (blocked until the branch is pushed and the Vercel account exists)
+- [ ] A pull request produces a green CI run and a Vercel preview URL (CI green on PR #2; Vercel preview blocked until the account exists)
 - [x] `npx prisma db seed` loads the seed data and Prisma Studio shows it
 
 ## 10. Troubleshooting

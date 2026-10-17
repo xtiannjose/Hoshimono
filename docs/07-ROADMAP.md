@@ -110,7 +110,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] Identity shell: sign-in page (email magic link; links go to the dev server log until Batch 2.5), `requireCustomer`, `requireStaff(role)`
 - [x] `/api/health` with DB check
-- [ ] CI workflow written (`.github/workflows/ci.yml`); tick after its first green run on GitHub
+- [x] CI workflow (`.github/workflows/ci.yml`), green on its first run in PR #2
 - [ ] Vercel project with preview deployments; Sentry connected (blocked: accounts deferred)
 
 **Exit criteria:** the six checks in [06-SETUP.md](06-SETUP.md) section 9 pass.
