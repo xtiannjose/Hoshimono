@@ -156,7 +156,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.1 Pricing core** (W5). Stack: pure TypeScript, Vitest. Skills: `tdd`, `grilling` for VAT and rounding rules.
 
-- [ ] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
+- [x] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
 
 **Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
