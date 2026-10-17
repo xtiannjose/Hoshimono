@@ -187,12 +187,12 @@ Commit only when you are ready (Conventional Commits, for example `chore: scaffo
 
 Phase 0 is only done when all of these pass:
 
-- [ ] `npm run dev` serves a branded home shell at http://localhost:3000 in light and dark mode
-- [ ] `GET /api/health` returns `{ "ok": true }` and confirms the database connection
-- [ ] `npm run check` passes with at least one real test
-- [ ] A commit triggers the pre-commit hook
-- [ ] A pull request produces a green CI run and a Vercel preview URL
-- [ ] `npx prisma db seed` loads the seed data and Prisma Studio shows it
+- [x] `npm run dev` serves a branded home shell at http://localhost:3000 in light and dark mode
+- [x] `GET /api/health` returns `{ "ok": true }` and confirms the database connection
+- [x] `npm run check` passes with at least one real test
+- [x] A commit triggers the pre-commit hook
+- [ ] A pull request produces a green CI run and a Vercel preview URL (blocked until the branch is pushed and the Vercel account exists)
+- [x] `npx prisma db seed` loads the seed data and Prisma Studio shows it
 
 ## 10. Troubleshooting
 

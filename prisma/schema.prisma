@@ -480,8 +480,9 @@ model PaymentEvent {
 
 model Customer {
   id             String    @id @default(uuid(7)) @db.Uuid
-  // Better Auth user id, linked in Batch 0.4.
+  // Linked on first sign-in (identity module).
   authUserId     String?   @unique @map("auth_user_id")
+  authUser       AuthUser? @relation(fields: [authUserId], references: [id], onDelete: SetNull)
   phone          String?   @unique
   email          String?   @unique
   name           String
@@ -527,6 +528,7 @@ enum StaffRole {
 model Staff {
   id             String          @id @default(uuid(7)) @db.Uuid
   authUserId     String?         @unique @map("auth_user_id")
+  authUser       AuthUser?       @relation(fields: [authUserId], references: [id], onDelete: SetNull)
   email          String          @unique
   name           String
   role           StaffRole
@@ -554,4 +556,71 @@ model AuditLog {
 
   @@index([entity, entityId])
   @@map("audit_log")
+}
+
+// ---------- identity: Better Auth tables, owned by the identity module ----------
+// Fields follow the Better Auth core schema; the model names are configured in
+// src/modules/identity/internal/auth.ts. Ids are strings Better Auth generates.
+
+model AuthUser {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false) @map("email_verified")
+  image         String?
+  sessions      AuthSession[]
+  accounts      AuthAccount[]
+  customer      Customer?
+  staff         Staff?
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("auth_users")
+}
+
+model AuthSession {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model AuthAccount {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model AuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([identifier])
+  @@map("auth_verifications")
 }
