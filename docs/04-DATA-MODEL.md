@@ -91,7 +91,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 **`orders`**: `id`, `order_no`, `customer_id`, `hub_id`, `slot_id`, `channel` (`web`, later `grab`, `lazada`), `status`, `payment_status`, `address_snapshot` (JSON), `contact_phone`, `rider_notes`, `subtotal_cents`, `discount_cents`, `delivery_fee_cents`, `vat_cents`, `total_cents`, `authorised_cents`, `final_total_cents?`, `voucher_id?`, `idempotency_key` (unique), `placed_at`, `cancelled_at?`, `delivered_at?`.
 
-**`order_lines`**: `order_id`, `product_id`, `name_snapshot`, `unit_price_cents`, `tax_class`, `vat_cents`, `ordered_qty`, `fulfilled_qty`, `ordered_weight_grams?`, `final_weight_grams?`, `line_total_cents`, `substitution_preference`, `status` (`pending`, `picked`, `short`, `substituted`, `refunded`).
+**`order_lines`**: `order_id`, `product_id`, `name_snapshot`, `unit_price_cents`, `tax_class`, `vat_cents`, `ordered_qty`, `fulfilled_qty`, `ordered_weight_grams?`, `final_weight_grams?`, `line_total_cents`, `substitution_preference`, `preferred_product_id?` and `note?` (copied from the Cart Line for the Picker), `status` (`pending`, `picked`, `short`, `substituted`, `refunded`).
 
 **`substitutions`**: `order_line_id`, `substitute_product_id`, `price_cents`, `proposed_by`, `customer_response` (`auto_accepted`, `accepted`, `rejected`), `responded_at`.
 

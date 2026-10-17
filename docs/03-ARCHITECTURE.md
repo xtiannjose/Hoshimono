@@ -53,7 +53,7 @@ Allowed dependency direction (arrow means "may call"):
 ```
 app routes / server actions
         |
-  orders --> payments, delivery, inventory, pricing, notifications
+  orders --> payments, delivery, inventory, pricing, notifications, cart, customers
   cart   --> pricing, catalog, inventory (read-only availability)
   customers --> delivery (resolveZone when saving an Address)
   fulfilment --> orders, inventory
@@ -98,6 +98,14 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 7. Commit, then enqueue notifications.
 
 If an online payment is not completed in 15 minutes, a cron job cancels the Order, releases stock and frees the Slot.
+
+As built (Batch 2.4, `src/modules/orders/internal/place-order.ts`):
+
+- Checks before the transaction: idempotency replay, the Address belongs to the Customer and a Zone serves it, the Cart has priced lines, the Zone minimum, and the total the Customer saw.
+- One transaction: close the Cart (`checked_out_at`, so two tabs place one Order), `bookSlot`, create the Order, `reserveStock` (Products in a fixed order, so concurrent Orders cannot deadlock), Order Lines with snapshots (name, price, tax class, VAT, the chosen substitute and picker note), the first status event and a `cod_pending` Payment. Any refusal throws and rolls everything back.
+- Out-of-stock Cart Lines are left out of the Order, as the Cart already showed them outside the total.
+- The order number is `SW-YYMMDD-XXXX` (Manila date, four characters without 0, O, 1 or I); a clash retries.
+- Dependencies: `orders` also calls `cart` (load and close the Cart) and `customers` (the Address).
 
 ## 7. Order lifecycle
 

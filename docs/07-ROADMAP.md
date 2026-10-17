@@ -170,9 +170,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.4 Inventory and orders** (W6). Stack: Postgres transactions, guarded `UPDATE ... WHERE`. Skills: `tdd`.
 
-- [ ] `inventory` module: availability, atomic reserve/release, movements log
-- [ ] `orders` module: `placeOrder` (idempotent), status machine, history events
-- [ ] Concurrency tests: two checkouts competing for the last unit and the last Slot
+- [x] `inventory` module: availability, atomic reserve/release, movements log
+- [x] `orders` module: `placeOrder` (idempotent), status machine, history events
+- [x] Concurrency tests: two checkouts competing for the last unit and the last Slot
 
 **Batch 2.5 Checkout, confirmation and notices** (W7). Stack: React Hook Form + Zod, Resend + React Email, SMS provider, Vercel Cron. Skills: `design-taste-frontend`.
 

@@ -93,7 +93,8 @@ model Product {
   stockMovements     StockMovement[]
   cartLines          CartLine[]               @relation("CartLineProduct")
   preferredInLines   CartLine[]               @relation("CartLinePreferred")
-  orderLines         OrderLine[]
+  orderLines         OrderLine[]              @relation("OrderLineProduct")
+  preferredInOrders  OrderLine[]              @relation("OrderLinePreferred")
   substitutions      Substitution[]
   createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -376,7 +377,7 @@ model OrderLine {
   orderId                String                 @map("order_id") @db.Uuid
   order                  Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
   productId              String                 @map("product_id") @db.Uuid
-  product                Product                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product                Product                @relation("OrderLineProduct", fields: [productId], references: [id], onDelete: Restrict)
   // Snapshots at checkout: catalogue edits never rewrite past Orders.
   nameSnapshot           String                 @map("name_snapshot")
   unitPriceCents         Int                    @map("unit_price_cents")
@@ -388,6 +389,10 @@ model OrderLine {
   finalWeightGrams       Int?                   @map("final_weight_grams")
   lineTotalCents         Int                    @map("line_total_cents")
   substitutionPreference SubstitutionPreference @map("substitution_preference")
+  // The Customer's own pick for "I'll choose", and their note for the Picker.
+  preferredProductId     String?                @map("preferred_product_id") @db.Uuid
+  preferredProduct       Product?               @relation("OrderLinePreferred", fields: [preferredProductId], references: [id], onDelete: SetNull)
+  note                   String?
   status                 OrderLineStatus        @default(pending)
   substitutions          Substitution[]
   createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)

@@ -348,3 +348,28 @@ export async function mergeGuestCart(
     await tx.cart.delete({ where: { id: guest.id } });
   });
 }
+
+/** The open Cart's id, or null. */
+export async function getCartId(
+  owner: CartOwner | null
+): Promise<string | null> {
+  const where = ownerWhere(owner);
+  if (!where) return null;
+  const cart = await db.cart.findFirst({ where, select: { id: true } });
+  return cart?.id ?? null;
+}
+
+/**
+ * Close the Cart inside the Order transaction. Only one transaction can
+ * close it, so two tabs checking out the same Cart place one Order.
+ */
+export async function checkOutCart(
+  tx: Prisma.TransactionClient,
+  cartId: string,
+  now: Date
+): Promise<boolean> {
+  const closed = await tx.$executeRaw`
+    UPDATE carts SET checked_out_at = ${now}, updated_at = now()
+    WHERE id = ${cartId}::uuid AND checked_out_at IS NULL`;
+  return closed === 1;
+}
