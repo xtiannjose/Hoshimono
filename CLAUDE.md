@@ -32,7 +32,7 @@ Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning 
 ## Environment
 
 - Windows 10, Git Bash and PowerShell. Use `npm` (pnpm is not installed).
-- Dev database is a managed Postgres branch (Neon or Supabase); Docker is optional.
+- Dev database is a managed Postgres branch on Neon (ADR 0005); Docker is optional.
 - Never commit `.env*` except `.env.example`. Secrets only in `.env.local` and the hosting dashboard.
 
 ## Test and commit discipline

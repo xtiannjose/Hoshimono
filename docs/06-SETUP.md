@@ -14,14 +14,14 @@ Goal: from this folder of documents to a running Next.js dev server with a conne
 
 Not needed: pnpm or yarn. This project uses `npm`.
 
-One-time Windows settings:
+One-time Windows settings, run from inside the repo:
 
 ```powershell
-git config --global core.autocrlf input
+git config core.autocrlf input
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
-The second line lets npm's PowerShell shims run. If you prefer not to change it, use Git Bash for npm commands.
+The first line is repo-local so your other projects are untouched; the committed `.gitattributes` (`* text=auto eol=lf`) keeps line endings as LF for everyone. The second line lets npm's PowerShell shims run. If you prefer not to change it, use Git Bash for npm commands.
 
 ## 2. Accounts to create
 
@@ -31,7 +31,7 @@ Create these up front; several take days to approve, so start the payment ones i
 |---|---|---|---|
 | GitHub | Repo, CI, PRs | 0 | Private repository |
 | Vercel | Hosting, preview deployments | 0 | Connect to the GitHub repo |
-| Neon (or Supabase) | Managed Postgres | 0 | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
+| Neon | Managed Postgres ([ADR 0005](adr/0005-neon-postgres-host.md)) | 0 | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
 | Google Cloud Console | OAuth sign-in, Maps/Places key | 0 and 2 | Restrict keys by HTTP referrer and API |
 | Resend | Transactional email | 2 | Verify your sending domain |
 | Semaphore (or Twilio) | SMS and OTP in the Philippines | 2 | Check sender-name registration lead time |
@@ -42,19 +42,20 @@ Create these up front; several take days to approve, so start the payment ones i
 
 ## 3. Scaffold the app
 
-This folder already contains documents, and the Next.js scaffolder refuses to write into a folder with files that could conflict. Scaffold next door, then copy in.
+This folder already contains documents, and the Next.js scaffolder refuses to write into a folder with files that could conflict. Scaffold in a sibling folder, then copy in. The repo lives at `D:\Coding\projects\Personal\Hoshimono`.
 
 ```powershell
-cd C:\Users\xtian\Projects
+cd D:\Coding\projects\Personal
 npx create-next-app@latest hoshimono-scaffold --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --disable-git
 ```
 
-Accept the defaults for any remaining prompts. Then merge it into the repo without overwriting our documents:
+Accept the defaults for any remaining prompts. Then merge it into the repo without overwriting anything we already have (`/XC /XN /XO` skips every file that exists in the repo, including `CLAUDE.md`, `README.md` and `.gitignore`). Do a dry run first with `/L` and read the list:
 
 ```powershell
-robocopy hoshimono-scaffold hoshimono /E /XD node_modules .next /XF README.md .gitignore
+robocopy hoshimono-scaffold Hoshimono /E /XC /XN /XO /XD node_modules .next /L
+robocopy hoshimono-scaffold Hoshimono /E /XC /XN /XO /XD node_modules .next
 Remove-Item -Recurse -Force hoshimono-scaffold
-cd hoshimono
+cd Hoshimono
 npm install
 npm run dev
 ```
@@ -132,7 +133,14 @@ npx prisma studio
 
 4. Enable extensions in the first migration: `CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;`.
 
-Local Postgres alternative: `docker run --name hoshimono-db -e POSTGRES_PASSWORD=dev -p 5432:5432 -d postgres:17`, then point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5432/postgres`.
+Local Postgres alternative (used while the Neon account is deferred). Port 5433 avoids clashing with a native Postgres on 5432, and the volume keeps data across container rebuilds:
+
+```powershell
+docker run --name hoshimono-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=hoshimono -v hoshimono-pgdata:/var/lib/postgresql/data -p 127.0.0.1:5433:5432 --restart unless-stopped -d postgres:17
+docker exec hoshimono-db psql -U postgres -c "CREATE DATABASE hoshimono_test;"
+```
+
+Point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5433/hoshimono`, and the Vitest URL in `.env.test` at `postgresql://postgres:dev@localhost:5433/hoshimono_test`.
 
 ## 7. Scripts to define in `package.json`
 
@@ -188,5 +196,5 @@ Phase 0 is only done when all of these pass:
 | `create-next-app` says the directory is not empty | Scaffold into `hoshimono-scaffold` as shown, do not scaffold in place |
 | Port 3000 in use | `npx kill-port 3000` or `npm run dev -- -p 3001` |
 | Prisma cannot connect | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app |
-| CRLF warnings from Git | Section 1 `core.autocrlf input`; add `.gitattributes` with `* text=auto eol=lf` |
+| CRLF warnings from Git | Section 1 `core.autocrlf input`; the repo already has `.gitattributes` with `* text=auto eol=lf` |
 | Long paths error on `npm install` | `git config --system core.longpaths true` and enable Windows long paths |

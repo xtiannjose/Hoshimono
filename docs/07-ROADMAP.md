@@ -35,7 +35,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Icons and fonts | Phosphor; Epilogue, Plus Jakarta Sans, Geist Mono via `next/font` | One icon family; fonts include the peso sign | Phase 0 |
 | Forms | React Hook Form + Zod | Same Zod schema validates in the browser and in Server Actions | Phase 1 admin, Phase 2 checkout |
 | Server logic | Server Actions + route handlers | Mutations call module interfaces; route handlers for webhooks, cron and health | Phase 0 onward |
-| Database | PostgreSQL (Neon or Supabase branch per environment) | Catalogue, carts, stock, Orders, payments | Phase 0 |
+| Database | PostgreSQL on Neon ([ADR 0005](adr/0005-neon-postgres-host.md)), one branch per environment | Catalogue, carts, stock, Orders, payments | Phase 0 |
 | ORM | Prisma | Schema, migrations, typed queries; raw SQL for guarded atomic updates ([ADR 0004](adr/0004-postgres-prisma.md)) | Phase 0 |
 | Search | Postgres full-text + `pg_trgm` + `unaccent` behind `SearchIndex` | Typo-tolerant search for "gatas", "milk" and misspellings | Phase 1 |
 | Money | Integer centavos, `lib/money.ts` | No floating-point money anywhere ([ADR 0002](adr/0002-money-as-integer-centavos.md)) | Phase 0 |
@@ -69,8 +69,8 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 
 | Decision | Options | Decide in |
 |---|---|---|
-| Postgres host | Neon or Supabase | Batch 0.3 |
-| Object storage and CDN | Vercel Blob, Supabase Storage, S3 + CloudFront, or similar | Batch 1.4 |
+| Postgres host | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md) | Done |
+| Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
 | Maps and geocoding | Google Maps, Mapbox or similar | Batch 2.3 |
 | SMS provider | Semaphore or Twilio | Batch 2.5 |
 | Rate-limit store | Upstash Redis, Vercel KV or Postgres-based | Batch 2.6 |
@@ -86,6 +86,8 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 **Goal:** an empty but real app: deployed, styled with our tokens, connected to a database, with sign-in and quality gates in place.
 
 **Batch 0.1 Scaffold and quality gates** (days 1 and 2). Stack: Next.js, TypeScript, ESLint, Prettier, Husky, lint-staged. Skills: `setup-pre-commit`, `git-guardrails-claude-code`.
+- [ ] Accounts and business tracks deferred by owner decision (2026-10-17, see [section 11](#11-business-tracks-run-alongside)). Until the Neon, Vercel, Sentry and Google accounts exist: local Postgres in Docker ([06-SETUP.md](06-SETUP.md) section 6), CI on GitHub Actions only
+- [ ] Repo-local `git config core.autocrlf input` set; `.gitattributes` committed
 - [ ] Scaffold Next.js app and merge into repo ([06-SETUP.md](06-SETUP.md) section 3)
 - [ ] Husky, lint-staged, Prettier; git guardrails
 - [ ] ESLint rule restricting imports into `modules/*/internal`
@@ -171,6 +173,13 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Exit criteria:** a Customer places and tracks a COD order on a phone; two simultaneous buyers of the last item result in exactly one Order; the total on the confirmation page equals the total computed by `priceCart` to the centavo; the E2E journey is green in CI.
 
+**Checkpoint and cut order.** This is the heaviest phase (six batches in three weeks). At the end of W6, Batches 2.1 to 2.4 must be green, including the concurrency tests. If they are not, cut in this order. Every cut item moves to the holiday buffer (section 9), so MVP scope and the Phase 3 and 4 dates do not change; anything still unfinished at the end of W11 is an owner decision on MVP scope, not a silent drop.
+
+1. Account area polish: order history timeline, receipt and Reorder (PRD ACC-3).
+2. Sign-in methods beyond the first working one (PRD ACC-1). If the SMS sender ID is late, ship email magic link and Google first and move mobile OTP.
+
+Never cut: server re-pricing, atomic stock reservation, atomic Slot booking, the concurrency tests, cancel before picking (PRD ACC-5).
+
 ## 8. Phase 3: Online payments (W8 to W9, 7 to 18 Dec)
 
 **Goal:** GCash and card payments that can never double-charge or lose an Order.
@@ -194,7 +203,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 ## 9. Holiday buffer (W10 to W11, 21 Dec to 1 Jan)
 
-No new features over Christmas and New Year. Use the time for bugs from Phases 0 to 3, test gaps, docs and the business tracks (Hub fit-out, Rider hiring, BIR registration).
+No new features over Christmas and New Year. Use the time for bugs from Phases 0 to 3, test gaps, docs and the business tracks (Hub fit-out, Rider hiring, BIR registration). This is also where items cut from Phase 2 land (see the cut order in section 7).
 
 ## 10. Phases 4 to 6 and launch
 
@@ -292,6 +301,17 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 | Legal review of terms, privacy, refunds | W15 | Phase 6 (W19) | Owner and lawyer |
 
 If a track slips past its "needed by" week, the dependent phase slips with it; do not launch payments, receipts or the dry run on placeholders.
+
+**Owner decision, 2026-10-17:** accounts and business tracks start after most of the app is built, not in W1. The dates in section 1 assumed W1 starts. Each phase below is blocked until its track is done, and its dates move with the start:
+
+- Phase 0 exit checks for a Vercel preview and Sentry: need those accounts.
+- Phase 1 real data load: supplier price lists and photos.
+- Phase 2 SMS and OTP: SMS sender ID registration.
+- Phase 3 payments: payment provider KYC (can take weeks).
+- Phase 4 receipts and dry run: BIR and VAT registration, Hub, Rider.
+- Phase 6 launch: legal review, production domain, email DNS.
+
+Until a track is done, build against seed data, sandboxes and `console` providers for email and SMS, and mark the dependent roadmap items as blocked.
 
 ## 12. Definition of done (every item)
 

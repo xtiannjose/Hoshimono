@@ -29,7 +29,7 @@ These shaped every document. Change them in one place ([docs/01-PRD.md](docs/01-
 |---|---|---|
 | App | Next.js (App Router), TypeScript, one deployable | [ADR 0001](docs/adr/0001-modular-monolith-nextjs.md) |
 | UI | Tailwind CSS v4, shadcn/ui (customised), Motion, Phosphor icons, Epilogue + Plus Jakarta Sans | [docs/05-DESIGN-SYSTEM.md](docs/05-DESIGN-SYSTEM.md) |
-| Data | PostgreSQL + Prisma | [ADR 0004](docs/adr/0004-postgres-prisma.md) |
+| Data | PostgreSQL + Prisma, hosted on Neon | [ADR 0004](docs/adr/0004-postgres-prisma.md), [ADR 0005](docs/adr/0005-neon-postgres-host.md) |
 | Money | Integer centavos, never floats | [ADR 0002](docs/adr/0002-money-as-integer-centavos.md) |
 | Payments | Xendit or PayMongo behind a `PaymentProvider` interface | [ADR 0003](docs/adr/0003-payment-provider-interface.md) |
 | Auth | Email/phone OTP + Google, via Better Auth | [docs/03-ARCHITECTURE.md](docs/03-ARCHITECTURE.md) |
