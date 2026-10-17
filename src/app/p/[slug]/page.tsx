@@ -51,6 +51,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       found.description ??
       `${name}, ${formatPackSize(found.packSize, found.isWeighed)}, ${formatMoney(found.priceCents)}. Same-day delivery in Metro Manila.`,
     alternates: { canonical: productHref(found) },
+    // A real photo makes the best share card; otherwise the site default.
+    ...(found.primaryImage && {
+      openGraph: {
+        type: "website",
+        images: [
+          {
+            url: found.primaryImage.url,
+            width: 1200,
+            height: 1200,
+            alt: found.primaryImage.alt,
+          },
+        ],
+      },
+    }),
   };
 }
 

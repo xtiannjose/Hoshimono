@@ -46,8 +46,11 @@ export function ImportForm() {
       {state.status === "failed" && (
         <section role="alert" aria-labelledby="report-h" className="grid gap-3">
           <h2 id="report-h" className="type-h3">
-            Nothing was imported. Fix these{" "}
-            {state.errors.length === 1 ? "problem" : "problems"} and try again.
+            Nothing was imported. Fix{" "}
+            {state.errors.length === 1
+              ? "this problem"
+              : `these ${state.errors.length} problems`}{" "}
+            and try again.
           </h2>
           <div className="rounded-card border-border bg-card overflow-x-auto border">
             <table className="w-full text-left text-sm">

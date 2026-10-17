@@ -1,4 +1,5 @@
 import { ArrowRightIcon, BasketIcon } from "@phosphor-icons/react/ssr";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -12,6 +13,12 @@ import { ProductGridSkeleton } from "@/components/product/product-grid";
 import { buttonVariants } from "@/components/ui/button";
 import { FRESH_PICKS_CATEGORY } from "@/config/home";
 import { categoryHref } from "@/lib/routes";
+
+export const metadata: Metadata = {
+  description:
+    "Fresh groceries delivered the same day across Metro Manila. Pick a delivery window, pay with GCash, card or cash on delivery.",
+  alternates: { canonical: "/" },
+};
 
 const SECTION_LINK =
   "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";

@@ -1,7 +1,8 @@
 "use client";
 
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import type { Ref } from "react";
 
 const SNAP = { type: "spring", visualDuration: 0.2, bounce: 0.1 } as const;
@@ -53,7 +54,7 @@ export function QuantityStepper({
         <MinusIcon size={20} aria-hidden />
       </button>
       {/* Count bump confirms the change (motion table, docs/05 section 7). */}
-      <motion.output
+      <m.output
         key={value}
         // Springs take two keyframes: mount enlarged, settle to normal size.
         initial={reduce ? false : { scale: 1.18 }}
@@ -62,7 +63,7 @@ export function QuantityStepper({
         className="font-display text-center text-lg font-semibold tabular-nums"
       >
         {value}
-      </motion.output>
+      </m.output>
       <button
         ref={plusRef}
         type="button"

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 
 // Shown when a page fails to load; the header and footer stay.
 export default function ErrorPage({
@@ -16,7 +16,9 @@ export default function ErrorPage({
         <p className="text-muted-foreground">
           Something went wrong on our side. Please try again.
         </p>
-        <Button onClick={reset}>Try again</Button>
+        <button type="button" onClick={reset} className={PRIMARY_BUTTON}>
+          Try again
+        </button>
       </div>
     </section>
   );

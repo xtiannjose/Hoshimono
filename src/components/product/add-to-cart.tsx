@@ -1,7 +1,8 @@
 "use client";
 
 import { PlusIcon } from "@phosphor-icons/react";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import { useEffect, useRef, useState } from "react";
 
 import { announce } from "@/components/live-region";
@@ -19,6 +20,8 @@ const SNAP = { type: "spring", visualDuration: 0.2, bounce: 0.1 } as const;
 export function AddToCart({ name, max = 99 }: { name: string; max?: number }) {
   const [quantity, setQuantity] = useState(0);
   const previous = useRef(0);
+  // Pop only on a swap the shopper caused, never on the server-rendered first paint.
+  const [swapped, setSwapped] = useState(false);
   const addRef = useRef<HTMLButtonElement>(null);
   const plusRef = useRef<HTMLButtonElement>(null);
   const reduce = useReducedMotion();
@@ -31,6 +34,7 @@ export function AddToCart({ name, max = 99 }: { name: string; max?: number }) {
   }, [quantity]);
 
   function change(next: number) {
+    setSwapped(true);
     setQuantity(next);
     announce(
       next === 0 ? `${name} removed from cart` : `${name}, ${next} in cart`
@@ -38,10 +42,13 @@ export function AddToCart({ name, max = 99 }: { name: string; max?: number }) {
   }
 
   return (
-    <motion.div
-      layout={!reduce}
+    // Each control pops in when it replaces the other (mockup-v2 "pop"),
+    // keyed so the swap replays it. domAnimation is enough: no layout needed.
+    <m.div
+      key={quantity === 0 ? "add" : "stepper"}
+      initial={reduce || !swapped ? false : { scale: 0.92, opacity: 0.4 }}
+      animate={{ scale: 1, opacity: 1 }}
       transition={SNAP}
-      style={{ borderRadius: 999 }}
     >
       {quantity === 0 ? (
         <button
@@ -63,6 +70,6 @@ export function AddToCart({ name, max = 99 }: { name: string; max?: number }) {
           plusRef={plusRef}
         />
       )}
-    </motion.div>
+    </m.div>
   );
 }

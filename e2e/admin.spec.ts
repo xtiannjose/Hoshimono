@@ -51,7 +51,7 @@ test("a 500-row CSV imports and the Products appear in search", async ({
       `Import Test Rice ${i + 1},E2E Mills,rice,1000,g,${(60 + (i % 40)).toFixed(2)},,vat_exempt,no,ambient,active,,,,`
   );
   await signIn(page, MERCHANDISER, "/admin/import");
-  await page.goto("/admin/import");
+  await page.goto("/admin/import", { waitUntil: "networkidle" });
   await page.getByLabel("CSV file").setInputFiles({
     name: "products.csv",
     mimeType: "text/csv",
@@ -70,7 +70,7 @@ test("a 500-row CSV imports and the Products appear in search", async ({
 
 test("a bad CSV shows a report and saves nothing", async ({ page }) => {
   await signIn(page, MERCHANDISER, "/admin/import");
-  await page.goto("/admin/import");
+  await page.goto("/admin/import", { waitUntil: "networkidle" });
   await page.getByLabel("CSV file").setInputFiles({
     name: "bad.csv",
     mimeType: "text/csv",
