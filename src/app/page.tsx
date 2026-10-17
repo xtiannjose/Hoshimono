@@ -1,13 +1,87 @@
-// Placeholder shell. Batch 1.2 replaces this with the real Home page.
+import { ArrowRightIcon, BasketIcon } from "@phosphor-icons/react/ssr";
+import Link from "next/link";
+import { Suspense } from "react";
+
+import {
+  CategoryMosaic,
+  CategoryMosaicSkeleton,
+} from "@/components/home/category-mosaic";
+import { FreshPicks } from "@/components/home/fresh-picks";
+import { ServiceStrip } from "@/components/home/service-strip";
+import { ProductGridSkeleton } from "@/components/product/product-grid";
+import { buttonVariants } from "@/components/ui/button";
+import { FRESH_PICKS_CATEGORY } from "@/config/home";
+import { categoryHref } from "@/lib/routes";
+
+const SECTION_LINK =
+  "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";
+
+// Home v1 (docs/mockup-v2/home.html): hero, service strip, Category mosaic
+// and fresh picks. Recipes and savings arrive with Phase 5.
 export default function Home() {
   return (
-    <section className="wrap py-14 md:py-24">
-      <h1 className="type-display max-w-4xl">
-        Fresh groceries, delivered the <span className="hl">same day</span>.
-      </h1>
-      <p className="type-lead mt-6">
-        The shop is not open yet. We are stocking the shelves.
-      </p>
-    </section>
+    <>
+      <section
+        aria-labelledby="hero-h"
+        className="wrap grid items-center gap-6 pt-8 md:pt-10 lg:grid-cols-12"
+      >
+        <div className="grid content-center gap-[22px] lg:col-span-6 lg:pr-6">
+          <h1 id="hero-h" className="type-display">
+            Fresh groceries, delivered <span className="hl">today.</span>
+          </h1>
+          <p className="type-lead">
+            Pick a delivery window, then pay with GCash, card or cash on
+            delivery.
+          </p>
+          <div>
+            <Link
+              href={categoryHref([FRESH_PICKS_CATEGORY])}
+              className={buttonVariants({ size: "lg" })}
+            >
+              Start shopping
+            </Link>
+          </div>
+        </div>
+        {/* Phones skip the photo so Products appear above the fold (mockup decision 5). */}
+        <div
+          role="img"
+          aria-label="Photo to come: produce basket on a market table"
+          className="rounded-card photo-slot relative hidden aspect-[5/4] lg:col-span-6 lg:grid"
+        >
+          <BasketIcon size={48} className="opacity-70" aria-hidden />
+        </div>
+      </section>
+
+      <div className="wrap">
+        <ServiceStrip />
+      </div>
+
+      <section aria-labelledby="cat-h" className="wrap pt-14">
+        <h2 id="cat-h" className="type-h2 mb-5">
+          Shop by category
+        </h2>
+        <Suspense fallback={<CategoryMosaicSkeleton />}>
+          <CategoryMosaic />
+        </Suspense>
+      </section>
+
+      <section aria-labelledby="fresh-h" className="wrap pt-14">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4">
+          <h2 id="fresh-h" className="type-h2">
+            Fresh picks today
+          </h2>
+          <Link
+            href={categoryHref([FRESH_PICKS_CATEGORY])}
+            className={SECTION_LINK}
+          >
+            See all fruit and vegetables{" "}
+            <ArrowRightIcon size={18} aria-hidden />
+          </Link>
+        </div>
+        <Suspense fallback={<ProductGridSkeleton />}>
+          <FreshPicks />
+        </Suspense>
+      </section>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Epilogue, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
+import { LiveRegion } from "@/components/live-region";
 import { Footer } from "@/components/shell/footer";
 import { Header } from "@/components/shell/header";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             {children}
           </main>
           <Footer />
+          <LiveRegion />
         </ThemeProvider>
       </body>
     </html>

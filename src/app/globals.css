@@ -31,6 +31,7 @@
   --err: #b3261e;
   --ring: #10261a;
   --scrim: rgb(16 38 26 / 0.48);
+  --hatch: rgb(16 38 26 / 0.045);
   --float-shadow:
     0 1px 2px rgb(16 38 26 / 0.06), 0 12px 32px rgb(16 38 26 / 0.14);
 
@@ -78,6 +79,7 @@
     --err: #ff8f85;
     --ring: #d3ee62;
     --scrim: rgb(0 0 0 / 0.6);
+    --hatch: rgb(237 243 227 / 0.05);
     --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
   }
 }
@@ -106,6 +108,7 @@
   --err: #ff8f85;
   --ring: #d3ee62;
   --scrim: rgb(0 0 0 / 0.6);
+  --hatch: rgb(237 243 227 / 0.05);
   --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
 }
 
@@ -269,4 +272,19 @@
   @media (min-width: 768px) {
     padding-inline: 24px;
   }
+}
+
+/* Photo placeholder until real photography exists (mockup-v2 README) */
+@utility photo-slot {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      transparent 0 11px,
+      var(--hatch) 11px 12px
+    ),
+    var(--surface-2);
+  color: var(--muted);
 }

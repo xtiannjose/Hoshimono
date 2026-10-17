@@ -126,9 +126,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 1.2 Storefront shell and Home** (W2 to W3). Stack: Server Components, Tailwind, shadcn/ui, Motion, `next/image`. Skills: `design-taste-frontend`, `motion`.
 
-- [ ] Home page v1 following [mockup v2](mockup-v2/README.md): hero, service strip, category mosaic, product grid, delivery button
-- [ ] `ProductCard`, `PriceTag`, `QuantityStepper`, `StockBadge` with every state (default, hover, focus, loading, out of stock)
-- [ ] Skeletons, empty and error states on every list
+- [x] Home page v1 following [mockup v2](mockup-v2/README.md): hero, service strip, category mosaic, product grid, delivery button
+- [x] `ProductCard`, `PriceTag`, `QuantityStepper`, `StockBadge` with every state (default, hover, focus, loading, out of stock); Add keeps a local quantity until Batch 2.2
+- [x] Skeletons, empty and error states on every list
 
 **Batch 1.3 Category, Product and Search pages** (W3). Stack: Server Components, structured data. Skills: `design-taste-frontend`.
 
