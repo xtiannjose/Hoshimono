@@ -1,0 +1,626 @@
+// Source of truth for tables (docs/04-DATA-MODEL.md keeps the reasoning).
+// v0 covers the MVP (Phases 0 to 4). Recipes, Vouchers, Promotions,
+// Freshness Claims and Referrals arrive with Phase 5.
+//
+// Constraints Prisma cannot express (CHECKs, partial unique indexes, the
+// generated search column, extensions) live in hand-edited migration SQL.
+// Money is integer centavos in *_cents columns (ADR 0002).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- catalog ----------
+
+enum PackSizeUnit {
+  g
+  ml
+  pc
+}
+
+enum UnitPriceBasis {
+  per_100g
+  per_litre
+  per_piece
+}
+
+enum TaxClass {
+  vatable
+  vat_exempt
+  zero_rated
+}
+
+enum Storage {
+  ambient
+  chilled
+  frozen
+}
+
+enum ProductStatus {
+  draft
+  active
+  archived
+}
+
+model Category {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  parentId  String?    @map("parent_id") @db.Uuid
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children  Category[] @relation("CategoryTree")
+  slug      String     @unique
+  name      String
+  sortOrder Int        @default(0) @map("sort_order")
+  imageUrl  String?    @map("image_url")
+  products  Product[]
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+model Product {
+  id                 String                   @id @default(uuid(7)) @db.Uuid
+  slug               String                   @unique
+  name               String
+  brand              String?
+  description        String?
+  categoryId         String                   @map("category_id") @db.Uuid
+  category           Category                 @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  packSizeValue      Int                      @map("pack_size_value")
+  packSizeUnit       PackSizeUnit             @map("pack_size_unit")
+  unitPriceBasis     UnitPriceBasis           @map("unit_price_basis")
+  priceCents         Int                      @map("price_cents")
+  compareAtCents     Int?                     @map("compare_at_cents")
+  taxClass           TaxClass                 @map("tax_class")
+  isWeighed          Boolean                  @default(false) @map("is_weighed")
+  avgUnitWeightGrams Int?                     @map("avg_unit_weight_grams")
+  barcode            String?                  @unique
+  allergens          String[]                 @default([])
+  dietaryTags        String[]                 @default([]) @map("dietary_tags")
+  storage            Storage                  @default(ambient)
+  status             ProductStatus            @default(draft)
+  archivedAt         DateTime?                @map("archived_at") @db.Timestamptz(3)
+  // Generated from name, brand and description in the migration SQL.
+  searchVector       Unsupported("tsvector")? @default(dbgenerated()) @map("search_vector")
+  images             ProductImage[]
+  stockLevels        StockLevel[]
+  stockMovements     StockMovement[]
+  cartLines          CartLine[]               @relation("CartLineProduct")
+  preferredInLines   CartLine[]               @relation("CartLinePreferred")
+  orderLines         OrderLine[]
+  substitutions      Substitution[]
+  createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([searchVector], type: Gin)
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "products_name_trgm_idx")
+  @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  sortOrder Int      @default(0) @map("sort_order")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ---------- delivery ----------
+
+model Hub {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  name           String
+  address        String
+  lat            Float
+  lng            Float
+  isActive       Boolean         @default(true) @map("is_active")
+  zones          Zone[]
+  slots          Slot[]
+  stockLevels    StockLevel[]
+  stockMovements StockMovement[]
+  orders         Order[]
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("hubs")
+}
+
+model Zone {
+  id                    String    @id @default(uuid(7)) @db.Uuid
+  hubId                 String    @map("hub_id") @db.Uuid
+  hub                   Hub       @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  name                  String
+  cities                String[]
+  barangays             String[]  @default([])
+  deliveryFeeCents      Int       @map("delivery_fee_cents")
+  freeDeliveryOverCents Int?      @map("free_delivery_over_cents")
+  minOrderCents         Int       @map("min_order_cents")
+  addresses             Address[]
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([hubId])
+  @@map("zones")
+}
+
+model Slot {
+  id        String     @id @default(uuid(7)) @db.Uuid
+  hubId     String     @map("hub_id") @db.Uuid
+  hub       Hub        @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  // Manila local calendar date; starts_at and ends_at are UTC instants.
+  date      DateTime   @db.Date
+  startsAt  DateTime   @map("starts_at") @db.Timestamptz(3)
+  endsAt    DateTime   @map("ends_at") @db.Timestamptz(3)
+  capacity  Int
+  booked    Int        @default(0)
+  holds     SlotHold[]
+  orders    Order[]
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([hubId, startsAt])
+  @@index([hubId, date])
+  @@map("slots")
+}
+
+model SlotHold {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  slotId    String   @map("slot_id") @db.Uuid
+  slot      Slot     @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  cartId    String   @unique @map("cart_id") @db.Uuid
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([slotId])
+  @@index([expiresAt])
+  @@map("slot_holds")
+}
+
+// ---------- inventory ----------
+
+enum StockMovementReason {
+  receipt
+  reserve
+  release
+  pick
+  shrink
+  adjustment
+}
+
+model StockLevel {
+  productId         String   @map("product_id") @db.Uuid
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  hubId             String   @map("hub_id") @db.Uuid
+  hub               Hub      @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  onHand            Int      @default(0) @map("on_hand")
+  reserved          Int      @default(0)
+  lowStockThreshold Int      @default(5) @map("low_stock_threshold")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([productId, hubId])
+  @@index([hubId])
+  @@map("stock_levels")
+}
+
+// Append-only.
+model StockMovement {
+  id        String              @id @default(uuid(7)) @db.Uuid
+  productId String              @map("product_id") @db.Uuid
+  product   Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  hubId     String              @map("hub_id") @db.Uuid
+  hub       Hub                 @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  delta     Int
+  reason    StockMovementReason
+  orderId   String?             @map("order_id") @db.Uuid
+  order     Order?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  staffId   String?             @map("staff_id") @db.Uuid
+  staff     Staff?              @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  note      String?
+  createdAt DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([productId, hubId])
+  @@index([orderId])
+  @@map("stock_movements")
+}
+
+// ---------- buying ----------
+
+enum SubstitutionPreference {
+  allow
+  preferred
+  none
+}
+
+enum OrderChannel {
+  web
+}
+
+enum OrderStatus {
+  pending_payment
+  confirmed
+  picking
+  picked
+  out_for_delivery
+  delivered
+  delivery_failed
+  cancelled
+}
+
+enum PaymentStatus {
+  unpaid
+  authorised
+  paid
+  partially_refunded
+  refunded
+  failed
+  cod_pending
+  cod_collected
+}
+
+enum OrderLineStatus {
+  pending
+  picked
+  short
+  substituted
+  refunded
+}
+
+enum SubstitutionResponse {
+  auto_accepted
+  accepted
+  rejected
+}
+
+enum ActorType {
+  customer
+  staff
+  system
+}
+
+model Cart {
+  id             String     @id @default(uuid(7)) @db.Uuid
+  customerId     String?    @map("customer_id") @db.Uuid
+  customer       Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  guestTokenHash String?    @unique @map("guest_token_hash")
+  voucherCode    String?    @map("voucher_code")
+  // Set when Checkout turns the Cart into an Order; one open Cart per Customer.
+  checkedOutAt   DateTime?  @map("checked_out_at") @db.Timestamptz(3)
+  lines          CartLine[]
+  slotHold       SlotHold?
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([customerId])
+  @@map("carts")
+}
+
+model CartLine {
+  id                     String                 @id @default(uuid(7)) @db.Uuid
+  cartId                 String                 @map("cart_id") @db.Uuid
+  cart                   Cart                   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId              String                 @map("product_id") @db.Uuid
+  product                Product                @relation("CartLineProduct", fields: [productId], references: [id], onDelete: Cascade)
+  quantity               Int
+  substitutionPreference SubstitutionPreference @default(allow) @map("substitution_preference")
+  preferredProductId     String?                @map("preferred_product_id") @db.Uuid
+  preferredProduct       Product?               @relation("CartLinePreferred", fields: [preferredProductId], references: [id], onDelete: SetNull)
+  note                   String?
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([cartId, productId])
+  @@map("cart_lines")
+}
+
+model Order {
+  id               String             @id @default(uuid(7)) @db.Uuid
+  // Human-facing number, SW-YYMMDD-XXXX.
+  orderNo          String             @unique @map("order_no")
+  customerId       String             @map("customer_id") @db.Uuid
+  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  hubId            String             @map("hub_id") @db.Uuid
+  hub              Hub                @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  slotId           String             @map("slot_id") @db.Uuid
+  slot             Slot               @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  channel          OrderChannel       @default(web)
+  status           OrderStatus
+  paymentStatus    PaymentStatus      @map("payment_status")
+  addressSnapshot  Json               @map("address_snapshot")
+  contactPhone     String             @map("contact_phone")
+  riderNotes       String?            @map("rider_notes")
+  subtotalCents    Int                @map("subtotal_cents")
+  discountCents    Int                @default(0) @map("discount_cents")
+  deliveryFeeCents Int                @map("delivery_fee_cents")
+  vatCents         Int                @map("vat_cents")
+  totalCents       Int                @map("total_cents")
+  authorisedCents  Int                @default(0) @map("authorised_cents")
+  finalTotalCents  Int?               @map("final_total_cents")
+  idempotencyKey   String             @unique @map("idempotency_key")
+  placedAt         DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
+  cancelledAt      DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  deliveredAt      DateTime?          @map("delivered_at") @db.Timestamptz(3)
+  lines            OrderLine[]
+  statusEvents     OrderStatusEvent[]
+  payments         Payment[]
+  stockMovements   StockMovement[]
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([customerId])
+  @@index([hubId, status])
+  @@index([slotId])
+  @@map("orders")
+}
+
+model OrderLine {
+  id                     String                 @id @default(uuid(7)) @db.Uuid
+  orderId                String                 @map("order_id") @db.Uuid
+  order                  Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  productId              String                 @map("product_id") @db.Uuid
+  product                Product                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  // Snapshots at checkout: catalogue edits never rewrite past Orders.
+  nameSnapshot           String                 @map("name_snapshot")
+  unitPriceCents         Int                    @map("unit_price_cents")
+  taxClass               TaxClass               @map("tax_class")
+  vatCents               Int                    @map("vat_cents")
+  orderedQty             Int                    @map("ordered_qty")
+  fulfilledQty           Int?                   @map("fulfilled_qty")
+  orderedWeightGrams     Int?                   @map("ordered_weight_grams")
+  finalWeightGrams       Int?                   @map("final_weight_grams")
+  lineTotalCents         Int                    @map("line_total_cents")
+  substitutionPreference SubstitutionPreference @map("substitution_preference")
+  status                 OrderLineStatus        @default(pending)
+  substitutions          Substitution[]
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orderId])
+  @@map("order_lines")
+}
+
+model Substitution {
+  id                  String                @id @default(uuid(7)) @db.Uuid
+  orderLineId         String                @map("order_line_id") @db.Uuid
+  orderLine           OrderLine             @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+  substituteProductId String                @map("substitute_product_id") @db.Uuid
+  substituteProduct   Product               @relation(fields: [substituteProductId], references: [id], onDelete: Restrict)
+  priceCents          Int                   @map("price_cents")
+  proposedById        String                @map("proposed_by") @db.Uuid
+  proposedBy          Staff                 @relation(fields: [proposedById], references: [id], onDelete: Restrict)
+  customerResponse    SubstitutionResponse? @map("customer_response")
+  respondedAt         DateTime?             @map("responded_at") @db.Timestamptz(3)
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orderLineId])
+  @@map("substitutions")
+}
+
+// Append-only Order history. Written only by orders.transition().
+model OrderStatusEvent {
+  id        String       @id @default(uuid(7)) @db.Uuid
+  orderId   String       @map("order_id") @db.Uuid
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  from      OrderStatus?
+  to        OrderStatus
+  actorType ActorType    @map("actor_type")
+  // Customer or Staff id depending on actor_type; null for system.
+  actorId   String?      @map("actor_id") @db.Uuid
+  reason    String?
+  at        DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([orderId, at])
+  @@map("order_status_events")
+}
+
+// ---------- payments ----------
+
+enum PaymentMethod {
+  cod
+  gcash
+  card
+}
+
+model Payment {
+  id            String         @id @default(uuid(7)) @db.Uuid
+  orderId       String         @map("order_id") @db.Uuid
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  // Null for cash on delivery; otherwise the PAYMENT_PROVIDER in use.
+  provider      String?
+  method        PaymentMethod
+  providerRef   String?        @map("provider_ref")
+  amountCents   Int            @map("amount_cents")
+  capturedCents Int            @default(0) @map("captured_cents")
+  refundedCents Int            @default(0) @map("refunded_cents")
+  status        PaymentStatus
+  events        PaymentEvent[]
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([orderId])
+  @@index([provider, providerRef])
+  @@map("payments")
+}
+
+// Raw provider events. The unique (provider, provider_event_id) makes webhooks idempotent.
+model PaymentEvent {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  provider        String
+  providerEventId String    @map("provider_event_id")
+  paymentId       String?   @map("payment_id") @db.Uuid
+  payment         Payment?  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  type            String
+  payload         Json
+  receivedAt      DateTime  @default(now()) @map("received_at") @db.Timestamptz(3)
+  processedAt     DateTime? @map("processed_at") @db.Timestamptz(3)
+
+  @@unique([provider, providerEventId])
+  @@index([paymentId])
+  @@map("payment_events")
+}
+
+// ---------- customers and staff ----------
+
+model Customer {
+  id             String    @id @default(uuid(7)) @db.Uuid
+  // Linked on first sign-in (identity module).
+  authUserId     String?   @unique @map("auth_user_id")
+  authUser       AuthUser? @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  phone          String?   @unique
+  email          String?   @unique
+  name           String
+  marketingOptIn Boolean   @default(false) @map("marketing_opt_in")
+  addresses      Address[]
+  carts          Cart[]
+  orders         Order[]
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("customers")
+}
+
+model Address {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String
+  line1      String
+  barangay   String
+  city       String
+  landmark   String
+  lat        Float?
+  lng        Float?
+  zoneId     String?  @map("zone_id") @db.Uuid
+  zone       Zone?    @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  notes      String?
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([customerId])
+  @@map("addresses")
+}
+
+enum StaffRole {
+  admin
+  merchandiser
+  picker
+  dispatcher
+}
+
+model Staff {
+  id             String          @id @default(uuid(7)) @db.Uuid
+  authUserId     String?         @unique @map("auth_user_id")
+  authUser       AuthUser?       @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  email          String          @unique
+  name           String
+  role           StaffRole
+  isActive       Boolean         @default(true) @map("is_active")
+  substitutions  Substitution[]
+  stockMovements StockMovement[]
+  auditLog       AuditLog[]
+  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("staff")
+}
+
+// Append-only record of admin writes.
+model AuditLog {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  staffId   String   @map("staff_id") @db.Uuid
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  action    String
+  entity    String
+  entityId  String   @map("entity_id")
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([entity, entityId])
+  @@map("audit_log")
+}
+
+// ---------- identity: Better Auth tables, owned by the identity module ----------
+// Fields follow the Better Auth core schema; the model names are configured in
+// src/modules/identity/internal/auth.ts. Ids are strings Better Auth generates.
+
+model AuthUser {
+  id            String        @id
+  name          String
+  email         String        @unique
+  emailVerified Boolean       @default(false) @map("email_verified")
+  image         String?
+  sessions      AuthSession[]
+  accounts      AuthAccount[]
+  customer      Customer?
+  staff         Staff?
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("auth_users")
+}
+
+model AuthSession {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  userId    String   @map("user_id")
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("auth_sessions")
+}
+
+model AuthAccount {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at") @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at") @db.Timestamptz(3)
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model AuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([identifier])
+  @@map("auth_verifications")
+}

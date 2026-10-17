@@ -1,6 +1,14 @@
 # Data Model
 
-Status: draft v0.1. This is the design intent; `prisma/schema.prisma` becomes the source of truth in Phase 0 and this document then records only the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
+Status: v0.2, 2026-10-17. `prisma/schema.prisma` is now the source of truth for tables and fields; this document keeps the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
+
+**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes, Vouchers, Promotions, Freshness Claims and the Referral fields on `customers` arrive with Phase 5 in a new migration; `orders.voucher_id` comes with them. Differences from the field lists below:
+
+- `carts.checked_out_at` marks a Cart that became an Order. "Active Cart" (invariant 9) means `checked_out_at IS NULL`.
+- Append-only tables (`stock_movements`, `order_status_events`, `payment_events`, `audit_log`) have `created_at` (or `at`, `received_at`) but no `updated_at`.
+- `payments.provider` is null for cash on delivery.
+- `products.search_vector` is a generated column: `simple` text search over `immutable_unaccent()` of name (weight A), brand (B) and description (C). Catalogue search (Batch 1.1) may change the expression in a new migration.
+- Invariants 1, 2, 3, 4, 5, 8 and 9 are database constraints in the first migration and are covered by `tests/db/invariants.test.ts`. Invariants 6 and 7 are enforced in code (`orders` module, Phase 2).
 
 ## 1. Conventions
 

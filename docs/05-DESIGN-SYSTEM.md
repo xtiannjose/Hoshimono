@@ -24,26 +24,26 @@ Two brand colours do all the work: **ink** (deep green-black) for text and actio
 
 Define as CSS variables, mapped into Tailwind v4's `@theme`. Switch modes with `prefers-color-scheme` plus a manual `data-theme` override.
 
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--bg` | `#F6F8EE` | `#0B1610` | Page background |
-| `--surface` | `#FCFDF7` | `#122019` | Cards, sheets, inputs |
-| `--surface-2` | `#EBF0DC` | `#1A2C22` | Quiet fills, image placeholders, footer |
-| `--border` | `#DCE3CB` | `#253A2E` | Dividers and card edges (decorative) |
-| `--border-strong` | `#7E8F6E` | `#6F8A78` | Input, chip and option-card edges (3:1 UI boundary) |
-| `--ink` | `#10261A` | `#EDF3E3` | Body text, headings, selected states |
-| `--muted` | `#4B5A4C` | `#A6B8A5` | Secondary text |
-| `--accent` | `#C9E84E` | `#D3EE62` | Lime surfaces: service strip, promo tile, logo mark, highlight |
-| `--accent-soft` | `#E4F2A8` | `#2C3A10` | Add button, selected option cards, "In stock" |
-| `--on-accent` | `#10261A` | `#0B1610` | Text on lime surfaces (always dark) |
-| `--btn-bg` / `--btn-fg` | `#10261A` / `#C9E84E` | `#D3EE62` / `#0B1610` | Primary buttons, filled stepper, cart bar |
-| `--hl` | `#C9E84E` | `#3F5414` | Marker highlight behind one word of display type |
-| `--ring` | `#10261A` | `#D3EE62` | Focus ring |
-| `--sale` | `#C4301B` | `#FF8A70` | Promotion prices and "Save" tags only |
-| `--sale-soft` | `#FBE3DD` | `#3B1D16` | Promotion tag background |
-| `--warn` | `#7A4E00` | `#F2C063` | Low stock, approximate weight, "Only a few left" |
-| `--warn-soft` | `#FFF1C9` | `#3A2E10` | Weighed-item note background |
-| `--err` | `#B3261E` | `#FF8F85` | Validation and failures |
+| Token                   | Light                 | Dark                  | Use                                                            |
+| ----------------------- | --------------------- | --------------------- | -------------------------------------------------------------- |
+| `--bg`                  | `#F6F8EE`             | `#0B1610`             | Page background                                                |
+| `--surface`             | `#FCFDF7`             | `#122019`             | Cards, sheets, inputs                                          |
+| `--surface-2`           | `#EBF0DC`             | `#1A2C22`             | Quiet fills, image placeholders, footer                        |
+| `--border`              | `#DCE3CB`             | `#253A2E`             | Dividers and card edges (decorative)                           |
+| `--border-strong`       | `#7E8F6E`             | `#6F8A78`             | Input, chip and option-card edges (3:1 UI boundary)            |
+| `--ink`                 | `#10261A`             | `#EDF3E3`             | Body text, headings, selected states                           |
+| `--muted`               | `#4B5A4C`             | `#A6B8A5`             | Secondary text                                                 |
+| `--accent`              | `#C9E84E`             | `#D3EE62`             | Lime surfaces: service strip, promo tile, logo mark, highlight |
+| `--accent-soft`         | `#E4F2A8`             | `#2C3A10`             | Add button, selected option cards, "In stock"                  |
+| `--on-accent`           | `#10261A`             | `#0B1610`             | Text on lime surfaces (always dark)                            |
+| `--btn-bg` / `--btn-fg` | `#10261A` / `#C9E84E` | `#D3EE62` / `#0B1610` | Primary buttons, filled stepper, cart bar                      |
+| `--hl`                  | `#C9E84E`             | `#3F5414`             | Marker highlight behind one word of display type               |
+| `--ring`                | `#10261A`             | `#D3EE62`             | Focus ring                                                     |
+| `--sale`                | `#C4301B`             | `#FF8A70`             | Promotion prices and "Save" tags only                          |
+| `--sale-soft`           | `#FBE3DD`             | `#3B1D16`             | Promotion tag background                                       |
+| `--warn`                | `#7A4E00`             | `#F2C063`             | Low stock, approximate weight, "Only a few left"               |
+| `--warn-soft`           | `#FFF1C9`             | `#3A2E10`             | Weighed-item note background                                   |
+| `--err`                 | `#B3261E`             | `#FF8F85`             | Validation and failures                                        |
 
 **The primary button flips between modes.** Lime on the light background is only 1.3:1, too weak to mark a button edge. So in light mode a primary button is ink with lime text (11.5:1), and in dark mode it is lime with dark text (14.2:1). Never use lime as a boundary-only element on a light surface; lime surfaces always carry `--on-accent` text.
 
@@ -51,11 +51,11 @@ Measured contrast (WCAG 2.x): ink on bg 14.9 light and 16.3 dark; muted on surfa
 
 ## 4. Typography
 
-| Role | Font | Notes |
-|---|---|---|
-| Display, headings, prices | **Epilogue** via `next/font/google` | Variable, weights 400 to 700; headings at 500, prices and h3 at 600, wordmark at 700 |
-| UI and body | **Plus Jakarta Sans** via `next/font/google` | Variable, weights 400 to 700 |
-| Codes in admin tables | **Geist Mono** | Order numbers, voucher codes |
+| Role                      | Font                                         | Notes                                                                                |
+| ------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Display, headings, prices | **Epilogue** via `next/font/google`          | Variable, weights 400 to 700; headings at 500, prices and h3 at 600, wordmark at 700 |
+| UI and body               | **Plus Jakarta Sans** via `next/font/google` | Variable, weights 400 to 700                                                         |
+| Codes in admin tables     | **Geist Mono**                               | Order numbers, voucher codes                                                         |
 
 - Epilogue replaced Bricolage Grotesque on 2026-10-17 for a more elegant, lighter heading voice (option C of the font comparison).
 - Both families were checked on 2026-10-17: each contains the peso sign (U+20B1) and tabular figures (`tnum`). The peso sign lives in the `latin-ext` subset, so load `subsets: ['latin', 'latin-ext']`.
@@ -81,23 +81,23 @@ Built on shadcn/ui primitives with the tokens above applied. None ship in defaul
 
 **Domain components (custom):**
 
-| Component | Notes |
-|---|---|
-| `ProductCard` | Square image, optional tags row (sale, stock, "By weight"), name (2 lines max), pack size, `PriceTag`, then a full-width **Add** pill (`--accent-soft`). Once the Product is in the Cart the pill becomes a filled `QuantityStepper`, so "in Cart" reads at a glance across a grid. Out-of-stock: greyed image, "Out of stock today" tag, **Notify me** button. |
-| `PriceTag` | Current price (sale price in `--sale`), compare-at strikethrough, Unit Price line, "approx." marker for Weighed Products |
-| `QuantityStepper` | Pill; minus, count, plus; 44 px targets; long-press repeat; announces "Name, 2 in cart" to screen readers. **Filled** variant on cards; **ghost** variant for servings, trays and Cart Lines. Cart Lines stop at 1 and offer Remove separately. |
-| `CategoryMosaic` | Home only. 8 Categories in a 4 x 3 grid with no empty cell: Fruit 2 x 2 on `--accent-soft` with a photo, Vegetables 2 x 1 on `--surface-2` with a photo, six 1 x 1 tiles |
-| `ServiceStrip` | Lime band under the hero: delivery fee, freshness check, payment methods |
-| `DeliveryButton` | Header pill with area and next Slot (replaces v0.1's separate top strip); opens the address and Zone picker |
-| `CartButton` | Desktop header: primary pill with running total and count. Mobile: `CartBar` floating above the tab bar with count, "View cart" and total |
-| `CartDrawer` | Sheet on desktop, bottom sheet on mobile; delivery Slot row, free-delivery hint, Cart Lines with Substitution Preference, totals, Checkout button |
-| `SubstitutionSelect` | Three radio cards: "Pick a similar item", "I'll choose", "No substitute" |
-| `SlotPicker` | Day radio cards, then time radio cards. States: Available, "Only a few left" (under 20% capacity, `--warn`), Full (dashed, struck through, disabled), selected ("Held for you for 10 minutes") |
-| `AddressForm` | Landmark required; map pin; Zone coverage check inline |
-| `OrderTimeline` | Vertical steps with timestamps and Rider contact (not in the mockup yet) |
-| `RecipePanel` | Photo, servings stepper, time, two-column ingredient checklist, "Add 5 items, ₱423.00" total that updates as items are ticked |
-| `PromoTile` | Lime tile spanning two grid cells in the savings row; one headline figure taken from real Promotion data |
-| `StockBadge` | "In stock" (`--accent-soft`), "Only a few left" (`--warn`), "Out of stock today" (quiet) |
+| Component            | Notes                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ProductCard`        | Square image, optional tags row (sale, stock, "By weight"), name (2 lines max), pack size, `PriceTag`, then a full-width **Add** pill (`--accent-soft`). Once the Product is in the Cart the pill becomes a filled `QuantityStepper`, so "in Cart" reads at a glance across a grid. Out-of-stock: greyed image, "Out of stock today" tag, **Notify me** button. |
+| `PriceTag`           | Current price (sale price in `--sale`), compare-at strikethrough, Unit Price line, "approx." marker for Weighed Products                                                                                                                                                                                                                                        |
+| `QuantityStepper`    | Pill; minus, count, plus; 44 px targets; long-press repeat; announces "Name, 2 in cart" to screen readers. **Filled** variant on cards; **ghost** variant for servings, trays and Cart Lines. Cart Lines stop at 1 and offer Remove separately.                                                                                                                 |
+| `CategoryMosaic`     | Home only. 8 Categories in a 4 x 3 grid with no empty cell: Fruit 2 x 2 on `--accent-soft` with a photo, Vegetables 2 x 1 on `--surface-2` with a photo, six 1 x 1 tiles                                                                                                                                                                                        |
+| `ServiceStrip`       | Lime band under the hero: delivery fee, freshness check, payment methods                                                                                                                                                                                                                                                                                        |
+| `DeliveryButton`     | Header pill with area and next Slot (replaces v0.1's separate top strip); opens the address and Zone picker                                                                                                                                                                                                                                                     |
+| `CartButton`         | Desktop header: primary pill with running total and count. Mobile: `CartBar` floating above the tab bar with count, "View cart" and total                                                                                                                                                                                                                       |
+| `CartDrawer`         | Sheet on desktop, bottom sheet on mobile; delivery Slot row, free-delivery hint, Cart Lines with Substitution Preference, totals, Checkout button                                                                                                                                                                                                               |
+| `SubstitutionSelect` | Three radio cards: "Pick a similar item", "I'll choose", "No substitute"                                                                                                                                                                                                                                                                                        |
+| `SlotPicker`         | Day radio cards, then time radio cards. States: Available, "Only a few left" (under 20% capacity, `--warn`), Full (dashed, struck through, disabled), selected ("Held for you for 10 minutes")                                                                                                                                                                  |
+| `AddressForm`        | Landmark required; map pin; Zone coverage check inline                                                                                                                                                                                                                                                                                                          |
+| `OrderTimeline`      | Vertical steps with timestamps and Rider contact (not in the mockup yet)                                                                                                                                                                                                                                                                                        |
+| `RecipePanel`        | Photo, servings stepper, time, two-column ingredient checklist, "Add 5 items, ₱423.00" total that updates as items are ticked                                                                                                                                                                                                                                   |
+| `PromoTile`          | Lime tile spanning two grid cells in the savings row; one headline figure taken from real Promotion data                                                                                                                                                                                                                                                        |
+| `StockBadge`         | "In stock" (`--accent-soft`), "Only a few left" (`--warn`), "Out of stock today" (quiet)                                                                                                                                                                                                                                                                        |
 
 **Every component documents and implements:** default, hover, focus-visible, active (`scale(0.97)` push), disabled, loading (skeleton shaped like the final layout), empty and error states. No generic spinners.
 
@@ -107,14 +107,14 @@ Library: **Motion** (`import { motion } from "motion/react"`). Do not mix GSAP i
 
 Every animation must answer "what does it communicate?"
 
-| Motion | Communicates | Spec |
-|---|---|---|
-| Add pill becomes stepper | Feedback: item added | `layout` on the control only; spring `visualDuration 0.2, bounce 0.1` |
-| Count bump (stepper, cart badge) | Feedback: count changed | scale 1 to 1.18 to 1, same spring |
-| Bottom sheet / cart drawer | State change; spatial origin | Spring `visualDuration 0.3, bounce 0.2`. Drag tracks the finger 1:1; on release, project the end point from velocity and snap to the nearest detent; rubber-band past the top. Enters and leaves along the same edge. |
-| Skeleton | Loading | Opacity pulse only, 1.2 s |
-| Home sections fade-up | Hierarchy, once | `whileInView`, `once: true`, 24 px, stagger 60 ms; Home only |
-| Toast | Transient confirmation | Slide and fade, 200 ms |
+| Motion                           | Communicates                 | Spec                                                                                                                                                                                                                  |
+| -------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add pill becomes stepper         | Feedback: item added         | `layout` on the control only; spring `visualDuration 0.2, bounce 0.1`                                                                                                                                                 |
+| Count bump (stepper, cart badge) | Feedback: count changed      | scale 1 to 1.18 to 1, same spring                                                                                                                                                                                     |
+| Bottom sheet / cart drawer       | State change; spatial origin | Spring `visualDuration 0.3, bounce 0.2`. Drag tracks the finger 1:1; on release, project the end point from velocity and snap to the nearest detent; rubber-band past the top. Enters and leaves along the same edge. |
+| Skeleton                         | Loading                      | Opacity pulse only, 1.2 s                                                                                                                                                                                             |
+| Home sections fade-up            | Hierarchy, once              | `whileInView`, `once: true`, 24 px, stagger 60 ms; Home only                                                                                                                                                          |
+| Toast                            | Transient confirmation       | Slide and fade, 200 ms                                                                                                                                                                                                |
 
 Rules: animate only `transform` and `opacity`; no scroll-jacking, parallax, marquees or infinite loops; use `useMotionValue` for pointer or drag values, never `useState`; wrap everything with `useReducedMotion()` and degrade to cross-fades. Search the Motion docs through the `motion` MCP tools before writing animation code, and audit finished work with the `motion` skill's MotionScore.
 
@@ -153,14 +153,14 @@ Dense and functional, same tokens and fonts, no Motion beyond focus and state tr
 
 ## 11. Performance budget
 
-| Budget | Value |
-|---|---|
-| LCP on Home, Category, Product (4G, mid-range Android) | under 2.5 s |
-| CLS | under 0.1 |
-| INP | under 200 ms |
-| JavaScript on a Category page | under 170 KB gzipped |
-| Product image on a card | under 40 KB (AVIF/WebP, correct `sizes`) |
-| Web fonts | under 120 KB woff2 in total (both families, `latin` + `latin-ext`; measured 118 KB on 2026-10-17) |
+| Budget                                                 | Value                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| LCP on Home, Category, Product (4G, mid-range Android) | under 2.5 s                                                                                       |
+| CLS                                                    | under 0.1                                                                                         |
+| INP                                                    | under 200 ms                                                                                      |
+| JavaScript on a Category page                          | under 170 KB gzipped                                                                              |
+| Product image on a card                                | under 40 KB (AVIF/WebP, correct `sizes`)                                                          |
+| Web fonts                                              | under 120 KB woff2 in total (both families, `latin` + `latin-ext`; measured 118 KB on 2026-10-17) |
 
 The hero image uses `next/image` with `priority`; below-the-fold images lazy-load; every image reserves its aspect ratio. If fonts hurt LCP on real devices, self-host files subset to Latin plus U+20B1 with `next/font/local`.
 
@@ -193,3 +193,10 @@ The hero image uses `next/image` with `priority`; below-the-fold images lazy-loa
 ```
 
 Token values live once in `:root` and the dark blocks (copy them from `mockup-v2/hoshimono.css`); components use the semantic utilities (`bg-btn text-btn-fg`, `rounded-card`), never raw hex.
+
+**Implemented in `src/app/globals.css` (Batch 0.2), with two deviations from the snippet above:**
+
+- shadcn already owns the names `muted` and `muted-foreground`. To keep generated components working, `bg-muted` is the quiet fill (`--surface-2`) and **secondary text is `text-muted-foreground`**, not `text-muted`. shadcn names (`background`, `foreground`, `card`, `primary`, `secondary`, `destructive`, `input`) are aliases onto our tokens; our names stay the source.
+- Dark mode is driven by `data-theme` on `<html>`, set by `next-themes`, with the `prefers-color-scheme` block as a no-JavaScript fallback. The Tailwind `dark:` variant matches `[data-theme="dark"]`.
+
+Type utilities `type-display`, `type-h1` to `type-h3`, `type-lead`, `type-small`, `type-fine`, `type-price`, the marker `hl` and the page width `wrap` are defined there too.
