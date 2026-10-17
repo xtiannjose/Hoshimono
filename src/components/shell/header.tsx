@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { BrandLogo } from "@/components/shell/brand-logo";
 import { CategoryNav } from "@/components/shell/category-nav";
 import { DeliveryButton } from "@/components/shell/delivery-button";
-import { SearchForm } from "@/components/shell/search-form";
+import { SearchBox } from "@/components/shell/search-box";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { z } from "@/config/z";
 
@@ -18,7 +18,7 @@ export function Header() {
       >
         <div className="wrap flex h-[72px] items-center gap-4">
           <BrandLogo />
-          <SearchForm id="q" className="hidden max-w-[560px] flex-1 md:flex" />
+          <SearchBox id="q" className="hidden max-w-[560px] flex-1 md:flex" />
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <DeliveryButton />
             <Link
@@ -32,7 +32,7 @@ export function Header() {
           </div>
         </div>
         <div className="wrap pb-3 md:hidden">
-          <SearchForm id="q-mobile" />
+          <SearchBox id="q-mobile" />
         </div>
         <div className="hidden md:block">
           <Suspense fallback={<div className="h-12" />}>

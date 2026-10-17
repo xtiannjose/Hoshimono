@@ -4,8 +4,13 @@
 import { cacheLife, cacheTag } from "next/cache";
 
 import {
+  getCategory,
   getCategoryTree,
+  getProduct,
   listProducts,
+  listRelatedProducts,
+  searchProducts,
+  suggestSearch,
   type CategoryNode,
   type ListProductsInput,
 } from "@/modules/catalog";
@@ -15,25 +20,65 @@ import { getStockStates } from "@/modules/inventory";
 export const CATALOG_TAG = "catalog";
 export const STOCK_TAG = "stock";
 
-export async function categoryTree(): Promise<CategoryNode[]> {
-  "use cache";
+function catalogCache() {
   cacheLife("minutes");
   cacheTag(CATALOG_TAG);
+}
+
+export async function categoryTree(): Promise<CategoryNode[]> {
+  "use cache";
+  catalogCache();
   return getCategoryTree();
+}
+
+export async function category(slug: string) {
+  "use cache";
+  catalogCache();
+  return getCategory(slug);
 }
 
 export async function productList(input: ListProductsInput) {
   "use cache";
-  cacheLife("minutes");
-  cacheTag(CATALOG_TAG);
+  catalogCache();
   return listProducts(input);
+}
+
+export async function product(id: string) {
+  "use cache";
+  catalogCache();
+  return getProduct(id);
+}
+
+export async function relatedProducts(id: string, limit: number) {
+  "use cache";
+  catalogCache();
+  return listRelatedProducts(id, limit);
+}
+
+export async function productSearch(
+  query: string,
+  page: { limit: number; offset: number }
+) {
+  "use cache";
+  catalogCache();
+  return searchProducts(query, page);
+}
+
+export async function searchSuggestions(query: string) {
+  "use cache";
+  catalogCache();
+  return suggestSearch(query);
 }
 
 export async function stockStates(productIds: string[]) {
   "use cache";
   cacheLife("minutes");
   cacheTag(STOCK_TAG);
-  return getStockStates(productIds, await getDefaultHubId());
+  const hubId = await getDefaultHubId();
+  // No Hub yet means nothing can be delivered: show everything as out.
+  if (!hubId)
+    return Object.fromEntries(productIds.map((id) => [id, "out" as const]));
+  return getStockStates(productIds, hubId);
 }
 
 /** Root-to-node slug path for every Category, for building /c/ links. */

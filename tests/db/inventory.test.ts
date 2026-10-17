@@ -18,7 +18,7 @@ const product = (slug: string) => seedId(`product:${slug}`);
 
 describe("getStockStates", () => {
   it("says in stock, a few left or out of stock, never the count", async () => {
-    const hubId = await getDefaultHubId();
+    const hubId = (await getDefaultHubId())!;
     const states = await getStockStates(
       [
         product("magnolia-fresh-milk"),
@@ -37,7 +37,7 @@ describe("getStockStates", () => {
   });
 
   it("counts reserved units as gone", async () => {
-    const hubId = await getDefaultHubId();
+    const hubId = (await getDefaultHubId())!;
     const id = product("magnolia-fresh-milk");
     const level = await db.stockLevel.findUniqueOrThrow({
       where: { productId_hubId: { productId: id, hubId } },

@@ -5,6 +5,7 @@ import {
   getCategoryTree,
   getProduct,
   listProducts,
+  listRelatedProducts,
   searchProducts,
   suggestSearch,
 } from "@/modules/catalog";
@@ -495,5 +496,24 @@ describe("listProducts: review cases", () => {
     );
     expect((await listProducts({ minPriceCents: Infinity }))?.total).toBe(155);
     expect((await listProducts({ maxPriceCents: 1e15 }))?.total).toBe(155);
+  });
+});
+
+describe("listRelatedProducts", () => {
+  it("fills from the same Category first, then its siblings, never itself", async () => {
+    const id = seedId(`product:${productSlug("Magnolia", "Fresh Milk")}`);
+    const related = await listRelatedProducts(id, 6);
+    expect(related).toHaveLength(6);
+    expect(related.map((p) => p.id)).not.toContain(id);
+    expect(related.slice(0, 5).every((p) => p.category.slug === "milk")).toBe(
+      true
+    );
+    expect(related[5].category.slug).not.toBe("milk");
+  });
+
+  it("returns nothing for an unknown Product", async () => {
+    expect(
+      await listRelatedProducts("00000000-0000-0000-0000-000000000000", 6)
+    ).toEqual([]);
   });
 });

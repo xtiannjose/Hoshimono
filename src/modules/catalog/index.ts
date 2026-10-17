@@ -19,3 +19,4 @@ export type {
 export { searchProducts, suggestSearch } from "./internal/search";
 export type { SearchResult, SearchSuggestions } from "./internal/search";
 export type { SearchIndex } from "./internal/search/search-index";
+export { listRelatedProducts } from "./internal/related";

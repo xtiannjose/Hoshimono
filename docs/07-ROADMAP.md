@@ -132,9 +132,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 1.3 Category, Product and Search pages** (W3). Stack: Server Components, structured data. Skills: `design-taste-frontend`.
 
-- [ ] Category page with filters and sort; Unit Price computed and shown
-- [ ] Product page with images, details, allergens, related Products, structured data
-- [ ] Search page with suggestions and zero-result guidance
+- [x] Category page with filters and sort; Unit Price computed and shown
+- [x] Product page with images, details, allergens, related Products, structured data
+- [x] Search page with suggestions and zero-result guidance
 
 **Batch 1.4 Admin catalogue** (W3 to W4). Stack: TanStack Table, React Hook Form + Zod, object storage + CDN. Skills: `anthropic-skills:xlsx` for the import template, `tdd` for CSV validation.
 
