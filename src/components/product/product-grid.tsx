@@ -45,7 +45,12 @@ export function ProductGrid({
 
 export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className={GRID} aria-busy="true" aria-label="Loading products">
+    <div
+      role="status"
+      className={GRID}
+      aria-busy="true"
+      aria-label="Loading products"
+    >
       {Array.from({ length: count }, (_, i) => (
         <ProductCardSkeleton key={i} />
       ))}

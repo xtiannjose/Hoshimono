@@ -173,7 +173,7 @@ async function ProductView({ params }: Pick<Props, "params">) {
               below.
             </p>
           ) : (
-            <AddToCart name={found.name} />
+            <AddToCart productId={found.id} name={found.name} />
           )}
         </div>
       </div>

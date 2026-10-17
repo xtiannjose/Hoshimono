@@ -81,7 +81,7 @@ export function ProductCard({
           isWeighed={product.isWeighed}
           muted={out}
         />
-        {out ? null : <AddToCart name={product.name} />}
+        {out ? null : <AddToCart productId={product.id} name={product.name} />}
       </div>
     </article>
   );

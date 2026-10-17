@@ -16,6 +16,8 @@ type Props = {
   max?: number;
   /** Filled on Product cards ("in your Cart"); ghost for servings and Cart Lines. */
   variant?: "filled" | "ghost";
+  /** 40 px tall, for Cart Lines (mockup-v2 mobile cart). */
+  compact?: boolean;
   plusRef?: Ref<HTMLButtonElement>;
   decreaseLabel?: string;
   increaseLabel?: string;
@@ -29,6 +31,7 @@ export function QuantityStepper({
   min = 0,
   max = 99,
   variant = "filled",
+  compact = false,
   plusRef,
   decreaseLabel = "Remove one",
   increaseLabel = "Add one",
@@ -38,18 +41,21 @@ export function QuantityStepper({
     variant === "filled"
       ? "bg-btn text-btn-fg [&_button:hover]:bg-white/10"
       : "border border-input bg-card text-foreground [&_button:hover]:bg-muted";
+  const shape = compact
+    ? "h-10 grid-cols-[40px_minmax(32px,1fr)_40px] [&_button]:size-10"
+    : "h-11 grid-cols-[44px_minmax(36px,1fr)_44px] [&_button]:size-11";
   return (
     <div
       role="group"
       aria-label={label}
-      className={`rounded-pill grid h-11 grid-cols-[44px_minmax(36px,1fr)_44px] items-center ${tone}`}
+      className={`rounded-pill grid items-center ${shape} ${tone}`}
     >
       <button
         type="button"
         aria-label={decreaseLabel}
         disabled={value <= min}
         onClick={() => onChange(value - 1)}
-        className="rounded-pill grid size-11 place-items-center transition-colors disabled:opacity-40"
+        className="rounded-pill grid place-items-center transition-colors disabled:opacity-40"
       >
         <MinusIcon size={20} aria-hidden />
       </button>
@@ -70,7 +76,7 @@ export function QuantityStepper({
         aria-label={increaseLabel}
         disabled={value >= max}
         onClick={() => onChange(value + 1)}
-        className="rounded-pill grid size-11 place-items-center transition-colors disabled:opacity-40"
+        className="rounded-pill grid place-items-center transition-colors disabled:opacity-40"
       >
         <PlusIcon size={20} aria-hidden />
       </button>

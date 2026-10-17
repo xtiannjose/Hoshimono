@@ -318,6 +318,8 @@ model CartLine {
   productId              String                 @map("product_id") @db.Uuid
   product                Product                @relation("CartLineProduct", fields: [productId], references: [id], onDelete: Cascade)
   quantity               Int
+  // Price when the line was last set, so the Cart can flag a change (CRT-5).
+  seenPriceCents         Int                    @map("seen_price_cents")
   substitutionPreference SubstitutionPreference @default(allow) @map("substitution_preference")
   preferredProductId     String?                @map("preferred_product_id") @db.Uuid
   preferredProduct       Product?               @relation("CartLinePreferred", fields: [preferredProductId], references: [id], onDelete: SetNull)

@@ -78,9 +78,11 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 
 ## 5. Cart and pricing
 
-- A **guest Cart** is stored in the database keyed by a signed, HTTP-only cookie id. Signing in merges it into the Customer's Cart (`mergeGuestCart`, quantities summed, capped by availability).
+- A **guest Cart** is stored in the database keyed by a random 256-bit token in an HTTP-only cookie. The database keeps only the token's SHA-256 hash, so the cookie needs no signature and a database leak exposes no live Cart. Signing in merges it into the Customer's Cart (`mergeGuestCart`, quantities summed, capped by availability, never below what the Customer already had). The merge runs on the first request after sign-in and locks the guest Cart row, so it happens once.
+- Cart Lines remember the price they were last set at (`seen_price_cents`), so the Cart flags a price change (CRT-5). Lines that are out of stock stay visible but are left out of the total.
 - `priceCart(lines, context)` is a **pure function**: given lines, current prices, active Promotions, an optional Voucher and the Zone's fee rules, it returns line totals, discounts, delivery fee, VAT breakdown and total in centavos. Everything shown in the Cart, Checkout and on the Order comes from this one function.
 - Because it is pure, it is the first thing built test-first and the most heavily tested unit in the system.
+- VAT (as built in Batch 2.1): prices include 12% VAT, so the VAT inside a vatable amount is 12/112 of it, rounded half up per line and then summed (ADR 0002). The delivery fee is treated as vatable. **Confirm with the accountant** together with the tax class of each Category (docs/04 section 5).
 
 ## 6. Checkout and order placement
 

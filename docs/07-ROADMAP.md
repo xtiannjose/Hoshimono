@@ -160,8 +160,8 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
-- [ ] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
-- [ ] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
+- [x] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
+- [x] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
 
 **Batch 2.3 Delivery and addresses** (W6). Stack: atomic SQL updates, maps and geocoding. Skills: `tdd`, `codebase-design`.
 

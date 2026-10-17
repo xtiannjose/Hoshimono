@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type {
   PackSizeUnit,
   Storage,
+  TaxClass,
   UnitPriceBasis,
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
@@ -23,6 +24,7 @@ export type ProductSummary = {
   compareAtCents: number | null;
   unitPrice: UnitPrice | null;
   isWeighed: boolean;
+  taxClass: TaxClass;
   storage: Storage;
   primaryImage: ProductImageView | null;
   category: { id: string; slug: string; name: string };
@@ -73,6 +75,7 @@ const summarySelect = {
   priceCents: true,
   compareAtCents: true,
   isWeighed: true,
+  taxClass: true,
   storage: true,
   category: { select: { id: true, slug: true, name: true } },
   images: {
@@ -99,6 +102,7 @@ function toSummary(row: SummaryRow): ProductSummary {
       row.packSizeValue
     ),
     isWeighed: row.isWeighed,
+    taxClass: row.taxClass,
     storage: row.storage,
     primaryImage: row.images[0] ?? null,
     category: row.category,

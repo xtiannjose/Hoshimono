@@ -3,15 +3,18 @@ import { db } from "@/lib/db";
 /** What a Customer may see: never the count (docs/03-ARCHITECTURE.md section 9). */
 export type StockState = "in_stock" | "low" | "out";
 
+export type Availability = { available: number; state: StockState };
+
 /**
- * Stock state per Product at a Hub. Available is on hand minus reserved;
- * "low" is at or under the Product's threshold ("Only a few left").
- * A Product with no stock row is out.
+ * Free units per Product at a Hub: on hand minus reserved. "low" is at or
+ * under the Product's threshold ("Only a few left"). A Product with no stock
+ * row is out. The count is for server checks such as Cart limits; only the
+ * state may reach a page.
  */
-export async function getStockStates(
+export async function getAvailability(
   productIds: string[],
   hubId: string
-): Promise<Record<string, StockState>> {
+): Promise<Record<string, Availability>> {
   const levels = await db.stockLevel.findMany({
     where: { hubId, productId: { in: productIds } },
     select: {
@@ -22,16 +25,28 @@ export async function getStockStates(
     },
   });
   const byProduct = new Map(levels.map((l) => [l.productId, l]));
-  const states: Record<string, StockState> = {};
+  const result: Record<string, Availability> = {};
   for (const id of productIds) {
     const level = byProduct.get(id);
-    const available = level ? level.onHand - level.reserved : 0;
-    states[id] =
-      available <= 0
+    const available = Math.max(0, level ? level.onHand - level.reserved : 0);
+    const state: StockState =
+      available === 0
         ? "out"
         : available <= (level?.lowStockThreshold ?? 0)
           ? "low"
           : "in_stock";
+    result[id] = { available, state };
   }
-  return states;
+  return result;
+}
+
+/** Stock state per Product at a Hub, without counts. */
+export async function getStockStates(
+  productIds: string[],
+  hubId: string
+): Promise<Record<string, StockState>> {
+  const availability = await getAvailability(productIds, hubId);
+  return Object.fromEntries(
+    Object.entries(availability).map(([id, a]) => [id, a.state])
+  );
 }

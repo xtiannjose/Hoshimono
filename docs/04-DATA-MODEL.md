@@ -87,7 +87,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 **`carts`**: `id`, `customer_id?`, `guest_token_hash?`, `voucher_code?`, `updated_at`. A Customer has at most one active Cart.
 
-**`cart_lines`**: `cart_id`, `product_id`, `quantity`, `substitution_preference` (`allow`, `preferred`, `none`), `preferred_product_id?`, `note`. Unique: `(cart_id, product_id)`.
+**`cart_lines`**: `cart_id`, `product_id`, `quantity`, `seen_price_cents` (the price when the line was last set, so the Cart can flag a change), `substitution_preference` (`allow`, `preferred`, `none`), `preferred_product_id?`, `note`. Unique: `(cart_id, product_id)`.
 
 **`orders`**: `id`, `order_no`, `customer_id`, `hub_id`, `slot_id`, `channel` (`web`, later `grab`, `lazada`), `status`, `payment_status`, `address_snapshot` (JSON), `contact_phone`, `rider_notes`, `subtotal_cents`, `discount_cents`, `delivery_fee_cents`, `vat_cents`, `total_cents`, `authorised_cents`, `final_total_cents?`, `voucher_id?`, `idempotency_key` (unique), `placed_at`, `cancelled_at?`, `delivered_at?`.
 

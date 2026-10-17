@@ -9,6 +9,7 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
+  globalSetup: "./e2e/warm-up.ts",
   fullyParallel: true,
   // The dev server compiles each route on first visit; give it time.
   expect: { timeout: 15_000 },
@@ -21,7 +22,7 @@ export default defineConfig({
     command: `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    timeout: 120_000,
+    timeout: 240_000,
     env: {
       DATABASE_URL: E2E_DATABASE_URL,
       DIRECT_URL: E2E_DATABASE_URL,

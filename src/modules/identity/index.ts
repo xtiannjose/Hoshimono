@@ -20,7 +20,10 @@ export function safeNext(next: string | null | undefined): string {
 }
 
 async function currentUser() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  // Read headers first: touching auth.api starts Better Auth, which reads
+  // the clock, and that must not happen while Next prerenders the shell.
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
   return session?.user ?? null;
 }
 
@@ -29,6 +32,12 @@ export async function requireCustomer(next = "/account") {
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   return customerForUser(db, user);
+}
+
+/** The signed-in Customer, or null for guests. Never redirects. */
+export async function currentCustomer() {
+  const user = await currentUser();
+  return user ? customerForUser(db, user) : null;
 }
 
 /** The signed-in Staff member with `role`. Others get a 404, not a hint. */
