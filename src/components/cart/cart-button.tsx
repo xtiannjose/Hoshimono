@@ -2,7 +2,6 @@
 
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -61,21 +60,14 @@ export function CartButton() {
 
 /** Phones: a floating bar with count, "View cart" and total. */
 function CartBar({ count, total }: { count: number; total: number }) {
-  const pathname = usePathname();
   const open = useCart((s) => s.open);
-  if (
-    count === 0 ||
-    open ||
-    pathname === "/cart" ||
-    pathname.startsWith("/checkout")
-  ) {
-    return null;
-  }
+  if (count === 0 || open) return null;
   // Portalled: the header's backdrop blur would pin a fixed child to it.
   return createPortal(
     <div
       style={{ zIndex: z.sticky }}
-      className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden"
+      // The Cart and Checkout pages mark themselves with data-no-cart-bar.
+      className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden [body:has([data-no-cart-bar])_&]:hidden"
     >
       <button
         type="button"

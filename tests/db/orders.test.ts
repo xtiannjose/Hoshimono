@@ -7,8 +7,10 @@ import { getDefaultAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import {
   cancelOrder,
+  expireUnpaidOrders,
   getOrder,
   listOrders,
+  ORDER_CONFIRMED_JOB,
   placeOrder,
   transitionOrder,
   type PlaceOrderInput,
@@ -82,7 +84,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.$executeRawUnsafe(
-    "TRUNCATE order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
+    "TRUNCATE jobs, notifications, order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
   );
   await db.slot.updateMany({ data: { booked: 0, capacity: 20 } });
   await db.stockLevel.updateMany({
@@ -143,6 +145,11 @@ describe("placeOrder", () => {
     ]);
     expect(order.statusEvents).toMatchObject([
       { from: null, to: "confirmed", actorType: "customer", actorId: ligaya },
+    ]);
+    expect(
+      await db.job.findMany({ select: { kind: true, payload: true } })
+    ).toEqual([
+      { kind: ORDER_CONFIRMED_JOB, payload: { orderId: result.orderId } },
     ]);
 
     expect(
@@ -400,6 +407,38 @@ describe("order status", () => {
       id: seedId("staff:picker"),
     });
     expect(await cancelOrder(ligaya, second)).toBe(false);
+  });
+
+  it("cancels online Orders left unpaid past the payment window", async () => {
+    const id = await placed();
+    await db.order.update({
+      where: { id },
+      data: { status: "pending_payment" },
+    });
+    const placedAt = (await db.order.findUniqueOrThrow({ where: { id } }))
+      .placedAt;
+    expect(
+      await expireUnpaidOrders(new Date(placedAt.getTime() + 14 * 60_000))
+    ).toBe(0);
+    expect(
+      await expireUnpaidOrders(new Date(placedAt.getTime() + 15 * 60_000))
+    ).toBe(1);
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { statusEvents: true },
+    });
+    expect(order.status).toBe("cancelled");
+    expect(order.statusEvents.find((e) => e.to === "cancelled")).toMatchObject({
+      actorType: "system",
+      reason: "Payment not completed in time",
+    });
+    expect(
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).reserved
+    ).toBe(0);
   });
 
   it("lists the Customer's Orders, newest first, and finds one by number", async () => {

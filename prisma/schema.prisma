@@ -363,6 +363,7 @@ model Order {
   statusEvents     OrderStatusEvent[]
   payments         Payment[]
   stockMovements   StockMovement[]
+  notifications    Notification[]
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -630,4 +631,43 @@ model AuthVerification {
 
   @@index([identifier])
   @@map("auth_verifications")
+}
+
+// ---------- jobs and notifications ----------
+
+// Outbox for work after a commit (docs/03 section 11): the cron route
+// leases due rows with FOR UPDATE SKIP LOCKED and retries with backoff.
+model Job {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  kind      String
+  payload   Json      @default("{}")
+  runAt     DateTime  @default(now()) @map("run_at") @db.Timestamptz(3)
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  doneAt    DateTime? @map("done_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([doneAt, runAt])
+  @@map("jobs")
+}
+
+enum NotificationChannel {
+  email
+  sms
+}
+
+// Delivery log: one row per message sent, so a retried job never sends twice.
+model Notification {
+  id          String              @id @default(uuid(7)) @db.Uuid
+  template    String
+  channel     NotificationChannel
+  recipient   String
+  orderId     String?             @map("order_id") @db.Uuid
+  order       Order?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  provider    String
+  providerRef String?             @map("provider_ref")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([template, channel, orderId])
+  @@map("notifications")
 }

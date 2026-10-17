@@ -117,3 +117,27 @@ export async function getOrder(
     events: order.statusEvents,
   };
 }
+
+/** What the confirmation notice needs; no Customer check (system use). */
+export async function getOrderForNotice(orderId: string) {
+  return db.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      orderNo: true,
+      contactPhone: true,
+      totalCents: true,
+      customer: { select: { email: true } },
+      slot: { select: { startsAt: true, endsAt: true } },
+      lines: {
+        orderBy: { createdAt: "asc" },
+        select: { nameSnapshot: true, orderedQty: true },
+      },
+      payments: {
+        take: 1,
+        orderBy: { createdAt: "desc" },
+        select: { method: true },
+      },
+    },
+  });
+}

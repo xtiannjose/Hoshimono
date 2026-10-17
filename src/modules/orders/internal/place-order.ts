@@ -9,6 +9,10 @@ import { checkOutCart, getCart, getCartId } from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
 import { bookSlot, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
+import { enqueueJob } from "@/modules/jobs";
+
+/** Job that sends the order confirmed email and SMS (Batch 2.5). */
+export const ORDER_CONFIRMED_JOB = "order.confirmed";
 
 export type PlaceOrderInput = {
   customerId: string;
@@ -235,6 +239,8 @@ export async function placeOrder(
         status: "cod_pending",
       },
     });
+    // In the same transaction, so a placed Order always gets its notice.
+    await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId: created.id });
     return created;
   };
 

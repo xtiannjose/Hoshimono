@@ -176,10 +176,10 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.5 Checkout, confirmation and notices** (W7). Stack: React Hook Form + Zod, Resend + React Email, SMS provider, Vercel Cron. Skills: `design-taste-frontend`.
 
-- [ ] Checkout page: Address, Slot, contact, COD, summary, server re-pricing
-- [ ] Order confirmation page and tracking page
-- [ ] `notifications`: order confirmed email and SMS
-- [ ] Jobs table and cron: expire holds and stale reservations
+- [x] Checkout page: Address, Slot, contact, COD, summary, server re-pricing (forms use `useActionState`; React Hook Form stays deferred, see 06-SETUP)
+- [x] Order confirmation page and tracking page (`/checkout/confirmed/[orderNo]`, `/orders/[orderNo]`, cancel before picking)
+- [x] `notifications`: order confirmed email and SMS through console providers and a delivery log. Resend and the SMS sender plug in when those accounts exist (business tracks)
+- [x] Jobs table and cron: `/api/cron/tick` purges Slot holds, cancels unpaid online Orders and runs the jobs outbox (`vercel.json`, `CRON_SECRET`)
 
 **Batch 2.6 Accounts and the full journey** (W7). Stack: Better Auth, rate-limit store, Playwright. Skills: `security-review`, `playwright-cli`.
 

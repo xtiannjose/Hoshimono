@@ -29,6 +29,7 @@ export default defineConfig({
       BETTER_AUTH_URL: BASE_URL,
       NEXT_PUBLIC_APP_URL: BASE_URL,
       E2E_MAILBOX: "1",
+      CRON_SECRET: "e2e-cron-secret",
     },
   },
 });
