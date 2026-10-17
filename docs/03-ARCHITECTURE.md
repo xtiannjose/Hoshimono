@@ -126,7 +126,7 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 - **Interface:** `PaymentProvider` with `createCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. Adapters for Xendit and PayMongo implement it; the active one is chosen by `PAYMENT_PROVIDER`.
 - **Webhooks** hit `/api/webhooks/[provider]`. The handler verifies the signature, records the raw event in `payment_events` with a unique constraint on the provider event id, then applies it. A duplicate event is acknowledged and ignored. The handler never trusts amounts from the browser return URL; the webhook (or a provider fetch) is the source of truth.
 - **Cash on delivery:** the Rider records collected cash at delivery; Dispatch reconciles per Rider per day.
-- **Weighed items:** where the method supports it (cards), authorise estimate plus 10% and capture the final amount after picking. Wallets such as GCash generally cannot hold funds, so charge the estimate and refund any difference once the final weight is entered. Picker tolerance is plus or minus 10% of ordered weight; a heavier pick within tolerance is absorbed by Sariwa. **Open decision:** confirm provider capabilities in Phase 3 and revise this paragraph.
+- **Weighed items:** where the method supports it (cards), authorise estimate plus 10% and capture the final amount after picking. Wallets such as GCash generally cannot hold funds, so charge the estimate and refund any difference once the final weight is entered. Picker tolerance is plus or minus 10% of ordered weight; a heavier pick within tolerance is absorbed by Hoshimono. **Open decision:** confirm provider capabilities in Phase 3 and revise this paragraph.
 - **Refunds** always go through `payments.refund`, produce a ledger row, and notify the Customer.
 - Card data never touches our servers; use hosted checkout or provider-hosted fields.
 
@@ -176,4 +176,4 @@ Environments: **local** (dev DB branch), **preview** (per pull request, own DB b
 - Microservices, Kubernetes, event buses, GraphQL, a headless commerce platform. Each solves a problem we do not have.
 - A custom payment form. Hosted checkout keeps card data out of scope.
 - Real-time everywhere. Order status updates by polling or server-sent events on the tracking page only.
-- A mobile app. The PWA covers MVP and V1.
+- A native mobile app. The PWA covers MVP and V1. If one is built later it will be Flutter on a versioned JSON API; the frozen plan is in [concepts/flutter-mobile](concepts/flutter-mobile/README.md).

@@ -32,3 +32,5 @@ Thumbs.db
 *.tsbuildinfo
 dist/
 .vercel/
+# Playwright CLI output (may contain credentials)
+.playwright-cli/

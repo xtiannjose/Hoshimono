@@ -1,5 +1,7 @@
 # Storefront mockup
 
+> **Superseded on 2026-10-17 by [mockup v2](../mockup-v2/README.md)** (design system v0.2). This v1 mockup follows design system v0.1 and is kept for reference only.
+
 A clickable design canvas of the Sariwa storefront: six screens built to the rules in [05-DESIGN-SYSTEM.md](../05-DESIGN-SYSTEM.md).
 
 **View it:** https://claude.ai/artifact/VYLAZvNwc5vQHBB2hYZmPJ (private to the owner's Claude account; use Share on that page to give others access).

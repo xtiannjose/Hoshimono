@@ -46,22 +46,22 @@ This folder already contains documents, and the Next.js scaffolder refuses to wr
 
 ```powershell
 cd C:\Users\xtian\Projects
-npx create-next-app@latest sariwa-scaffold --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --disable-git
+npx create-next-app@latest hoshimono-scaffold --typescript --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --disable-git
 ```
 
 Accept the defaults for any remaining prompts. Then merge it into the repo without overwriting our documents:
 
 ```powershell
-robocopy sariwa-scaffold sariwa /E /XD node_modules .next /XF README.md .gitignore
-Remove-Item -Recurse -Force sariwa-scaffold
-cd sariwa
+robocopy hoshimono-scaffold hoshimono /E /XD node_modules .next /XF README.md .gitignore
+Remove-Item -Recurse -Force hoshimono-scaffold
+cd hoshimono
 npm install
 npm run dev
 ```
 
 Open http://localhost:3000. You should see the default Next.js page. Stop the server (Ctrl+C).
 
-Delete any default content you will not use (`src/app/page.tsx` body, `public/*.svg`). Keep `src/app/layout.tsx`; it already loads Geist through `next/font`.
+Delete any default content you will not use (`src/app/page.tsx` body, `public/*.svg`). Keep `src/app/layout.tsx`, but swap its default Geist fonts for Epilogue and Plus Jakarta Sans ([05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) section 4).
 
 ## 4. Install the libraries
 
@@ -102,7 +102,7 @@ Fill `.env.local`. Never commit it.
 | Variable | Meaning | Where it comes from |
 |---|---|---|
 | `NEXT_PUBLIC_APP_URL` | Public base URL | `http://localhost:3000` locally |
-| `NEXT_PUBLIC_BRAND_NAME` | Display name | Defaults to Sariwa |
+| `NEXT_PUBLIC_BRAND_NAME` | Display name | Defaults to Hoshimono |
 | `DATABASE_URL` | Pooled Postgres URL used by the app | Neon dashboard, pooled connection |
 | `DIRECT_URL` | Direct Postgres URL used by migrations | Neon dashboard, direct connection |
 | `BETTER_AUTH_SECRET` | Session signing secret | `openssl rand -base64 32` (Git Bash) |
@@ -132,7 +132,7 @@ npx prisma studio
 
 4. Enable extensions in the first migration: `CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;`.
 
-Local Postgres alternative: `docker run --name sariwa-db -e POSTGRES_PASSWORD=dev -p 5432:5432 -d postgres:17`, then point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5432/postgres`.
+Local Postgres alternative: `docker run --name hoshimono-db -e POSTGRES_PASSWORD=dev -p 5432:5432 -d postgres:17`, then point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5432/postgres`.
 
 ## 7. Scripts to define in `package.json`
 
@@ -185,7 +185,7 @@ Phase 0 is only done when all of these pass:
 |---|---|
 | `npm.ps1 cannot be loaded` | Run the `Set-ExecutionPolicy` line in section 1, or use Git Bash |
 | `EPERM` or locked files in `.next` | Stop the dev server and antivirus scan on the project folder; delete `.next` |
-| `create-next-app` says the directory is not empty | Scaffold into `sariwa-scaffold` as shown, do not scaffold in place |
+| `create-next-app` says the directory is not empty | Scaffold into `hoshimono-scaffold` as shown, do not scaffold in place |
 | Port 3000 in use | `npx kill-port 3000` or `npm run dev -- -p 3001` |
 | Prisma cannot connect | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app |
 | CRLF warnings from Git | Section 1 `core.autocrlf input`; add `.gitattributes` with `* text=auto eol=lf` |

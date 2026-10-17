@@ -1,14 +1,14 @@
-# Sariwa
+# Hoshimono
 
 Online supermarket for Metro Manila households: browse 5,000+ groceries, fill a cart, pick a delivery slot, pay with GCash, card or cash on delivery, and get fresh produce from a local fulfilment hub the same day.
 
-"Sariwa" is Filipino for "fresh". It is a **working name**; the brand lives in one config file (`src/config/brand.ts`, created in Phase 0) so renaming is a five-minute job.
+**Hoshimono** is the brand name, confirmed on 2026-10-17; it replaced the working name "Sariwa". The brand lives in one config file (`src/config/brand.ts`, created in Phase 0), so changing it later stays a five-minute job.
 
 > **Status:** planning complete, code not started. Mockup and all foundation documents exist. Next step is Phase 0 in [docs/07-ROADMAP.md](docs/07-ROADMAP.md).
 
 ## Why this exists
 
-[BuiltaMart](https://builtamart.com) proved the model: a premium e-grocer running from a single fulfilment hub with a flat delivery fee, own website plus aggregator channels. Sariwa is our own version of that idea, built on our tooling, with a better cart experience (recipe-to-cart, substitution control, weighed-item price holds). The full teardown is in [docs/02-RESEARCH-BUILTAMART.md](docs/02-RESEARCH-BUILTAMART.md).
+[BuiltaMart](https://builtamart.com) proved the model: a premium e-grocer running from a single fulfilment hub with a flat delivery fee, own website plus aggregator channels. Hoshimono is our own version of that idea, built on our tooling, with a better cart experience (recipe-to-cart, substitution control, weighed-item price holds). The full teardown is in [docs/02-RESEARCH-BUILTAMART.md](docs/02-RESEARCH-BUILTAMART.md).
 
 ## Assumptions to confirm
 
@@ -28,13 +28,14 @@ These shaped every document. Change them in one place ([docs/01-PRD.md](docs/01-
 | Layer | Choice | Decision record |
 |---|---|---|
 | App | Next.js (App Router), TypeScript, one deployable | [ADR 0001](docs/adr/0001-modular-monolith-nextjs.md) |
-| UI | Tailwind CSS v4, shadcn/ui (customised), Motion, Phosphor icons | [docs/05-DESIGN-SYSTEM.md](docs/05-DESIGN-SYSTEM.md) |
+| UI | Tailwind CSS v4, shadcn/ui (customised), Motion, Phosphor icons, Epilogue + Plus Jakarta Sans | [docs/05-DESIGN-SYSTEM.md](docs/05-DESIGN-SYSTEM.md) |
 | Data | PostgreSQL + Prisma | [ADR 0004](docs/adr/0004-postgres-prisma.md) |
 | Money | Integer centavos, never floats | [ADR 0002](docs/adr/0002-money-as-integer-centavos.md) |
 | Payments | Xendit or PayMongo behind a `PaymentProvider` interface | [ADR 0003](docs/adr/0003-payment-provider-interface.md) |
 | Auth | Email/phone OTP + Google, via Better Auth | [docs/03-ARCHITECTURE.md](docs/03-ARCHITECTURE.md) |
 | Tests | Vitest (unit/integration), Playwright (end to end) | [docs/03-ARCHITECTURE.md](docs/03-ARCHITECTURE.md) |
 | Hosting | Vercel + managed Postgres (Singapore region) | [docs/06-SETUP.md](docs/06-SETUP.md) |
+| Mobile | Installable web app (PWA) in Phase 5; a native Flutter app is a frozen future concept | [docs/concepts/flutter-mobile/](docs/concepts/flutter-mobile/README.md) |
 
 ## Document map
 
@@ -53,12 +54,13 @@ Read in this order the first time.
 | - | [GLOSSARY.md](GLOSSARY.md) | The exact words we use for domain concepts. |
 | - | [CLAUDE.md](CLAUDE.md) | Instructions for AI agents working in this repo. |
 | - | [docs/adr/](docs/adr/) | Architecture decisions that are hard to reverse. |
-| - | [docs/mockup/](docs/mockup/README.md) | Storefront mockup and how to view it. |
+| - | [docs/mockup-v2/](docs/mockup-v2/README.md) | Storefront mockup (v2, current) and how to view it. v1 is in [docs/mockup/](docs/mockup/README.md). |
+| - | [docs/concepts/](docs/concepts/) | Frozen concepts kept for reference: design directions v3, v4, v5 and the Flutter app plan. Read only. |
 
 ## Planned repository layout
 
 ```
-sariwa/
+hoshimono/
   src/
     app/                 Next.js routes (storefront, account, checkout, admin, api)
     modules/             Business logic, one folder per domain (catalog, cart, ...)
