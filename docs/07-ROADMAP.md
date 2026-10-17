@@ -138,9 +138,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 1.4 Admin catalogue** (W3 to W4). Stack: TanStack Table, React Hook Form + Zod, object storage + CDN. Skills: `anthropic-skills:xlsx` for the import template, `tdd` for CSV validation.
 
-- [ ] Admin: Product list, create/edit, image upload, status, bulk CSV import/export with validation report
-- [ ] Admin: Category tree editor
-- [ ] Image pipeline: upload, convert to WebP/AVIF, sizes, CDN
+- [x] Admin: Product list, create/edit, image upload, status, bulk CSV import/export with validation report (plain server-rendered table instead of TanStack Table; react-hook-form not needed)
+- [x] Admin: Category tree editor
+- [x] Image pipeline: upload, convert to WebP/AVIF, sizes, CDN (1200 px WebP master, next/image serves AVIF/WebP sizes; storage is local disk behind `MediaStore` until the R2 account exists)
 
 **Batch 1.5 SEO and performance** (W4). Stack: Next.js metadata, sitemaps, Lighthouse CI, axe-core. Skills: `playwright-cli`, `run`.
 

@@ -55,8 +55,9 @@ export function QuantityStepper({
       {/* Count bump confirms the change (motion table, docs/05 section 7). */}
       <motion.output
         key={value}
-        initial={reduce ? false : { scale: 1 }}
-        animate={reduce ? undefined : { scale: [1, 1.18, 1] }}
+        // Springs take two keyframes: mount enlarged, settle to normal size.
+        initial={reduce ? false : { scale: 1.18 }}
+        animate={{ scale: 1 }}
         transition={SNAP}
         className="font-display text-center text-lg font-semibold tabular-nums"
       >

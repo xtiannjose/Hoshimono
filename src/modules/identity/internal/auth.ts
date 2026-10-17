@@ -5,6 +5,8 @@ import { magicLink } from "better-auth/plugins/magic-link";
 
 import { db } from "@/lib/db";
 
+import { rememberLink } from "./dev-mailbox";
+
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
   user: { modelName: "authUser" },
@@ -20,6 +22,7 @@ export const auth = betterAuth({
           throw new Error("Email delivery is not configured");
         }
         console.info(`[dev] Sign-in link for ${email}: ${url}`);
+        rememberLink(email, url);
       },
     }),
     nextCookies(), // keep last: lets Server Actions set auth cookies

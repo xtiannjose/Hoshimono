@@ -4,6 +4,7 @@
 import { createHash } from "node:crypto";
 
 import type { PrismaClient } from "../src/generated/prisma/client";
+import { productSlug as slugForProduct, slugify } from "../src/lib/slug";
 import type {
   PackSizeUnit,
   StaffRole,
@@ -16,13 +17,6 @@ export function seedId(key: string): string {
   const h = createHash("sha256").update(`hoshimono:${key}`).digest("hex");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20, 32)}`;
 }
-
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/['’!.]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 
 // ---------- Categories: 9 top level, 32 children ----------
 
@@ -422,9 +416,7 @@ function manilaToday(now: Date): { y: number; m: number; d: number } {
   };
 }
 
-export function productSlug(brand: string | null, name: string): string {
-  return slugify(brand ? `${brand} ${name}` : name);
-}
+export const productSlug = slugForProduct;
 
 // ---------- Seed ----------
 

@@ -1,28 +1,52 @@
-import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
-import { Skeleton } from "@/components/ui/skeleton";
 import { requireStaff } from "@/modules/identity";
 
-export const metadata: Metadata = { title: "Admin" };
+import { AdminSkeleton } from "./staff-gate";
 
-// Placeholder until Batch 1.4 builds the admin catalogue.
-export default function AdminPage() {
+export default function AdminHome() {
   return (
-    <section className="wrap py-14 md:py-20">
-      <h1 className="type-h1">Admin</h1>
-      <Suspense fallback={<Skeleton className="mt-6 h-6 w-64" />}>
-        <StaffGreeting />
-      </Suspense>
-    </section>
+    <Suspense fallback={<AdminSkeleton />}>
+      <Home />
+    </Suspense>
   );
 }
 
-async function StaffGreeting() {
-  const staff = await requireStaff("admin", "/admin");
+async function Home() {
+  const staff = await requireStaff("merchandiser", "/admin");
   return (
-    <p className="mt-6">
-      Signed in as {staff.name} ({staff.role})
-    </p>
+    <section className="grid max-w-xl gap-4">
+      <h1 className="type-h2">Admin</h1>
+      <p>
+        Signed in as {staff.name} ({staff.role})
+      </p>
+      <ul className="grid gap-2">
+        <li>
+          <Link
+            href="/admin/products"
+            className="font-semibold underline underline-offset-4"
+          >
+            Products: edit, add photos, change status
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/categories"
+            className="font-semibold underline underline-offset-4"
+          >
+            Categories: rename, move, reorder
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/admin/import"
+            className="font-semibold underline underline-offset-4"
+          >
+            Import and export Products as CSV
+          </Link>
+        </li>
+      </ul>
+    </section>
   );
 }
