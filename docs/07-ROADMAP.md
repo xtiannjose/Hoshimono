@@ -102,9 +102,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 0.3 Data and money** (days 3 and 4). Stack: Postgres, Prisma. Skills: `tdd`, `codebase-design`.
 
-- [ ] Prisma schema v0 from [04-DATA-MODEL.md](04-DATA-MODEL.md); first migration with `pg_trgm`, `unaccent`
-- [ ] Seed script (deterministic): 1 Hub, 3 Zones, ~40 categories, ~150 Products, staff and test Customers
-- [ ] `lib/money.ts` with tests (parse, format, add, percentage) per [ADR 0002](adr/0002-money-as-integer-centavos.md)
+- [x] Prisma schema v0 from [04-DATA-MODEL.md](04-DATA-MODEL.md); first migration with `pg_trgm`, `unaccent`
+- [x] Seed script (deterministic): 1 Hub, 3 Zones, ~40 categories, ~150 Products, staff and test Customers
+- [x] `lib/money.ts` with tests (parse, format, add, percentage) per [ADR 0002](adr/0002-money-as-integer-centavos.md)
 
 **Batch 0.4 Identity, health and deploy** (days 4 and 5). Stack: Better Auth, Vercel, Sentry, GitHub Actions. Skills: `run`, `playwright-cli`.
 

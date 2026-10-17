@@ -129,7 +129,7 @@ Add the same variables to Vercel (Project Settings, Environment Variables), usin
 
 1. In Neon create a project in `ap-southeast-1`. Create branches `dev` and `test` from `main`.
 2. Put the `dev` branch URLs in `.env.local`. Put the `test` branch URL in `.env.test` (git-ignored) for Vitest.
-3. Initialise Prisma (`npx prisma init`), write `prisma/schema.prisma` from [04-DATA-MODEL.md](04-DATA-MODEL.md), then:
+3. Prisma 7 is set up already (`prisma/schema.prisma`, `prisma.config.ts`, client generated into `src/generated/prisma` on `npm install`). Keep `prisma` and `@prisma/client` on the same version: in October 2026 npm tagged a Prisma 8 release candidate as `latest` for the CLI only, so always install with `prisma@^7`. `prisma.config.ts` loads `.env.local` itself. Then:
 
 ```powershell
 npx prisma migrate dev --name init
@@ -137,7 +137,8 @@ npx prisma db seed
 npx prisma studio
 ```
 
-4. Enable extensions in the first migration: `CREATE EXTENSION IF NOT EXISTS pg_trgm; CREATE EXTENSION IF NOT EXISTS unaccent;`.
+4. The first migration enables `pg_trgm` and `unaccent` and adds the CHECK constraints, partial unique indexes and generated search column by hand. After any schema change, `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` must print an empty migration.
+5. `npm test` runs database tests against the `hoshimono_test` database from `.env.test` (Docker must be running). The tests refuse any database whose name does not end in `_test`. Prisma blocks `migrate reset` from AI agents unless you consent in chat.
 
 Local Postgres alternative (used while the Neon account is deferred). Port 5433 avoids clashing with a native Postgres on 5432, and the volume keeps data across container rebuilds:
 
