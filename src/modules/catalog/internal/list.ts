@@ -64,6 +64,24 @@ export function clampInt(
   return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
+const INT4_MAX = 2_147_483_647;
+const MAX_FILTER_VALUES = 50;
+const MAX_FILTER_LENGTH = 100;
+
+/** A price bound from the URL: ignored unless it is a real number. */
+function priceBound(value: number | undefined): number | undefined {
+  return value !== undefined && Number.isFinite(value)
+    ? clampInt(value, 0, 0, INT4_MAX)
+    : undefined;
+}
+
+/** Filter values from the URL, capped so a crafted link cannot bloat the query. */
+function bounded(values: string[] | undefined): string[] {
+  return (values ?? [])
+    .slice(0, MAX_FILTER_VALUES)
+    .map((v) => v.slice(0, MAX_FILTER_LENGTH));
+}
+
 /** Active Products for a Category page, or null when the Category does not exist. */
 export async function listProducts(
   input: ListProductsInput
@@ -84,19 +102,23 @@ export async function listProducts(
       ? [Prisma.sql`p.category_id = ANY(${categoryIds}::uuid[])`]
       : []),
   ];
+  const brandFilter = bounded(input.brands);
+  const dietaryTags = bounded(input.dietaryTags);
+  const minPrice = priceBound(input.minPriceCents);
+  const maxPrice = priceBound(input.maxPriceCents);
   const filters = [
     ...base,
-    ...(input.brands?.length
-      ? [Prisma.sql`p.brand = ANY(${input.brands}::text[])`]
+    ...(brandFilter.length
+      ? [Prisma.sql`p.brand = ANY(${brandFilter}::text[])`]
       : []),
-    ...(input.minPriceCents !== undefined
-      ? [Prisma.sql`p.price_cents >= ${Math.trunc(input.minPriceCents)}`]
+    ...(minPrice !== undefined
+      ? [Prisma.sql`p.price_cents >= ${minPrice}`]
       : []),
-    ...(input.maxPriceCents !== undefined
-      ? [Prisma.sql`p.price_cents <= ${Math.trunc(input.maxPriceCents)}`]
+    ...(maxPrice !== undefined
+      ? [Prisma.sql`p.price_cents <= ${maxPrice}`]
       : []),
-    ...(input.dietaryTags?.length
-      ? [Prisma.sql`p.dietary_tags @> ${input.dietaryTags}::text[]`]
+    ...(dietaryTags.length
+      ? [Prisma.sql`p.dietary_tags @> ${dietaryTags}::text[]`]
       : []),
   ];
   const where = Prisma.join(filters, " AND ");

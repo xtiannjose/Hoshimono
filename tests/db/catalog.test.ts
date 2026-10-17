@@ -336,6 +336,82 @@ describe("searchProducts", () => {
   });
 });
 
+// Cases found by the Batch 1.1 review workflow (correctness, spec and
+// search-quality reviewers, each confirmed by a skeptic).
+describe("searchProducts: review cases", () => {
+  const names = async (q: string) =>
+    (await searchProducts(q, { limit: 96 })).items.map((p) => p.name);
+  const MEAT = /Pork|Beef|Chicken|Liempo|Kasim/;
+
+  it("a two-topic parent Category does not pull in the other topic", async () => {
+    for (const q of ["fish", "isda"]) {
+      const found = await names(q);
+      expect(found, q).toEqual(
+        expect.arrayContaining(["Tilapia", "Galunggong"])
+      );
+      expect(
+        found.filter((n) => MEAT.test(n)),
+        q
+      ).toEqual([]);
+    }
+    const eggs = await names("egg");
+    expect(eggs.filter((n) => /Milk|Cheese|Yogurt|Butter/.test(n))).toEqual([]);
+    const fruit = await names("fruit");
+    expect(fruit).not.toContain("Ampalaya");
+    expect(fruit).toContain("Calamansi");
+  });
+
+  it("a parent Category still finds its Products when no child is meant", async () => {
+    expect(await names("meat")).toEqual(
+      expect.arrayContaining(["Pork Belly (Liempo)", "Ground Beef"])
+    );
+    expect((await names("dairy")).length).toBe(16);
+  });
+
+  it("ranks whole-word matches above prefix-only matches", async () => {
+    expect((await names("egg"))[0]).toMatch(/Eggs/);
+    expect(await names("itlog")).not.toContain("Eggplant");
+    expect(await names("asin")).toEqual(["Iodized Salt"]);
+  });
+
+  it("lets query words span the Product and its Category", async () => {
+    expect(await names("canned tuna")).toContain("Tuna Flakes in Oil");
+    expect(await names("frozen chicken")).toContain("Chicken Nuggets");
+  });
+
+  it("matches a partly typed Filipino word", async () => {
+    expect(await names("gata")).toContain("Fresh Milk");
+    expect(await names("kamati")).toContain("Tomatoes");
+  });
+
+  it("prefers the Filipino word when a typo is equally close to two words", async () => {
+    const result = await searchProducts("manko");
+    expect(result.correctedQuery).toBe("manok");
+    expect(result.items.map((p) => p.name)).toContain("Whole Chicken");
+  });
+
+  it("ignores pack sizes typed into the query", async () => {
+    expect(await names("rice 5kg")).toContain("Jasmine Rice");
+    expect(await names("12 pcs eggs")).toContain("Large Eggs, 12 pack");
+    expect(await names("1l milk")).toContain("Fresh Milk");
+  });
+
+  it("joins words typed apart", async () => {
+    expect(await names("pan de sal")).toContain("Pandesal, 10 pieces");
+  });
+
+  it("does not turn short real words into other Products", async () => {
+    expect((await searchProducts("ham")).total).toBe(0);
+    expect((await searchProducts("tuyo")).total).toBe(0);
+  });
+
+  it("uses trigram matching only when every word matches", async () => {
+    expect((await searchProducts("kong xyzzy")).total).toBe(0);
+    // Brand counts too: "nescafee" is close to the Nescafe brand.
+    expect((await names("nescafee"))[0]).toMatch(/Coffee/);
+  });
+});
+
 describe("suggestSearch", () => {
   it("suggests Products, brands and Categories while typing", async () => {
     const ala = await suggestSearch("ala");
@@ -357,5 +433,15 @@ describe("suggestSearch", () => {
       brands: [],
       categories: [],
     });
+  });
+});
+
+describe("listProducts: review cases", () => {
+  it("ignores price bounds that are not real numbers and never throws", async () => {
+    expect((await listProducts({ maxPriceCents: Number.NaN }))?.total).toBe(
+      155
+    );
+    expect((await listProducts({ minPriceCents: Infinity }))?.total).toBe(155);
+    expect((await listProducts({ maxPriceCents: 1e15 }))?.total).toBe(155);
   });
 });
