@@ -7,7 +7,8 @@ import {
   type CartContext,
   type CartOwner,
 } from "@/modules/cart";
-import { getDefaultHubId } from "@/modules/delivery";
+import { getDefaultAddress } from "@/modules/customers";
+import { getDefaultHubId, resolveZone } from "@/modules/delivery";
 import { currentCustomer } from "@/modules/identity";
 
 // The guest Cart cookie holds a random token; the database keeps only its
@@ -50,9 +51,18 @@ export async function writeCartOwner(): Promise<CartOwner> {
   return { guestToken };
 }
 
-/** Hub and Zone for pricing and stock. */
-export async function cartContext(): Promise<CartContext> {
-  // shortcut: no Zone until the Customer has an Address (Batch 2.3), so the
-  // delivery fee shows as "at checkout".
+/**
+ * Hub and Zone for pricing and stock: the Zone of a signed-in Customer's
+ * default address, else the default Hub with delivery shown "at checkout".
+ */
+export async function cartContext(
+  owner: CartOwner | null
+): Promise<CartContext> {
+  const address =
+    owner && "customerId" in owner
+      ? await getDefaultAddress(owner.customerId)
+      : null;
+  const zone = address ? await resolveZone(address) : null;
+  if (zone) return { hubId: zone.hubId, zone: zone.fees };
   return { hubId: await getDefaultHubId(), zone: null };
 }

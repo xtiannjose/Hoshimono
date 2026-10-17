@@ -9,6 +9,8 @@ const ROUTES = [
   "/cart",
   "/sign-in",
   "/account",
+  "/account/addresses",
+  "/account/addresses/new",
   "/admin",
 ];
 

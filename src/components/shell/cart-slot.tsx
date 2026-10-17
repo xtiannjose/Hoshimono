@@ -4,7 +4,8 @@ import { getCart } from "@/modules/cart";
 
 /** The header's Cart, read per request inside a Suspense boundary. */
 export async function CartSlot() {
-  const view = await getCart(await readCartOwner(), await cartContext());
+  const owner = await readCartOwner();
+  const view = await getCart(owner, await cartContext(owner));
   return (
     <>
       <CartSync view={view} />

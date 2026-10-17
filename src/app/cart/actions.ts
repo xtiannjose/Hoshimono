@@ -22,7 +22,8 @@ export type CartResult = { cart: CartView; message?: string };
 const productId = z.guid();
 
 async function currentCart(): Promise<CartView> {
-  return getCart(await readCartOwner(), await cartContext());
+  const owner = await readCartOwner();
+  return getCart(owner, await cartContext(owner));
 }
 
 export async function loadCart(): Promise<CartView> {
@@ -40,7 +41,7 @@ export async function setQuantity(
     return { cart: await currentCart(), message: "That did not work." };
   }
   const owner = await writeCartOwner();
-  const context = await cartContext();
+  const context = await cartContext(owner);
   const result = await setLineQuantity(
     owner,
     input.data.id,
@@ -77,7 +78,7 @@ export async function chooseSubstitution(
   const owner = await writeCartOwner();
   const saved =
     input.success && (await setSubstitution(owner, input.data.id, input.data));
-  const cart = await getCart(owner, await cartContext());
+  const cart = await getCart(owner, await cartContext(owner));
   return saved ? { cart } : { cart, message: "Please pick an item." };
 }
 
@@ -88,7 +89,7 @@ export async function saveNote(id: string, note: string): Promise<CartResult> {
   const owner = await writeCartOwner();
   const saved =
     input.success && (await setLineNote(owner, input.data.id, input.data.note));
-  const cart = await getCart(owner, await cartContext());
+  const cart = await getCart(owner, await cartContext(owner));
   return saved
     ? { cart }
     : { cart, message: `Notes can be up to ${MAX_NOTE_LENGTH} characters.` };

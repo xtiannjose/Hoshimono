@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,12 @@ async function AccountSummary() {
       <p>
         Signed in as <b>{customer.email ?? customer.name}</b>
       </p>
+      <Link
+        href="/account/addresses"
+        className="font-semibold underline underline-offset-[3px]"
+      >
+        Your addresses
+      </Link>
       <form action={signOutAction}>
         <Button type="submit" variant="secondary">
           Sign out

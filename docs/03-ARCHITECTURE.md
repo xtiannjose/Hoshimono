@@ -55,6 +55,7 @@ app routes / server actions
         |
   orders --> payments, delivery, inventory, pricing, notifications
   cart   --> pricing, catalog, inventory (read-only availability)
+  customers --> delivery (resolveZone when saving an Address)
   fulfilment --> orders, inventory
   content --> catalog, cart
   everything --> lib (db, money, dates, logger)
@@ -137,6 +138,7 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 - `stock_levels(product_id, hub_id, on_hand, reserved)`. Available = `on_hand - reserved`. All changes go through `inventory`, which writes an append-only `stock_movements` row (reason: receipt, reserve, release, pick, shrink, adjustment).
 - Reservation, release and Slot booking are single atomic SQL updates with a `WHERE` guard, not read-then-write in application code. This avoids overselling under concurrent checkouts.
 - Slot hold for 10 minutes uses a `slot_holds` row with `expires_at`; a cron job purges expired holds each minute.
+- As built (Batch 2.3): places left in a Slot are `capacity - booked - live holds of other carts`. `holdSlot` and `bookSlot` lock the Slot row (`SELECT ... FOR UPDATE`) before counting, so the last place goes to exactly one cart. A Slot stops taking new holds 90 minutes before it starts (`SLOT_CUTOFF_MINUTES`, an assumption until operations set it); a cart holding a place may still book until the Slot starts. `bookSlot` runs inside the caller's Order transaction.
 - Low stock shows as "Only a few left" below a per-Product threshold; the storefront never reveals exact counts.
 
 ## 10. Search

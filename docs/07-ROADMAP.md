@@ -165,8 +165,8 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.3 Delivery and addresses** (W6). Stack: atomic SQL updates, maps and geocoding. Skills: `tdd`, `codebase-design`.
 
-- [ ] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
-- [ ] Address book with map pin, landmark, Zone coverage check
+- [x] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
+- [x] Address book with landmark and Zone coverage check (`customers` module, `/account/addresses`). Map pin deferred until a maps provider is chosen; Zones match by city and barangay name
 
 **Batch 2.4 Inventory and orders** (W6). Stack: Postgres transactions, guarded `UPDATE ... WHERE`. Skills: `tdd`.
 

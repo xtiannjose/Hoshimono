@@ -24,7 +24,8 @@ export default function CartPage() {
 }
 
 async function CurrentCart() {
-  const view = await getCart(await readCartOwner(), await cartContext());
+  const owner = await readCartOwner();
+  const view = await getCart(owner, await cartContext(owner));
   return (
     <>
       <CartSync view={view} />
