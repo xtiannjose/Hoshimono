@@ -8,8 +8,16 @@ import { testDatabaseUrl } from "./helpers";
 export default function setup() {
   config({ path: ".env.test", override: true, quiet: true });
   const url = testDatabaseUrl();
-  execSync("npx prisma migrate deploy", {
-    stdio: "pipe",
-    env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },
-  });
+  try {
+    execSync("npx prisma migrate deploy", {
+      stdio: "pipe",
+      env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },
+    });
+  } catch (error) {
+    const stderr = (error as { stderr?: Buffer }).stderr?.toString() ?? "";
+    throw new Error(
+      `Could not migrate the test database. Is Docker running ` +
+        `("docker start hoshimono-db")?\n${stderr.trim()}`
+    );
+  }
 }

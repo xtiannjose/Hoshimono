@@ -1,30 +1,11 @@
 #!/bin/bash
-# Blocks destructive git commands from agent sessions. Parses the hook JSON
-# with node (jq is not installed on the dev machine); fails closed if node is missing.
+# Hook entry point (the registered command path never changes). The rules live
+# in block-dangerous-git.mjs. Fails closed: any error, or no node, blocks.
 
-INPUT=$(cat)
-COMMAND=$(printf '%s' "$INPUT" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(String(JSON.parse(s).tool_input.command||""))}catch{process.exit(3)}})') || {
-  echo "BLOCKED: could not parse hook input, refusing to run." >&2
+if ! command -v node >/dev/null 2>&1; then
+  echo "BLOCKED: node is not available to check this command." >&2
   exit 2
-}
+fi
 
-DANGEROUS_PATTERNS=(
-  "git push"
-  "git reset --hard"
-  "git clean -fd"
-  "git clean -f"
-  "git branch -D"
-  "git checkout \."
-  "git restore \."
-  "push --force"
-  "reset --hard"
-)
-
-for pattern in "${DANGEROUS_PATTERNS[@]}"; do
-  if echo "$COMMAND" | grep -qE "$pattern"; then
-    echo "BLOCKED: '$COMMAND' matches dangerous pattern '$pattern'. The user has prevented you from doing this." >&2
-    exit 2
-  fi
-done
-
-exit 0
+node "$(dirname "$0")/block-dangerous-git.mjs" && exit 0
+exit 2
