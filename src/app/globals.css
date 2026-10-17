@@ -1,26 +1,272 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+/* Dark mode: next-themes always sets data-theme on <html>. The media query
+   below only covers a first paint before that runs, or no JavaScript. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------- Tokens: docs/05-DESIGN-SYSTEM.md section 3 ---------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  color-scheme: light;
+  --bg: #f6f8ee;
+  --surface: #fcfdf7;
+  --surface-2: #ebf0dc;
+  --border: #dce3cb;
+  --border-strong: #7e8f6e;
+  --ink: #10261a;
+  --muted: #4b5a4c;
+  --accent: #c9e84e;
+  --accent-hover: #badb38;
+  --accent-soft: #e4f2a8;
+  --on-accent: #10261a;
+  --btn-bg: #10261a;
+  --btn-bg-hover: #1f3d2b;
+  --btn-fg: #c9e84e;
+  --hl: #c9e84e;
+  --sale: #c4301b;
+  --sale-soft: #fbe3dd;
+  --warn: #7a4e00;
+  --warn-soft: #fff1c9;
+  --err: #b3261e;
+  --ring: #10261a;
+  --scrim: rgb(16 38 26 / 0.48);
+  --float-shadow:
+    0 1px 2px rgb(16 38 26 / 0.06), 0 12px 32px rgb(16 38 26 / 0.14);
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* shadcn semantic names, mapped onto our tokens. `muted` is a quiet fill
+     here (shadcn's meaning); our secondary-text colour is `muted-foreground`. */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--btn-bg);
+  --primary-foreground: var(--btn-fg);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--on-accent);
+  --destructive: var(--err);
+  --input: var(--border-strong);
+  --radius: 0.875rem;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0b1610;
+    --surface: #122019;
+    --surface-2: #1a2c22;
+    --border: #253a2e;
+    --border-strong: #6f8a78;
+    --ink: #edf3e3;
+    --muted: #a6b8a5;
+    --accent: #d3ee62;
+    --accent-hover: #e0f57f;
+    --accent-soft: #2c3a10;
+    --on-accent: #0b1610;
+    --btn-bg: #d3ee62;
+    --btn-bg-hover: #e0f57f;
+    --btn-fg: #0b1610;
+    --hl: #3f5414;
+    --sale: #ff8a70;
+    --sale-soft: #3b1d16;
+    --warn: #f2c063;
+    --warn-soft: #3a2e10;
+    --err: #ff8f85;
+    --ring: #d3ee62;
+    --scrim: rgb(0 0 0 / 0.6);
+    --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0b1610;
+  --surface: #122019;
+  --surface-2: #1a2c22;
+  --border: #253a2e;
+  --border-strong: #6f8a78;
+  --ink: #edf3e3;
+  --muted: #a6b8a5;
+  --accent: #d3ee62;
+  --accent-hover: #e0f57f;
+  --accent-soft: #2c3a10;
+  --on-accent: #0b1610;
+  --btn-bg: #d3ee62;
+  --btn-bg-hover: #e0f57f;
+  --btn-fg: #0b1610;
+  --hl: #3f5414;
+  --sale: #ff8a70;
+  --sale-soft: #3b1d16;
+  --warn: #f2c063;
+  --warn-soft: #3a2e10;
+  --err: #ff8f85;
+  --ring: #d3ee62;
+  --scrim: rgb(0 0 0 / 0.6);
+  --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
+}
+
+/* ---------- Tailwind v4 mapping: docs/05-DESIGN-SYSTEM.md section 12 ---------- */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ink: var(--ink);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-btn: var(--btn-bg);
+  --color-btn-hover: var(--btn-bg-hover);
+  --color-btn-fg: var(--btn-fg);
+  --color-hl: var(--hl);
+  --color-sale: var(--sale);
+  --color-sale-soft: var(--sale-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-err: var(--err);
+  --color-ring: var(--ring);
+  --color-scrim: var(--scrim);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+
+  /* One radius system: pill for things you press, 14px fields, 20px containers. */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-field: 14px;
+  --radius-card: 20px;
+  --radius-pill: 999px;
+
+  --shadow-float: var(--float-shadow);
+
+  --font-display:
+    var(--font-epilogue), var(--font-jakarta), system-ui, sans-serif;
+  --font-sans:
+    var(--font-jakarta), system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
+  --font-heading: var(--font-display);
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* ---------- Base ---------- */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-size: 16px;
+    line-height: 24px;
+  }
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+}
+
+/* ---------- Type scale: docs/05-DESIGN-SYSTEM.md section 4 ---------- */
+@utility type-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(44px, 5.2vw, 76px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+@utility type-h1 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 44px;
+  line-height: 48px;
+  letter-spacing: -0.035em;
+}
+@utility type-h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 38px;
+  letter-spacing: -0.035em;
+}
+@utility type-h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: -0.025em;
+}
+@utility type-lead {
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--muted);
+  max-width: 44ch;
+}
+@utility type-small {
+  font-size: 14px;
+  line-height: 20px;
+}
+@utility type-fine {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+/* Prices: Epilogue 600, tabular figures */
+@utility type-price {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Marker highlight behind one word of display type */
+@utility hl {
+  background: linear-gradient(
+    transparent 58%,
+    var(--hl) 58%,
+    var(--hl) 92%,
+    transparent 92%
+  );
+  padding: 0 0.04em;
+}
+
+/* Page width: 1280px content plus 24px gutters, 16px on mobile */
+@utility wrap {
+  width: 100%;
+  max-width: 1328px;
+  margin-inline: auto;
+  padding-inline: 16px;
+  @media (min-width: 768px) {
+    padding-inline: 24px;
+  }
 }

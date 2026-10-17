@@ -4,13 +4,13 @@ Goal: from this folder of documents to a running Next.js dev server with a conne
 
 ## 1. Prerequisites
 
-| Tool | Needed | Check |
-|---|---|---|
-| Node.js | Current LTS or newer (24.x on the dev machine) | `node -v` |
-| npm | Ships with Node (11.x on the dev machine) | `npm -v` |
-| Git | 2.40+ | `git --version` |
-| VS Code or Cursor | Recommended | |
-| Docker Desktop | Optional (local Postgres instead of a cloud branch) | `docker -v` |
+| Tool              | Needed                                              | Check           |
+| ----------------- | --------------------------------------------------- | --------------- |
+| Node.js           | Current LTS or newer (24.x on the dev machine)      | `node -v`       |
+| npm               | Ships with Node (11.x on the dev machine)           | `npm -v`        |
+| Git               | 2.40+                                               | `git --version` |
+| VS Code or Cursor | Recommended                                         |                 |
+| Docker Desktop    | Optional (local Postgres instead of a cloud branch) | `docker -v`     |
 
 Not needed: pnpm or yarn. This project uses `npm`.
 
@@ -27,18 +27,18 @@ The first line is repo-local so your other projects are untouched; the committed
 
 Create these up front; several take days to approve, so start the payment ones in Phase 0 even though code arrives in Phase 3.
 
-| Service | For | Phase | Notes |
-|---|---|---|---|
-| GitHub | Repo, CI, PRs | 0 | Private repository |
-| Vercel | Hosting, preview deployments | 0 | Connect to the GitHub repo |
-| Neon | Managed Postgres ([ADR 0005](adr/0005-neon-postgres-host.md)) | 0 | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
-| Google Cloud Console | OAuth sign-in, Maps/Places key | 0 and 2 | Restrict keys by HTTP referrer and API |
-| Resend | Transactional email | 2 | Verify your sending domain |
-| Semaphore (or Twilio) | SMS and OTP in the Philippines | 2 | Check sender-name registration lead time |
-| Xendit and/or PayMongo | Payments | 3 | Business verification (KYC) can take weeks; start early |
-| Sentry | Error tracking | 0 | Free tier is enough |
-| Cloudflare R2 or Cloudinary | Product image storage and CDN | 1 | R2 is S3-compatible and cheap; Cloudinary transforms on the fly |
-| Domain registrar | Production domain | 6 | Point DNS to Vercel |
+| Service                     | For                                                           | Phase   | Notes                                                                                                      |
+| --------------------------- | ------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| GitHub                      | Repo, CI, PRs                                                 | 0       | Private repository                                                                                         |
+| Vercel                      | Hosting, preview deployments                                  | 0       | Connect to the GitHub repo                                                                                 |
+| Neon                        | Managed Postgres ([ADR 0005](adr/0005-neon-postgres-host.md)) | 0       | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
+| Google Cloud Console        | OAuth sign-in, Maps/Places key                                | 0 and 2 | Restrict keys by HTTP referrer and API                                                                     |
+| Resend                      | Transactional email                                           | 2       | Verify your sending domain                                                                                 |
+| Semaphore (or Twilio)       | SMS and OTP in the Philippines                                | 2       | Check sender-name registration lead time                                                                   |
+| Xendit and/or PayMongo      | Payments                                                      | 3       | Business verification (KYC) can take weeks; start early                                                    |
+| Sentry                      | Error tracking                                                | 0       | Free tier is enough                                                                                        |
+| Cloudflare R2 or Cloudinary | Product image storage and CDN                                 | 1       | R2 is S3-compatible and cheap; Cloudinary transforms on the fly                                            |
+| Domain registrar            | Production domain                                             | 6       | Point DNS to Vercel                                                                                        |
 
 ## 3. Scaffold the app
 
@@ -70,13 +70,19 @@ Install by phase so the dependency list always matches what the code uses. Phase
 
 ```powershell
 # UI
-npx shadcn@latest init
+npx shadcn@latest init -t next -b radix -p nova --css-variables -y
+# then set "iconLibrary": "phosphor" in components.json BEFORE adding components
 npx shadcn@latest add button input label checkbox radio-group select textarea badge skeleton separator tabs accordion popover command dialog sheet drawer sonner form
 npm install motion @phosphor-icons/react
 
-# Data, validation, forms
-npm install @prisma/client zod react-hook-form @hookform/resolvers
+# Data
+npm install @prisma/client
 npm install -D prisma tsx
+
+# Forms and validation: install in Batch 1.4 (admin forms) when first used.
+# @hookform/resolvers currently conflicts with Zod 4 through an optional peer; resolve it then.
+# npm install zod react-hook-form @hookform/resolvers
+# The shadcn `form` item did not install in Batch 0.2; check for `form` or `field` in 1.4.
 
 # Auth
 npm install better-auth
@@ -100,22 +106,22 @@ Copy-Item .env.example .env.local
 
 Fill `.env.local`. Never commit it.
 
-| Variable | Meaning | Where it comes from |
-|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | Public base URL | `http://localhost:3000` locally |
-| `NEXT_PUBLIC_BRAND_NAME` | Display name | Defaults to Hoshimono |
-| `DATABASE_URL` | Pooled Postgres URL used by the app | Neon dashboard, pooled connection |
-| `DIRECT_URL` | Direct Postgres URL used by migrations | Neon dashboard, direct connection |
-| `BETTER_AUTH_SECRET` | Session signing secret | `openssl rand -base64 32` (Git Bash) |
-| `BETTER_AUTH_URL` | Auth base URL | Same as app URL |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google` |
-| `PAYMENT_PROVIDER` | `xendit` or `paymongo` | Decided in Phase 3 |
-| `XENDIT_*`, `PAYMONGO_*` | Provider keys and webhook secrets | Provider dashboards, **test mode keys only** until launch |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Email | Resend |
-| `SMS_PROVIDER`, `SEMAPHORE_API_KEY` | SMS | Semaphore |
-| `MEDIA_BUCKET`, `MEDIA_PUBLIC_URL` | Image storage | R2 or Cloudinary |
-| `GOOGLE_MAPS_API_KEY` | Address pin and autocomplete | Google Cloud |
-| `SENTRY_DSN`, `NEXT_PUBLIC_GA_ID` | Observability and analytics | Sentry, Google Analytics |
+| Variable                                   | Meaning                                | Where it comes from                                                                           |
+| ------------------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`                      | Public base URL                        | `http://localhost:3000` locally                                                               |
+| `NEXT_PUBLIC_BRAND_NAME`                   | Display name                           | Defaults to Hoshimono                                                                         |
+| `DATABASE_URL`                             | Pooled Postgres URL used by the app    | Neon dashboard, pooled connection                                                             |
+| `DIRECT_URL`                               | Direct Postgres URL used by migrations | Neon dashboard, direct connection                                                             |
+| `BETTER_AUTH_SECRET`                       | Session signing secret                 | `openssl rand -base64 32` (Git Bash)                                                          |
+| `BETTER_AUTH_URL`                          | Auth base URL                          | Same as app URL                                                                               |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in                         | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google` |
+| `PAYMENT_PROVIDER`                         | `xendit` or `paymongo`                 | Decided in Phase 3                                                                            |
+| `XENDIT_*`, `PAYMONGO_*`                   | Provider keys and webhook secrets      | Provider dashboards, **test mode keys only** until launch                                     |
+| `RESEND_API_KEY`, `EMAIL_FROM`             | Email                                  | Resend                                                                                        |
+| `SMS_PROVIDER`, `SEMAPHORE_API_KEY`        | SMS                                    | Semaphore                                                                                     |
+| `MEDIA_BUCKET`, `MEDIA_PUBLIC_URL`         | Image storage                          | R2 or Cloudinary                                                                              |
+| `GOOGLE_MAPS_API_KEY`                      | Address pin and autocomplete           | Google Cloud                                                                                  |
+| `SENTRY_DSN`, `NEXT_PUBLIC_GA_ID`          | Observability and analytics            | Sentry, Google Analytics                                                                      |
 
 Add the same variables to Vercel (Project Settings, Environment Variables), using separate values for Preview and Production.
 
@@ -144,22 +150,22 @@ Point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:54
 
 ## 7. Scripts to define in `package.json`
 
-| Script | Command | Purpose |
-|---|---|---|
-| `dev` | `next dev` | Dev server |
-| `build` | `next build` | Production build |
-| `start` | `next start` | Run the build |
-| `lint` | `eslint .` | Lint |
-| `typecheck` | `tsc --noEmit` | Types |
-| `format` | `prettier --write .` | Format |
-| `test` | `vitest run` | Unit and integration tests |
-| `test:watch` | `vitest` | Watch mode |
-| `test:e2e` | `playwright test` | End-to-end tests |
-| `db:migrate` | `prisma migrate dev` | Create and apply a migration locally |
-| `db:deploy` | `prisma migrate deploy` | Apply migrations in CI and production |
-| `db:seed` | `prisma db seed` | Seed data |
-| `db:studio` | `prisma studio` | Browse data |
-| `check` | `npm run lint && npm run typecheck && npm test` | The pre-push gate |
+| Script       | Command                                         | Purpose                               |
+| ------------ | ----------------------------------------------- | ------------------------------------- |
+| `dev`        | `next dev`                                      | Dev server                            |
+| `build`      | `next build`                                    | Production build                      |
+| `start`      | `next start`                                    | Run the build                         |
+| `lint`       | `eslint .`                                      | Lint                                  |
+| `typecheck`  | `tsc --noEmit`                                  | Types                                 |
+| `format`     | `prettier --write .`                            | Format                                |
+| `test`       | `vitest run`                                    | Unit and integration tests            |
+| `test:watch` | `vitest`                                        | Watch mode                            |
+| `test:e2e`   | `playwright test`                               | End-to-end tests                      |
+| `db:migrate` | `prisma migrate dev`                            | Create and apply a migration locally  |
+| `db:deploy`  | `prisma migrate deploy`                         | Apply migrations in CI and production |
+| `db:seed`    | `prisma db seed`                                | Seed data                             |
+| `db:studio`  | `prisma studio`                                 | Browse data                           |
+| `check`      | `npm run lint && npm run typecheck && npm test` | The pre-push gate                     |
 
 ## 8. Git, hooks and CI
 
@@ -189,12 +195,12 @@ Phase 0 is only done when all of these pass:
 
 ## 10. Troubleshooting
 
-| Symptom | Fix |
-|---|---|
-| `npm.ps1 cannot be loaded` | Run the `Set-ExecutionPolicy` line in section 1, or use Git Bash |
-| `EPERM` or locked files in `.next` | Stop the dev server and antivirus scan on the project folder; delete `.next` |
-| `create-next-app` says the directory is not empty | Scaffold into `hoshimono-scaffold` as shown, do not scaffold in place |
-| Port 3000 in use | `npx kill-port 3000` or `npm run dev -- -p 3001` |
-| Prisma cannot connect | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app |
-| CRLF warnings from Git | Section 1 `core.autocrlf input`; the repo already has `.gitattributes` with `* text=auto eol=lf` |
-| Long paths error on `npm install` | `git config --system core.longpaths true` and enable Windows long paths |
+| Symptom                                           | Fix                                                                                              |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `npm.ps1 cannot be loaded`                        | Run the `Set-ExecutionPolicy` line in section 1, or use Git Bash                                 |
+| `EPERM` or locked files in `.next`                | Stop the dev server and antivirus scan on the project folder; delete `.next`                     |
+| `create-next-app` says the directory is not empty | Scaffold into `hoshimono-scaffold` as shown, do not scaffold in place                            |
+| Port 3000 in use                                  | `npx kill-port 3000` or `npm run dev -- -p 3001`                                                 |
+| Prisma cannot connect                             | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app            |
+| CRLF warnings from Git                            | Section 1 `core.autocrlf input`; the repo already has `.gitattributes` with `* text=auto eol=lf` |
+| Long paths error on `npm install`                 | `git config --system core.longpaths true` and enable Windows long paths                          |

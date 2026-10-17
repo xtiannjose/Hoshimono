@@ -96,9 +96,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 0.2 Design foundation** (days 2 and 3). Stack: Tailwind v4, shadcn/ui, Motion, Phosphor, `next/font`. Skills: `design-taste-frontend`.
 
-- [ ] Install Phase 0 libraries; configure Tailwind v4 with design tokens (light and dark) copied from `mockup-v2/hoshimono.css`
-- [ ] Epilogue and Plus Jakarta Sans via `next/font` (`latin` + `latin-ext` for the peso sign), Geist Mono for codes; Phosphor icons; Motion installed
-- [ ] `src/config/brand.ts`, `z.ts`, layout shell: header, footer, `DeliveryButton` placeholder, theme toggle
+- [x] Install Phase 0 libraries (react-hook-form, zod and `@hookform/resolvers` deferred to Batch 1.4, see [06-SETUP.md](06-SETUP.md) section 4); configure Tailwind v4 with design tokens (light and dark) copied from `mockup-v2/hoshimono.css`
+- [x] Epilogue and Plus Jakarta Sans via `next/font` (`latin` + `latin-ext` for the peso sign), Geist Mono for codes; Phosphor icons; Motion installed
+- [x] `src/config/brand.ts`, `z.ts`, layout shell: header, footer, `DeliveryButton` placeholder, theme toggle
 
 **Batch 0.3 Data and money** (days 3 and 4). Stack: Postgres, Prisma. Skills: `tdd`, `codebase-design`.
 
