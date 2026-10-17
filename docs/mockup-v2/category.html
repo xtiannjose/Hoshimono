@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoshimono Fruit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400..700&family=Plus+Jakarta+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="hoshimono.css">
+<script src="hoshimono.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<header class="hdr">
+  <div class="wrap hdr-row">
+    <a class="logo" href="home.html"><span class="logo-mark" aria-hidden="true">h</span>hoshimono</a>
+    <form class="search" role="search">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <label class="sr-only" for="q">Search groceries</label>
+      <input id="q" type="search" placeholder="Search groceries, brands and recipes">
+    </form>
+    <div class="hdr-acts">
+      <a class="deliv" href="#area">
+        <i class="ph ph-map-pin" aria-hidden="true"></i>
+        <span><small>Today, 2:00 to 4:00 PM</small><b>Pasig 1600</b></span>
+      </a>
+      <a class="iconbtn" href="#account" aria-label="Account"><i class="ph ph-user" aria-hidden="true"></i></a>
+      <a class="btn btn-primary cartbtn" href="checkout.html" data-cart data-count="8" data-total="104550">
+        <i class="ph ph-shopping-cart" aria-hidden="true"></i>
+        <span class="sr-only">Cart:</span>
+        <span class="num" data-cart-total>₱1,045.50</span>
+        <span class="count"><span data-cart-count>8</span><span class="sr-only"> items</span></span>
+      </a>
+    </div>
+  </div>
+  <nav class="wrap catnav" aria-label="Categories">
+    <a href="category.html"><i class="ph ph-list" aria-hidden="true"></i>All categories</a>
+    <a href="category.html" aria-current="page">Fresh</a>
+    <a href="category.html">Meat and fish</a>
+    <a href="category.html">Dairy and eggs</a>
+    <a href="category.html">Bakery</a>
+    <a href="category.html">Frozen</a>
+    <a href="category.html">Pantry</a>
+    <a href="category.html">Drinks</a>
+    <a href="category.html">Household</a>
+    <a href="home.html#recipes">Recipes</a>
+    <a class="deal" href="category.html"><i class="ph ph-tag" aria-hidden="true"></i>Deals</a>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="home.html">Home</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+    <a href="category.html">Fresh</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+    <span aria-current="page">Fruit</span>
+  </nav>
+
+  <div class="title-row">
+    <div>
+      <h1 class="h1">Fruit</h1>
+      <p class="muted" style="margin-top:4px">48 products</p>
+    </div>
+    <div class="tools">
+      <label class="chip"><input class="sr-only" type="checkbox" checked><i class="ph ph-check" aria-hidden="true"></i>In stock</label>
+      <label class="chip"><input class="sr-only" type="checkbox">On sale</label>
+      <label class="chip"><input class="sr-only" type="checkbox">Sold by weight</label>
+      <label class="sr-only" for="sort">Sort by</label>
+      <select id="sort" class="select"><option>Sort: Relevance</option><option>Price, low to high</option><option>Unit price, low to high</option></select>
+    </div>
+  </div>
+
+  <div class="list-layout">
+    <aside class="filters" aria-label="Filters">
+      <fieldset class="fgroup">
+        <legend class="sr-only">Dietary and sourcing</legend>
+        <h2 aria-hidden="true">Dietary and sourcing</h2>
+        <label class="fopt"><input type="checkbox"> Locally grown</label>
+        <label class="fopt"><input type="checkbox"> Organic</label>
+        <label class="fopt"><input type="checkbox"> Pre-packed</label>
+      </fieldset>
+      <fieldset class="fgroup">
+        <legend class="sr-only">Price</legend>
+        <h2 aria-hidden="true">Price</h2>
+        <div class="range">
+          <div class="field"><label for="pmin" class="small">Min</label><input id="pmin" class="input num" inputmode="numeric" value="₱0"></div>
+          <span class="muted" style="padding-top:28px">to</span>
+          <div class="field"><label for="pmax" class="small">Max</label><input id="pmax" class="input num" inputmode="numeric" value="₱500"></div>
+        </div>
+      </fieldset>
+      <fieldset class="fgroup">
+        <legend class="sr-only">Brand</legend>
+        <h2 aria-hidden="true">Brand</h2>
+        <label class="fopt"><input type="checkbox"> Hoshimono Farms</label>
+        <label class="fopt"><input type="checkbox"> Davao Harvest</label>
+        <label class="fopt"><input type="checkbox"> Benguet Direct</label>
+        <label class="fopt"><input type="checkbox"> Cebu Orchard</label>
+        <a class="link" href="#brands">Show more brands</a>
+      </fieldset>
+      <button type="button" class="btn btn-secondary"><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i>Clear filters</button>
+    </aside>
+
+    <section aria-label="Products">
+      <div class="grid4">
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Carabao Mangoes"><i class="ph ph-orange-slice" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet"><i class="ph ph-scales" aria-hidden="true"></i>By weight</span></div><a class="pname" href="product.html">Carabao Mangoes</a><span class="psize">approx. 1 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱160<span class="c">.00</span></div><div class="unit">₱160.00 per kg</div></div>
+            <div class="qty" id="c1" data-qty="1" data-price="16000" data-name="Carabao Mangoes">
+              <button type="button" class="add" data-step="1" aria-label="Add Carabao Mangoes to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Carabao Mangoes"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Fuji Apples"><i class="ph ph-orange" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-sale">Save 15%</span></div><a class="pname" href="product.html">Fuji Apples</a><span class="psize">4 pcs</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price is-sale">₱148<span class="c">.00</span><s class="was">₱174.00</s></div><div class="unit">₱37.00 per piece</div></div>
+            <div class="qty" id="c2" data-qty="0" data-price="14800" data-name="Fuji Apples">
+              <button type="button" class="add" data-step="1" aria-label="Add Fuji Apples to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Fuji Apples"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Saba Bananas"><i class="ph ph-plant" aria-hidden="true"></i></a>
+          <div class="card-body"><a class="pname" href="product.html">Saba Bananas</a><span class="psize">1 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱72<span class="c">.00</span></div><div class="unit">₱72.00 per kg</div></div>
+            <div class="qty" id="c3" data-qty="0" data-price="7200" data-name="Saba Bananas">
+              <button type="button" class="add" data-step="1" aria-label="Add Saba Bananas to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Saba Bananas"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Calamansi"><i class="ph ph-leaf" aria-hidden="true"></i></a>
+          <div class="card-body"><a class="pname" href="product.html">Calamansi</a><span class="psize">250 g</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱45<span class="c">.00</span></div><div class="unit">₱18.00 per 100 g</div></div>
+            <div class="qty" id="c4" data-qty="0" data-price="4500" data-name="Calamansi">
+              <button type="button" class="add" data-step="1" aria-label="Add Calamansi to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Calamansi"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Hass Avocado"><i class="ph ph-avocado" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-warn">Only a few left</span></div><a class="pname" href="product.html">Hass Avocado</a><span class="psize">2 pcs</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱120<span class="c">.00</span></div><div class="unit">₱60.00 per piece</div></div>
+            <div class="qty" id="c5" data-qty="0" data-price="12000" data-name="Hass Avocado">
+              <button type="button" class="add" data-step="1" aria-label="Add Hass Avocado to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Hass Avocado"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Seedless Grapes"><i class="ph ph-cherries" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet"><i class="ph ph-scales" aria-hidden="true"></i>By weight</span></div><a class="pname" href="product.html">Seedless Grapes</a><span class="psize">approx. 500 g</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱225<span class="c">.00</span></div><div class="unit">₱450.00 per kg</div></div>
+            <div class="qty" id="c6" data-qty="0" data-price="22500" data-name="Seedless Grapes">
+              <button type="button" class="add" data-step="1" aria-label="Add Seedless Grapes to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Seedless Grapes"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Pineapple"><i class="ph ph-plant" aria-hidden="true"></i></a>
+          <div class="card-body"><a class="pname" href="product.html">Pineapple</a><span class="psize">1 pc, approx. 1.2 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱85<span class="c">.00</span></div><div class="unit">₱70.83 per kg</div></div>
+            <div class="qty" id="c7" data-qty="0" data-price="8500" data-name="Pineapple">
+              <button type="button" class="add" data-step="1" aria-label="Add Pineapple to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Pineapple"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Papaya"><i class="ph ph-orange-slice" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet"><i class="ph ph-scales" aria-hidden="true"></i>By weight</span></div><a class="pname" href="product.html">Papaya</a><span class="psize">approx. 1 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱68<span class="c">.00</span></div><div class="unit">₱68.00 per kg</div></div>
+            <div class="qty" id="c8" data-qty="0" data-price="6800" data-name="Papaya">
+              <button type="button" class="add" data-step="1" aria-label="Add Papaya to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Papaya"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Navel Oranges"><i class="ph ph-orange" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-sale">Save 12%</span></div><a class="pname" href="product.html">Navel Oranges</a><span class="psize">6 pcs</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price is-sale">₱189<span class="c">.00</span><s class="was">₱215.00</s></div><div class="unit">₱31.50 per piece</div></div>
+            <div class="qty" id="c9" data-qty="0" data-price="18900" data-name="Navel Oranges">
+              <button type="button" class="add" data-step="1" aria-label="Add Navel Oranges to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Navel Oranges"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card is-oos">
+          <a class="slot ar-1" href="product.html" aria-label="Dragon Fruit"><i class="ph ph-cherries" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet">Out of stock today</span></div><a class="pname" href="product.html">Dragon Fruit</a><span class="psize">2 pcs</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱160<span class="c">.00</span></div><div class="unit">₱80.00 per piece</div></div>
+            <button type="button" class="btn btn-secondary btn-block" style="min-height:44px"><i class="ph ph-bell" aria-hidden="true"></i>Notify me</button>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Watermelon, half"><i class="ph ph-orange-slice" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet"><i class="ph ph-scales" aria-hidden="true"></i>By weight</span></div><a class="pname" href="product.html">Watermelon, half</a><span class="psize">approx. 2 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱130<span class="c">.00</span></div><div class="unit">₱65.00 per kg</div></div>
+            <div class="qty" id="c11" data-qty="0" data-price="13000" data-name="Watermelon, half">
+              <button type="button" class="add" data-step="1" aria-label="Add Watermelon, half to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Watermelon, half"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Strawberries"><i class="ph ph-cherries" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-warn">Only a few left</span></div><a class="pname" href="product.html">Strawberries</a><span class="psize">250 g</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱210<span class="c">.00</span></div><div class="unit">₱84.00 per 100 g</div></div>
+            <div class="qty" id="c12" data-qty="0" data-price="21000" data-name="Strawberries">
+              <button type="button" class="add" data-step="1" aria-label="Add Strawberries to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Strawberries"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+      </div>
+      <div class="more">
+        <span class="muted">Showing 12 of 48</span>
+        <button type="button" class="btn btn-secondary">Load more fruit</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="logo" href="home.html"><span class="logo-mark" aria-hidden="true">h</span>hoshimono</a>
+        <p class="muted" style="margin-top:12px;max-width:34ch;font-size:15px">Groceries picked at our Pasig hub and delivered the same day across Metro Manila.</p>
+      </div>
+      <div><h2>Shop</h2><ul><li><a href="category.html">Fresh produce</a></li><li><a href="category.html">Meat and fish</a></li><li><a href="category.html">Pantry</a></li><li><a href="home.html#recipes">Recipes</a></li></ul></div>
+      <div><h2>Help</h2><ul><li><a href="#area">Delivery areas</a></li><li><a href="#refund">Refund policy</a></li><li><a href="#contact">Contact us</a></li></ul></div>
+      <div><h2>Company</h2><ul><li><a href="#tax">Tax and business details</a></li><li><a href="#privacy">Privacy policy</a></li><li><a href="#terms">Terms of service</a></li></ul></div>
+    </div>
+    <div class="foot-base"><span>© 2026 Hoshimono</span><span>We accept GCash, cards and cash on delivery</span></div>
+  </div>
+</footer>
+</body>
+</html>

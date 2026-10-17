@@ -1,4 +1,4 @@
-# Sariwa
+# Hoshimono
 
 Online supermarket that sells groceries to households and delivers them from our own fulfilment hubs. This glossary fixes the words the product, the code and the database use.
 

@@ -1,6 +1,6 @@
 # Research: BuiltaMart teardown
 
-Date: 2026-10-16. Purpose: understand a working Philippine e-grocer so Sariwa can borrow what works and improve what does not. We take ideas and structure only; we do not copy their name, branding, copy, photography or code.
+Date: 2026-10-16. Purpose: understand a working Philippine e-grocer so Hoshimono can borrow what works and improve what does not. We take ideas and structure only; we do not copy their name, branding, copy, photography or code.
 
 ## How this was gathered, and its limits
 
@@ -62,9 +62,9 @@ Product slugs combine category prefix, name, size, brand and a numeric id (for e
 | Deep links | Apple app-site-association and Android assetlinks files | Needed only if we ship native apps; PWA first |
 | Page shell | Fixed viewport, no zoom (`maximum-scale=1`) | We allow zoom for accessibility |
 
-## 5. Where Sariwa matches, differs and must still learn
+## 5. Where Hoshimono matches, differs and must still learn
 
-| Capability | BuiltaMart | Sariwa MVP | Sariwa V1 |
+| Capability | BuiltaMart | Hoshimono MVP | Hoshimono V1 |
 |---|---|---|---|
 | Large range with brand/size in URL | Yes | Yes | Yes |
 | Flat delivery fee | PHP 59 | Configurable, default PHP 59 | Same |
@@ -76,7 +76,7 @@ Product slugs combine category prefix, name, size, brand and a numeric id (for e
 | Delivery slot visibility | "Instant" / same-day | Real slots with capacity | Same |
 | Native app | Yes (iOS, likely Android) | PWA | Evaluate |
 | Aggregator channels | GrabMart, Lazada, Pick-a-Roo | No | Evaluate after traction |
-| Nav, filters, product card, checkout UX | **Not observed** | Designed in [mockup](mockup/README.md) | Validate against real screenshots |
+| Nav, filters, product card, checkout UX | **Not observed** | Designed in [mockup v2](mockup-v2/README.md) | Validate against real screenshots |
 
 ## 6. Lessons applied to the plan
 

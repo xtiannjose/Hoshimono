@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sariwa Mobile Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500..800&family=Radio+Canada:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="homey.css">
+<script src="sariwa.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<div class="m">
+  <header class="m-hdr">
+    <div class="wrap">
+      <div class="m-top">
+        <a class="logo" href="mobile-home.html"><span class="logo-mark" aria-hidden="true">s</span>sariwa</a>
+        <a class="m-deliv" href="#area"><i class="ph ph-map-pin" aria-hidden="true"></i><span>Pasig 1600<br><span class="muted" style="font-weight:500">Today, 2 to 4 PM</span></span></a>
+      </div>
+      <form class="search" role="search">
+        <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+        <label class="sr-only" for="mq">Search groceries</label>
+        <input id="mq" type="search" placeholder="Search groceries and recipes">
+      </form>
+    </div>
+  </header>
+
+  <nav class="m-chips" aria-label="Categories">
+    <a class="chip" href="category.html">Fruit</a>
+    <a class="chip" href="category.html">Vegetables</a>
+    <a class="chip" href="category.html">Meat</a>
+    <a class="chip" href="category.html">Seafood</a>
+    <a class="chip" href="category.html">Dairy</a>
+    <a class="chip" href="category.html">Bakery</a>
+    <a class="chip" href="category.html">Pantry</a>
+    <a class="chip" href="category.html">Drinks</a>
+  </nav>
+
+  <main id="main" class="wrap">
+    <section class="m-hero" aria-labelledby="mh">
+      <h1 id="mh" class="display">Fresh groceries, delivered <span class="hl">today.</span></h1>
+      <p class="lead">Order before noon from our Pasig hub. Pick a window, pay with GCash or cash.</p>
+      <a class="btn btn-primary btn-lg btn-block" href="category.html">Start shopping</a>
+    </section>
+
+    <section class="sec" aria-labelledby="mf">
+      <div class="sec-head" style="margin-bottom:14px">
+        <h2 id="mf" class="h2">Fresh picks today</h2>
+        <a class="link" href="category.html">See all</a>
+      </div>
+      <div class="m-g2">
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Carabao Mangoes"><i class="ph ph-orange-slice" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-quiet"><i class="ph ph-scales" aria-hidden="true"></i>By weight</span></div><a class="pname" href="product.html">Carabao Mangoes</a><span class="psize">approx. 1 kg</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱160<span class="c">.00</span></div><div class="unit">₱160.00 per kg</div></div>
+            <div class="qty" id="m1" data-qty="1" data-price="16000" data-name="Carabao Mangoes">
+              <button type="button" class="add" data-step="1" aria-label="Add Carabao Mangoes to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Carabao Mangoes"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Baguio Carrots"><i class="ph ph-carrot" aria-hidden="true"></i></a>
+          <div class="card-body"><a class="pname" href="product.html">Baguio Carrots</a><span class="psize">500 g</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱58<span class="c">.00</span></div><div class="unit">₱11.60 per 100 g</div></div>
+            <div class="qty" id="m2" data-qty="0" data-price="5800" data-name="Baguio Carrots">
+              <button type="button" class="add" data-step="1" aria-label="Add Baguio Carrots to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Baguio Carrots"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Hass Avocado"><i class="ph ph-avocado" aria-hidden="true"></i></a>
+          <div class="card-body"><div class="card-tags"><span class="tag tag-warn">Only a few left</span></div><a class="pname" href="product.html">Hass Avocado</a><span class="psize">2 pcs</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱120<span class="c">.00</span></div><div class="unit">₱60.00 per piece</div></div>
+            <div class="qty" id="m3" data-qty="0" data-price="12000" data-name="Hass Avocado">
+              <button type="button" class="add" data-step="1" aria-label="Add Hass Avocado to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Hass Avocado"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <a class="slot ar-1" href="product.html" aria-label="Fresh Milk"><i class="ph ph-drop" aria-hidden="true"></i></a>
+          <div class="card-body"><a class="pname" href="product.html">Fresh Milk</a><span class="psize">1 L</span></div>
+          <div class="card-foot">
+            <div class="pricing"><div class="price">₱98<span class="c">.00</span></div><div class="unit">₱9.80 per 100 ml</div></div>
+            <div class="qty" id="m4" data-qty="2" data-price="9800" data-name="Fresh Milk">
+              <button type="button" class="add" data-step="1" aria-label="Add Fresh Milk to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+              <div class="stepper" role="group" aria-label="Quantity of Fresh Milk"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>2</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="sec" aria-labelledby="mr">
+      <div class="m-recipe">
+        <div class="slot ar-21" role="img" aria-label="Photo placeholder: chicken adobo over rice"><i class="ph ph-cooking-pot" aria-hidden="true"></i></div>
+        <div>
+          <h2 id="mr" class="h3">Chicken adobo for 4</h2>
+          <p class="muted small" style="margin-top:6px">Add what you need in one tap. Ingredients you have at home stay out.</p>
+        </div>
+        <a class="btn btn-secondary btn-block" href="home.html#recipes">Add 5 items, ₱423.00</a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<aside aria-label="Cart summary"><a class="cartbar" href="mobile-cart.html" data-cart data-count="8" data-total="104550">
+  <span class="lbl"><i class="ph ph-shopping-cart" aria-hidden="true"></i><span data-cart-count>8</span> items</span>
+  <span class="go">View cart</span>
+  <span class="total" data-cart-total>₱1,045.50</span>
+</a></aside>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="mobile-home.html" aria-current="page"><i class="ph ph-house" aria-hidden="true"></i>Home</a>
+  <a href="category.html"><i class="ph ph-squares-four" aria-hidden="true"></i>Shop</a>
+  <a href="home.html#recipes"><i class="ph ph-cooking-pot" aria-hidden="true"></i>Recipes</a>
+  <a href="#orders"><i class="ph ph-receipt" aria-hidden="true"></i>Orders</a>
+  <a href="#account"><i class="ph ph-user" aria-hidden="true"></i>Account</a>
+</nav>
+</body>
+</html>

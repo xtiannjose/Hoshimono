@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Checkout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=Geist+Mono:wght@400..600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="market.css">
+<script src="sariwa.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="co-hdr">
+  <div class="wrap">
+    <a class="logo" href="home.html"><span class="logo-mark" aria-hidden="true">s</span>sariwa</a>
+    <span class="secure"><i class="ph ph-lock" aria-hidden="true"></i>Secure checkout</span>
+    <a class="link" href="home.html"><i class="ph ph-caret-left" aria-hidden="true"></i>Back to shopping</a>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+  <h1 class="sr-only">Checkout</h1>
+  <div class="co">
+    <div class="co-main">
+      <section class="panel" aria-labelledby="h-addr">
+        <div class="panel-head">
+          <h2 id="h-addr" class="h3">Delivery address</h2>
+          <a class="link" href="#change-address">Change</a>
+        </div>
+        <div class="addr">
+          <i class="ph ph-house" aria-hidden="true"></i>
+          <div>
+            <b>Marites Santos</b>
+            <div>Unit 12B, Rosewood Residences, Brgy. Kapitolyo, Pasig City 1600</div>
+            <div class="muted small" style="margin-top:4px">We deliver here from the Pasig hub. Delivery fee ₱59.00.</div>
+          </div>
+        </div>
+        <div class="fields">
+          <div class="field">
+            <label for="landmark">Landmark</label>
+            <input id="landmark" class="input" value="Across from the barangay hall" required aria-describedby="landmark-h">
+            <small id="landmark-h">Required. Helps the rider find you.</small>
+          </div>
+          <div class="field">
+            <label for="phone">Mobile number</label>
+            <input id="phone" class="input num" type="tel" inputmode="tel" autocomplete="tel" value="+63 917 555 0142" aria-describedby="phone-h">
+            <small id="phone-h">The rider calls this number on arrival.</small>
+          </div>
+          <div class="field wide">
+            <label for="notes">Note for the rider (optional)</label>
+            <input id="notes" class="input" value="Call when you reach the lobby.">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-slot">
+        <h2 id="h-slot" class="h3">Delivery window</h2>
+        <fieldset>
+          <legend class="sr-only">Delivery day</legend>
+          <div class="days">
+            <label class="day"><input class="sr-only" type="radio" name="day" checked>Today<b>Fri 16 Oct</b></label>
+            <label class="day"><input class="sr-only" type="radio" name="day">Tomorrow<b>Sat 17 Oct</b></label>
+            <label class="day"><input class="sr-only" type="radio" name="day">Sun<b>18 Oct</b></label>
+            <label class="day"><input class="sr-only" type="radio" name="day">Mon<b>19 Oct</b></label>
+            <label class="day"><input class="sr-only" type="radio" name="day">Tue<b>20 Oct</b></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend class="sr-only">Delivery time</legend>
+          <div class="slots">
+            <label class="slotopt"><input class="sr-only" type="radio" name="slot" disabled><b>12:00 to 2:00 PM</b><small>Full</small></label>
+            <label class="slotopt"><input class="sr-only" type="radio" name="slot" checked><b>2:00 to 4:00 PM</b><small><span class="held"><i class="ph ph-check-circle" aria-hidden="true"></i>Held for you for 10 minutes</span><span class="avail">Available</span></small></label>
+            <label class="slotopt is-few"><input class="sr-only" type="radio" name="slot"><b>4:00 to 6:00 PM</b><small><span class="held"><i class="ph ph-check-circle" aria-hidden="true"></i>Held for you for 10 minutes</span><span class="avail">Only a few left</span></small></label>
+            <label class="slotopt"><input class="sr-only" type="radio" name="slot"><b>6:00 to 8:00 PM</b><small><span class="held"><i class="ph ph-check-circle" aria-hidden="true"></i>Held for you for 10 minutes</span><span class="avail">Available</span></small></label>
+            <label class="slotopt"><input class="sr-only" type="radio" name="slot"><b>8:00 to 10:00 PM</b><small><span class="held"><i class="ph ph-check-circle" aria-hidden="true"></i>Held for you for 10 minutes</span><span class="avail">Available</span></small></label>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="panel" aria-labelledby="h-pay">
+        <h2 id="h-pay" class="h3">Payment</h2>
+        <fieldset>
+          <legend class="sr-only">Payment method</legend>
+          <label class="payopt"><i class="ph ph-device-mobile" aria-hidden="true"></i><span><b>GCash</b><small>You approve the payment in the GCash app</small></span><input type="radio" name="pay" checked></label>
+          <label class="payopt"><i class="ph ph-credit-card" aria-hidden="true"></i><span><b>Credit or debit card</b><small>Visa and Mastercard, entered on our payment partner's secure page</small></span><input type="radio" name="pay"></label>
+          <label class="payopt"><i class="ph ph-money" aria-hidden="true"></i><span><b>Cash on delivery</b><small>Pay the rider when your order arrives</small></span><input type="radio" name="pay"></label>
+        </fieldset>
+        <div class="note">
+          <i class="ph ph-scales" aria-hidden="true"></i>
+          <span>Two items are sold by weight. We charge the weight we actually pack, and refund any difference to your GCash within one day.</span>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sum" aria-labelledby="h-sum">
+      <div class="panel-head"><h2 id="h-sum" class="h3">Order summary</h2><span class="muted small">8 items</span></div>
+      <div class="lines">
+        <div class="line"><div class="slot"><i class="ph ph-orange-slice" aria-hidden="true"></i></div><div><b>Carabao Mangoes</b><small>approx. 1 kg, ₱160.00 per kg</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a></div><span class="amt">₱160.00</span></div>
+        <div class="line"><div class="slot"><i class="ph ph-egg" aria-hidden="true"></i></div><div><b>Eggs, Large</b><small>12 pcs, quantity 1</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>No substitute</a></div><span class="amt">₱112.00</span></div>
+        <div class="line"><div class="slot"><i class="ph ph-drop" aria-hidden="true"></i></div><div><b>Fresh Milk</b><small>1 L, quantity 2</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a></div><span class="amt">₱196.00</span></div>
+        <div class="line"><div class="slot"><i class="ph ph-cow" aria-hidden="true"></i></div><div><b>Chicken Breast Fillet</b><small>approx. 500 g, ₱285.00 per kg</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a></div><span class="amt">₱142.50</span></div>
+        <div class="line"><div class="slot"><i class="ph ph-grains" aria-hidden="true"></i></div><div><b>Jasmine Rice</b><small>5 kg, quantity 1</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>Pick a similar item</a></div><span class="amt">₱345.00</span></div>
+        <div class="line"><div class="slot"><i class="ph ph-bread" aria-hidden="true"></i></div><div><b>Pandesal</b><small>10 pcs, quantity 2</small><a class="sub" href="#substitution"><i class="ph ph-swap" aria-hidden="true"></i>I'll choose</a></div><span class="amt">₱90.00</span></div>
+      </div>
+
+      <div class="field">
+        <label for="voucher">Voucher code</label>
+        <div class="voucher"><input id="voucher" class="input" value="FRESH50" aria-describedby="voucher-ok"><button type="button" class="btn btn-secondary">Apply</button></div>
+      </div>
+      <p id="voucher-ok" class="applied"><i class="ph ph-check-circle" aria-hidden="true"></i>FRESH50 applied: ₱50.00 off orders over ₱1,000</p>
+
+      <div class="tot">
+        <div><span>Subtotal</span><span>₱1,045.50</span></div>
+        <div class="is-disc"><span>Voucher FRESH50</span><span>-₱50.00</span></div>
+        <div><span>Delivery</span><span>₱59.00</span></div>
+        <div class="is-grand"><span>Total</span><span>₱1,054.50</span></div>
+        <div class="fine">VAT included.</div>
+      </div>
+
+      <a class="btn btn-primary btn-lg btn-block" href="#place">Place order, ₱1,054.50</a>
+      <p class="fine">Two weighed items can change your final total by up to ₱30.25. By placing your order you agree to our terms of service and refund policy.</p>
+    </aside>
+  </div>
+</main>
+
+<footer class="foot" style="margin-top:56px;padding-top:0">
+  <div class="wrap">
+    <div class="foot-base" style="margin-top:0;border-top:0"><span>© 2026 Sariwa</span><span style="display:flex;gap:20px;flex-wrap:wrap"><a href="#refund">Refund policy</a><a href="#privacy">Privacy policy</a><a href="#terms">Terms of service</a><a href="#contact">Contact us</a></span></div>
+  </div>
+</footer>
+</body>
+</html>

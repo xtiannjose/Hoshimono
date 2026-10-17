@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoshimono Chicken Breast Fillet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Epilogue:wght@400..700&family=Plus+Jakarta+Sans:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="hoshimono.css">
+<script src="hoshimono.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div id="live" class="sr-only" aria-live="polite"></div>
+
+<header class="hdr">
+  <div class="wrap hdr-row">
+    <a class="logo" href="home.html"><span class="logo-mark" aria-hidden="true">h</span>hoshimono</a>
+    <form class="search" role="search">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <label class="sr-only" for="q">Search groceries</label>
+      <input id="q" type="search" placeholder="Search groceries, brands and recipes">
+    </form>
+    <div class="hdr-acts">
+      <a class="deliv" href="#area">
+        <i class="ph ph-map-pin" aria-hidden="true"></i>
+        <span><small>Today, 2:00 to 4:00 PM</small><b>Pasig 1600</b></span>
+      </a>
+      <a class="iconbtn" href="#account" aria-label="Account"><i class="ph ph-user" aria-hidden="true"></i></a>
+      <a class="btn btn-primary cartbtn" href="checkout.html" data-cart data-count="8" data-total="104550">
+        <i class="ph ph-shopping-cart" aria-hidden="true"></i>
+        <span class="sr-only">Cart:</span>
+        <span class="num" data-cart-total>₱1,045.50</span>
+        <span class="count"><span data-cart-count>8</span><span class="sr-only"> items</span></span>
+      </a>
+    </div>
+  </div>
+  <nav class="wrap catnav" aria-label="Categories">
+    <a href="category.html"><i class="ph ph-list" aria-hidden="true"></i>All categories</a>
+    <a href="category.html">Fresh</a>
+    <a href="category.html" aria-current="page">Meat and fish</a>
+    <a href="category.html">Dairy and eggs</a>
+    <a href="category.html">Bakery</a>
+    <a href="category.html">Frozen</a>
+    <a href="category.html">Pantry</a>
+    <a href="category.html">Drinks</a>
+    <a href="category.html">Household</a>
+    <a href="home.html#recipes">Recipes</a>
+    <a class="deal" href="category.html"><i class="ph ph-tag" aria-hidden="true"></i>Deals</a>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+  <nav class="crumb" aria-label="Breadcrumb">
+    <a href="home.html">Home</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+    <a href="category.html">Meat and fish</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+    <a href="category.html">Chicken</a><i class="ph ph-caret-right" aria-hidden="true"></i>
+    <span aria-current="page">Chicken Breast Fillet</span>
+  </nav>
+
+  <div class="pdp">
+    <div class="gallery">
+      <div class="thumbs">
+        <button type="button" class="slot thumb" aria-current="true" aria-label="Photo 1, showing"><i class="ph ph-image" aria-hidden="true"></i></button>
+        <button type="button" class="slot thumb" aria-label="Photo 2"><i class="ph ph-image" aria-hidden="true"></i></button>
+        <button type="button" class="slot thumb" aria-label="Photo 3"><i class="ph ph-image" aria-hidden="true"></i></button>
+        <button type="button" class="slot thumb" aria-label="Photo 4"><i class="ph ph-image" aria-hidden="true"></i></button>
+      </div>
+      <div class="slot main ar-1" role="img" aria-label="Photo placeholder: chicken breast fillet on a board">
+        <i class="ph ph-cow" aria-hidden="true"></i>
+        <span class="slot-cap">Photo, 1200 x 1200. Chicken breast fillet on a board, plain background.</span>
+      </div>
+    </div>
+
+    <div class="buy">
+      <div>
+        <a class="brandline" href="category.html">Hoshimono Farms</a>
+        <h1 class="h1" style="margin-top:6px">Chicken Breast Fillet</h1>
+        <p class="muted" style="margin-top:8px">Skinless and boneless, packed in approx. 500 g trays.</p>
+      </div>
+
+      <div>
+        <div class="bigprice"><span class="price">₱142<span class="c">.50</span></span><span class="muted">estimated for approx. 500 g</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <span class="unit" style="font-size:14px">₱285.00 per kg</span>
+          <span class="tag tag-soft"><i class="ph ph-check" aria-hidden="true"></i>In stock</span>
+        </div>
+      </div>
+
+      <div class="note">
+        <i class="ph ph-scales" aria-hidden="true"></i>
+        <span>Sold by weight. You pay for the exact weight we pack, within 10% of 500 g. Your final total is confirmed at delivery.</span>
+      </div>
+
+      <fieldset>
+        <legend class="opt-title">If it's unavailable</legend>
+        <div class="seg">
+          <label><span style="display:flex;align-items:center;gap:8px"><input type="radio" name="sub" checked style="accent-color:var(--ink);width:18px;height:18px;margin:0"><b>Pick a similar item</b></span><span>We choose the closest match</span></label>
+          <label><span style="display:flex;align-items:center;gap:8px"><input type="radio" name="sub" style="accent-color:var(--ink);width:18px;height:18px;margin:0"><b>I'll choose</b></span><span>Set a preferred swap</span></label>
+          <label><span style="display:flex;align-items:center;gap:8px"><input type="radio" name="sub" style="accent-color:var(--ink);width:18px;height:18px;margin:0"><b>No substitute</b></span><span>Refund this item</span></label>
+        </div>
+      </fieldset>
+
+      <div class="buyrow">
+        <div class="qty" id="trays" data-qty="1" data-min="1">
+          <div class="stepper stepper-ghost" role="group" aria-label="Number of trays"><button type="button" data-step="-1" aria-label="Fewer trays"><i class="ph ph-minus" aria-hidden="true"></i></button><output>1</output><button type="button" data-step="1" aria-label="More trays"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+        </div>
+        <a class="btn btn-primary btn-lg" href="checkout.html"><i class="ph ph-shopping-cart" aria-hidden="true"></i>Add to cart</a>
+      </div>
+
+      <div class="deliv-line">
+        <i class="ph ph-truck" aria-hidden="true"></i>
+        <div><b>Delivers today, 2:00 to 4:00 PM</b><div class="muted small">To Pasig 1600. Chilled and packed in an insulated tote.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="acc" aria-label="Product information">
+    <details open>
+      <summary>Product details <i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+      <div>Fresh chicken breast, trimmed and portioned at our hub each morning. Even thickness for quick pan-frying, grilling or slicing for stir-fries.</div>
+    </details>
+    <details>
+      <summary>Ingredients and allergens <i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+      <div>Chicken breast. No added ingredients. Packed in a facility that also handles shrimp and fish.</div>
+    </details>
+    <details>
+      <summary>Storage and handling <i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+      <div>Keep chilled between 0 and 4 °C. Use within two days of delivery, or freeze for up to three months.</div>
+    </details>
+    <details>
+      <summary>Freshness promise <i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+      <div>If anything in your order is not fresh, report it within 24 hours with a photo and we will refund or credit it.</div>
+    </details>
+  </section>
+
+  <section class="sec" aria-labelledby="rel-h">
+    <div class="sec-head">
+      <h2 id="rel-h" class="h2">Often bought together</h2>
+      <a class="link" href="category.html">See all pantry <i class="ph ph-arrow-right" aria-hidden="true"></i></a>
+    </div>
+    <div class="grid5">
+      <article class="card">
+        <a class="slot ar-1" href="product.html" aria-label="Soy Sauce"><i class="ph ph-drop" aria-hidden="true"></i></a>
+        <div class="card-body"><a class="pname" href="product.html">Soy Sauce</a><span class="psize">500 ml</span></div>
+        <div class="card-foot">
+          <div class="pricing"><div class="price">₱38<span class="c">.00</span></div><div class="unit">₱7.60 per 100 ml</div></div>
+          <div class="qty" id="r1" data-qty="0" data-price="3800" data-name="Soy Sauce">
+            <button type="button" class="add" data-step="1" aria-label="Add Soy Sauce to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            <div class="stepper" role="group" aria-label="Quantity of Soy Sauce"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <a class="slot ar-1" href="product.html" aria-label="Cane Vinegar"><i class="ph ph-drop" aria-hidden="true"></i></a>
+        <div class="card-body"><a class="pname" href="product.html">Cane Vinegar</a><span class="psize">500 ml</span></div>
+        <div class="card-foot">
+          <div class="pricing"><div class="price">₱36<span class="c">.00</span></div><div class="unit">₱7.20 per 100 ml</div></div>
+          <div class="qty" id="r2" data-qty="0" data-price="3600" data-name="Cane Vinegar">
+            <button type="button" class="add" data-step="1" aria-label="Add Cane Vinegar to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            <div class="stepper" role="group" aria-label="Quantity of Cane Vinegar"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <a class="slot ar-1" href="product.html" aria-label="Garlic"><i class="ph ph-plant" aria-hidden="true"></i></a>
+        <div class="card-body"><a class="pname" href="product.html">Garlic</a><span class="psize">100 g</span></div>
+        <div class="card-foot">
+          <div class="pricing"><div class="price">₱28<span class="c">.00</span></div><div class="unit">₱28.00 per 100 g</div></div>
+          <div class="qty" id="r3" data-qty="0" data-price="2800" data-name="Garlic">
+            <button type="button" class="add" data-step="1" aria-label="Add Garlic to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            <div class="stepper" role="group" aria-label="Quantity of Garlic"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <a class="slot ar-1" href="product.html" aria-label="Jasmine Rice"><i class="ph ph-grains" aria-hidden="true"></i></a>
+        <div class="card-body"><a class="pname" href="product.html">Jasmine Rice</a><span class="psize">1 kg</span></div>
+        <div class="card-foot">
+          <div class="pricing"><div class="price">₱72<span class="c">.00</span></div><div class="unit">₱72.00 per kg</div></div>
+          <div class="qty" id="r4" data-qty="0" data-price="7200" data-name="Jasmine Rice">
+            <button type="button" class="add" data-step="1" aria-label="Add Jasmine Rice to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            <div class="stepper" role="group" aria-label="Quantity of Jasmine Rice"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+        </div>
+      </article>
+      <article class="card">
+        <a class="slot ar-1" href="product.html" aria-label="Cooking Oil"><i class="ph ph-drop" aria-hidden="true"></i></a>
+        <div class="card-body"><a class="pname" href="product.html">Cooking Oil</a><span class="psize">1 L</span></div>
+        <div class="card-foot">
+          <div class="pricing"><div class="price">₱96<span class="c">.00</span></div><div class="unit">₱9.60 per 100 ml</div></div>
+          <div class="qty" id="r5" data-qty="0" data-price="9600" data-name="Cooking Oil">
+            <button type="button" class="add" data-step="1" aria-label="Add Cooking Oil to cart"><i class="ph ph-plus" aria-hidden="true"></i>Add</button>
+            <div class="stepper" role="group" aria-label="Quantity of Cooking Oil"><button type="button" data-step="-1" aria-label="Remove one"><i class="ph ph-minus" aria-hidden="true"></i></button><output>0</output><button type="button" data-step="1" aria-label="Add one"><i class="ph ph-plus" aria-hidden="true"></i></button></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="logo" href="home.html"><span class="logo-mark" aria-hidden="true">h</span>hoshimono</a>
+        <p class="muted" style="margin-top:12px;max-width:34ch;font-size:15px">Groceries picked at our Pasig hub and delivered the same day across Metro Manila.</p>
+      </div>
+      <div><h2>Shop</h2><ul><li><a href="category.html">Fresh produce</a></li><li><a href="category.html">Meat and fish</a></li><li><a href="category.html">Pantry</a></li><li><a href="home.html#recipes">Recipes</a></li></ul></div>
+      <div><h2>Help</h2><ul><li><a href="#area">Delivery areas</a></li><li><a href="#refund">Refund policy</a></li><li><a href="#contact">Contact us</a></li></ul></div>
+      <div><h2>Company</h2><ul><li><a href="#tax">Tax and business details</a></li><li><a href="#privacy">Privacy policy</a></li><li><a href="#terms">Terms of service</a></li></ul></div>
+    </div>
+    <div class="foot-base"><span>© 2026 Hoshimono</span><span>We accept GCash, cards and cash on delivery</span></div>
+  </div>
+</footer>
+</body>
+</html>

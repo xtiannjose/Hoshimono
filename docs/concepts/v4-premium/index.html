@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sariwa Mockup v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@300..700&display=swap">
+<link rel="stylesheet" href="premium.css">
+<style>
+  .board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr)); gap: 32px; padding: 32px 0 64px; }
+  .frame { display: grid; gap: 10px; align-content: start; }
+  .frame a { font-weight: 700; }
+  .vp { overflow: hidden; border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface); }
+  .vp iframe { border: 0; transform-origin: 0 0; display: block; pointer-events: none; }
+  .desk .vp { width: 605px; height: 378px; max-width: 100%; }
+  .desk iframe { width: 1440px; height: 900px; transform: scale(.42); }
+  .phones { display: flex; gap: 24px; flex-wrap: wrap; }
+  .phone .vp { width: 234px; height: 506px; }
+  .phone iframe { width: 390px; height: 844px; transform: scale(.6); }
+  .themes { display: flex; gap: 8px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div style="padding-top:40px;display:grid;gap:14px">
+    <h1 class="h1">Sariwa storefront, mockup v4</h1>
+    <p class="lead">The "calm and premium" direction, an alternative to mockup v2 for comparison. Open a screen to click through it. Product names, prices and the Customer are sample data.</p>
+    <fieldset class="themes">
+      <legend class="sr-only">Preview theme</legend>
+      <label class="chip"><input class="sr-only" type="radio" name="t" value="" checked>System</label>
+      <label class="chip"><input class="sr-only" type="radio" name="t" value="light">Light</label>
+      <label class="chip"><input class="sr-only" type="radio" name="t" value="dark">Dark</label>
+    </fieldset>
+  </div>
+  <div class="board">
+    <div class="frame desk"><a href="home.html">Home</a><div class="vp"><iframe title="Home preview" src="home.html" tabindex="-1" loading="lazy"></iframe></div></div>
+    <div class="frame desk"><a href="category.html">Category, Fruit</a><div class="vp"><iframe title="Category preview" src="category.html" tabindex="-1" loading="lazy"></iframe></div></div>
+    <div class="frame desk"><a href="product.html">Product, Chicken Breast Fillet</a><div class="vp"><iframe title="Product preview" src="product.html" tabindex="-1" loading="lazy"></iframe></div></div>
+    <div class="frame desk"><a href="checkout.html">Checkout</a><div class="vp"><iframe title="Checkout preview" src="checkout.html" tabindex="-1" loading="lazy"></iframe></div></div>
+    <div class="phones">
+      <div class="frame phone"><a href="mobile-home.html">Mobile Home</a><div class="vp"><iframe title="Mobile Home preview" src="mobile-home.html" tabindex="-1" loading="lazy"></iframe></div></div>
+      <div class="frame phone"><a href="mobile-cart.html">Mobile Cart</a><div class="vp"><iframe title="Mobile Cart preview" src="mobile-cart.html" tabindex="-1" loading="lazy"></iframe></div></div>
+    </div>
+  </div>
+</main>
+<script>
+  document.querySelector('.themes').addEventListener('change', (e) => {
+    const t = e.target.value;
+    if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+    document.querySelectorAll('.vp iframe').forEach((f) => { f.src = f.src.split('?')[0] + (t ? `?theme=${t}` : ''); });
+    document.querySelectorAll('.frame a').forEach((a) => { a.href = a.getAttribute('href').split('?')[0] + (t ? `?theme=${t}` : ''); });
+  });
+</script>
+</body>
+</html>
