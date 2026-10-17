@@ -53,3 +53,26 @@ export function percentOf(cents: number, bps: number): number {
   assertCentavos(result);
   return result === 0 ? 0 : result; // normalise -0
 }
+
+/**
+ * `cents` scaled by `numerator / denominator`, rounded half up once on the
+ * magnitude (the same rule as percentOf). Used for Unit Prices and weighed
+ * lines: price per kg times grams over 1,000.
+ */
+export function prorate(
+  cents: number,
+  numerator: number,
+  denominator: number
+): number {
+  assertCentavos(cents);
+  assertCentavos(numerator);
+  assertCentavos(denominator);
+  if (denominator <= 0) {
+    throw new RangeError(`Denominator must be positive: ${denominator}`);
+  }
+  const product = Math.abs(cents) * Math.abs(numerator);
+  const rounded = Math.floor((2 * product + denominator) / (2 * denominator));
+  const result = cents < 0 !== numerator < 0 ? -rounded : rounded;
+  assertCentavos(result);
+  return result === 0 ? 0 : result;
+}

@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { addMoney, formatMoney, parseMoney, percentOf } from "@/lib/money";
+import {
+  addMoney,
+  formatMoney,
+  parseMoney,
+  percentOf,
+  prorate,
+} from "@/lib/money";
 
 describe("formatMoney", () => {
   it("shows pesos with grouping and two decimals", () => {
@@ -91,5 +97,26 @@ describe("percentOf", () => {
   it("rejects non-integer inputs", () => {
     expect(() => percentOf(59.5, 1200)).toThrow(RangeError);
     expect(() => percentOf(5900, 12.5)).toThrow(RangeError);
+  });
+});
+
+describe("prorate", () => {
+  it("scales centavos by a ratio, rounding half up once", () => {
+    // ₱95.00 per kg, 1,250 g picked: ₱118.75
+    expect(prorate(9500, 1250, 1000)).toBe(11875);
+    // ₱115.00 per litre carton of 1,000 ml, shown per 100 ml: ₱11.50
+    expect(prorate(11500, 100, 1000)).toBe(1150);
+    // ₱42.00 for 360 ml, per litre: 116.666... rounds to ₱116.67
+    expect(prorate(4200, 1000, 360)).toBe(11667);
+    // exactly half a centavo rounds up
+    expect(prorate(1, 1, 2)).toBe(1);
+    expect(prorate(3, 1, 2)).toBe(2);
+  });
+
+  it("rejects non-integers and a zero or negative denominator", () => {
+    expect(() => prorate(95.5, 1, 2)).toThrow(RangeError);
+    expect(() => prorate(9500, 1.5, 2)).toThrow(RangeError);
+    expect(() => prorate(9500, 1, 0)).toThrow(RangeError);
+    expect(() => prorate(9500, 1, -2)).toThrow(RangeError);
   });
 });
