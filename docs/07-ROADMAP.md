@@ -146,7 +146,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] Sitemaps (static, products), `robots.txt`, canonical URLs, Open Graph images
 - [x] Tag-based revalidation so admin edits reach the storefront within a minute (`updateTag` in every admin action: immediate)
-- [ ] Lighthouse budget met on Home, Category, Product. Not yet: median mobile performance 78 (Home), 79 (Category), 84 (Product) on the local dev machine under load; accessibility, best practices and SEO 100 on all three. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
+- [ ] Lighthouse budget met on Home, Category, Product. Not yet: mobile performance 85 to 87 (Home), 81 to 87 (Category), 85 to 88 (Product) against `next start` on localhost; accessibility, best practices and SEO 100 on all three. The Product and Category headings now render in the page shell instead of a streamed Suspense segment (Product was 79), so first paint is the LCP. The rest is a localhost effect: scripts arrive at once and run before Chrome's first paint, so the simulated LCP counts all JavaScript. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
 
 **Exit criteria:** a non-developer imports a 500-row CSV, edits a Product in admin, and sees the change on the storefront within a minute; search finds "gatas" and "milk" and tolerates one typo; Lighthouse performance 90+ on mobile profile for the three key pages.
 

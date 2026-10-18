@@ -104,9 +104,20 @@ test("the export downloads every Product as CSV", async ({ page }) => {
 test("a Merchandiser adds a Category", async ({ page }) => {
   await signIn(page, MERCHANDISER, "/admin/categories");
   await page.goto("/admin/categories");
-  await page.getByLabel("New Category name").fill(`Baby Food ${RUN}`);
-  await page.getByLabel("Under").selectOption({ label: "Pantry" });
-  await page.getByRole("button", { name: "Add Category" }).click();
+  // Production can keep a hidden copy of the page while it streams.
+  const visible = { visible: true } as const;
+  await page
+    .getByLabel("New Category name")
+    .filter(visible)
+    .fill(`Baby Food ${RUN}`);
+  await page
+    .getByLabel("Under")
+    .filter(visible)
+    .selectOption({ label: "Pantry" });
+  await page
+    .getByRole("button", { name: "Add Category" })
+    .filter(visible)
+    .click();
   await expect(
     page.getByRole("status").filter({ hasText: "Category added" })
   ).toBeVisible();
