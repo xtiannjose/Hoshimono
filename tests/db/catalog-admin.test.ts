@@ -7,6 +7,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   addProductImage,
   createCategory,
+  createProduct,
   deleteCategory,
   exportProductsCsv,
   importProductsCsv,
@@ -44,7 +45,7 @@ describe("importProductsCsv", () => {
       "Fresh Milk,Magnolia,milk,1000,ml,119.00,125.00,vatable,no,chilled,active,,,milk,",
     ].join("\n");
     const result = await importProductsCsv(csv);
-    expect(result).toEqual({ ok: true, created: 1, updated: 1 });
+    expect(result).toMatchObject({ ok: true, created: 1, updated: 1 });
 
     const vinegar = await db.product.findUniqueOrThrow({
       where: { slug: "datu-puti-coconut-vinegar" },
@@ -105,12 +106,123 @@ describe("importProductsCsv", () => {
     }
   });
 
+  it("leaves out columns alone on existing Products, and defaults them only for new ones", async () => {
+    const milkId = seedId("product:magnolia-fresh-milk");
+    await db.product.update({
+      where: { id: milkId },
+      data: {
+        compareAtCents: 12500,
+        barcode: "4800000000017",
+        description: "Pasteurised",
+      },
+    });
+    const before = await db.product.findUniqueOrThrow({
+      where: { id: milkId },
+    });
+    const csv = [
+      "name,brand,category,pack_size_value,pack_size_unit,price,tax_class",
+      "Fresh Milk,Magnolia,milk,1000,ml,119.00,vatable",
+      "Oat Milk,Oatside,milk,1000,ml,189.00,vatable",
+    ].join("\n");
+    const result = await importProductsCsv(csv);
+    expect(result).toMatchObject({ ok: true, created: 1, updated: 1 });
+    const milk = await db.product.findUniqueOrThrow({ where: { id: milkId } });
+    expect(milk).toMatchObject({
+      priceCents: 11900,
+      status: before.status,
+      compareAtCents: 12500,
+      barcode: "4800000000017",
+      description: "Pasteurised",
+      storage: before.storage,
+      isWeighed: before.isWeighed,
+      unitPriceBasis: before.unitPriceBasis,
+    });
+    const oat = await db.product.findUniqueOrThrow({
+      where: { slug: "oatside-oat-milk" },
+    });
+    expect(oat).toMatchObject({
+      status: "draft",
+      storage: "ambient",
+      compareAtCents: null,
+    });
+    // The audit trail gets every change with its before and after.
+    if (result.ok) {
+      const change = result.changes.find((c) => c.id === milkId);
+      expect(change?.before?.priceCents).toBe(before.priceCents);
+      expect(change?.after.priceCents).toBe(11900);
+    }
+  });
+
+  it("matches by name when the file has no brand or slug column", async () => {
+    const before = await db.product.findUniqueOrThrow({
+      where: { id: seedId("product:pork-belly-liempo") },
+    });
+    const csv = [
+      "name,category,pack_size_value,pack_size_unit,price,tax_class",
+      "Pork Belly (Liempo),pork,500,g,205.00,vat_exempt",
+    ].join("\n");
+    expect(await importProductsCsv(csv)).toMatchObject({
+      ok: true,
+      created: 0,
+      updated: 1,
+    });
+    const liempo = await db.product.findUniqueOrThrow({
+      where: { id: before.id },
+    });
+    expect(liempo).toMatchObject({
+      priceCents: 20500,
+      isWeighed: true,
+      status: before.status,
+    });
+  });
+
+  it("skips blank rows that spreadsheets leave at the end", async () => {
+    const csv = [
+      HEADER,
+      "Fresh Milk,Magnolia,milk,1000,ml,118.00,,vatable,no,chilled,active,,,,",
+      ",,,,,,,,,,,,,,",
+      "  ,  ,",
+    ].join("\n");
+    expect(await importProductsCsv(csv)).toMatchObject({
+      ok: true,
+      updated: 1,
+    });
+  });
+
+  it("refuses barcodes that are taken, repeated, or mangled by a spreadsheet", async () => {
+    await db.product.update({
+      where: { id: seedId("product:magnolia-fresh-milk") },
+      data: { barcode: "4800000000017" },
+    });
+    const csv = [
+      HEADER,
+      "Oat Milk,Oatside,milk,1000,ml,189.00,,vatable,no,chilled,active,4800000000017,,,",
+      "Soy Milk,Vitasoy,milk,1000,ml,99.00,,vatable,no,chilled,active,4800000000024,,,",
+      "Rice Milk,Vitasoy,milk,1000,ml,99.00,,vatable,no,chilled,active,4800000000024,,,",
+      "Almond Milk,Califia,milk,1000,ml,99.00,,vatable,no,chilled,active,4.80002E+12,,,",
+    ].join("\n");
+    const result = await importProductsCsv(csv);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.map((e) => [e.row, e.field])).toEqual([
+        [2, "barcode"],
+        [4, "barcode"],
+        [5, "barcode"],
+      ]);
+      expect(result.errors[2].message).toContain("Text");
+    }
+  });
+
   it("round-trips: importing an export changes nothing", async () => {
     const before = await db.product.findMany({ orderBy: { slug: "asc" } });
     const csv = await exportProductsCsv();
     expect(parseCsv(csv)).toHaveLength(before.length + 1);
     const result = await importProductsCsv(csv);
-    expect(result).toEqual({ ok: true, created: 0, updated: before.length });
+    expect(result).toMatchObject({
+      ok: true,
+      created: 0,
+      updated: before.length,
+    });
     const after = await db.product.findMany({ orderBy: { slug: "asc" } });
     expect(after.map((p) => [p.slug, p.priceCents, p.status])).toEqual(
       before.map((p) => [p.slug, p.priceCents, p.status])
@@ -128,6 +240,71 @@ describe("updateProduct", () => {
     const row = await db.product.findUniqueOrThrow({ where: { id } });
     expect(row.priceCents).toBe(12000);
     expect(row.compareAtCents).toBeNull();
+  });
+});
+
+describe("createProduct", () => {
+  const base = {
+    categoryId: seedId("category:milk"),
+    packSizeValue: 1000,
+    packSizeUnit: "ml",
+    unitPriceBasis: "per_litre",
+    priceCents: 9900,
+    compareAtCents: null,
+    taxClass: "vatable",
+    isWeighed: false,
+    storage: "chilled",
+    status: "draft",
+    brand: null,
+    description: null,
+    allergens: [],
+    dietaryTags: [],
+  };
+
+  it("asks for letters or numbers when a name makes no slug", async () => {
+    expect(
+      await createProduct({ ...base, name: "味の素", barcode: null })
+    ).toEqual({
+      ok: false,
+      errors: [
+        { field: "name", message: "Use letters or numbers in the name" },
+      ],
+    });
+  });
+
+  it("explains a barcode that another Product already has", async () => {
+    await db.product.update({
+      where: { id: seedId("product:magnolia-fresh-milk") },
+      data: { barcode: "4800000000017" },
+    });
+    expect(
+      await createProduct({
+        ...base,
+        name: "Oat Milk",
+        barcode: "4800000000017",
+      })
+    ).toEqual({
+      ok: false,
+      errors: [
+        {
+          field: "barcode",
+          message: "Another Product already has this barcode",
+        },
+      ],
+    });
+    expect(
+      await updateProduct(seedId("product:alaska-full-cream-milk"), {
+        barcode: "4800000000017",
+      })
+    ).toEqual({
+      ok: false,
+      errors: [
+        {
+          field: "barcode",
+          message: "Another Product already has this barcode",
+        },
+      ],
+    });
   });
 });
 

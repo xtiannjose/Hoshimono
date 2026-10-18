@@ -4,6 +4,8 @@ import { useActionState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
+import { formKey } from "@/components/form-key";
+
 import { saveProduct, type FormState } from "../actions";
 
 export type ProductFormValues = {
@@ -103,7 +105,12 @@ export function ProductForm({
   };
 
   return (
-    <form action={action} className="grid max-w-3xl gap-5" noValidate>
+    <form
+      key={formKey(state)}
+      action={action}
+      className="grid max-w-3xl gap-5"
+      noValidate
+    >
       {values.id && <input type="hidden" name="id" value={values.id} />}
       {state.saved && (
         <p

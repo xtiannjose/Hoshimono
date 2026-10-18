@@ -19,9 +19,12 @@ const COLUMNS: [string, string][] = [
   ["compare_at_price", "Optional. The old price, higher than price."],
   ["tax_class", "Required. vatable, vat_exempt or zero_rated."],
   ["is_weighed", "yes or no. Weighed Products need pack_size_unit g."],
-  ["storage", "ambient, chilled or frozen. Default ambient."],
-  ["status", "draft, active or archived. Default draft."],
-  ["barcode", "Optional. 8 to 14 digits."],
+  ["storage", "ambient, chilled or frozen. New Products default to ambient."],
+  ["status", "draft, active or archived. New Products default to draft."],
+  [
+    "barcode",
+    "Optional. 8 to 14 digits. In Excel, format this column as Text first, or long barcodes turn into 4.8E+12 and lose digits.",
+  ],
   ["description", "Optional."],
   ["allergens", "Optional. Separate with ; such as milk;soy"],
   [
@@ -44,6 +47,12 @@ export default function ImportPage() {
             <p className="text-muted-foreground max-w-2xl">
               Start from an export: it has every column and every Product. Edit
               it in Excel or Google Sheets, save as CSV, then import it here.
+            </p>
+            <p className="text-muted-foreground max-w-2xl">
+              A file may hold only some columns, such as a price list. Products
+              already in the shop keep every column the file leaves out; only
+              new Products get the defaults. Without a brand or slug column,
+              rows match existing Products by name.
             </p>
             <p>
               <a

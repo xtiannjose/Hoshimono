@@ -106,7 +106,7 @@ export { googleEnabled } from "./internal/auth";
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
 }
-export { recordAudit } from "./internal/audit";
+export { recordAudit, recordAudits } from "./internal/audit";
 
 /** The signed-in Staff member with `role`, or null. For route handlers. */
 export async function getStaff(role: StaffRole) {

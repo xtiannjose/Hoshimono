@@ -32,6 +32,16 @@ export async function createProduct(
   const checked = validate(input);
   if (!checked.ok) return checked;
   const slug = productSlug(checked.fields.brand, checked.fields.name);
+  if (!slug) {
+    return {
+      ok: false,
+      errors: [
+        { field: "name", message: "Use letters or numbers in the name" },
+      ],
+    };
+  }
+  const taken = await barcodeTaken(checked.fields.barcode, null);
+  if (taken) return taken;
   if (await db.product.findUnique({ where: { slug }, select: { id: true } })) {
     return {
       ok: false,
@@ -43,15 +53,52 @@ export async function createProduct(
       ],
     };
   }
-  const created = await db.product.create({
-    data: {
-      ...checked.fields,
-      slug,
-      archivedAt: archivedAtFor(checked.fields.status, null),
-    },
+  try {
+    const created = await db.product.create({
+      data: {
+        ...checked.fields,
+        slug,
+        archivedAt: archivedAtFor(checked.fields.status, null),
+      },
+      select: { id: true },
+    });
+    return { ok: true, id: created.id };
+  } catch (error) {
+    return uniqueClash(error);
+  }
+}
+
+const BARCODE_TAKEN = {
+  ok: false as const,
+  errors: [
+    { field: "barcode", message: "Another Product already has this barcode" },
+  ],
+};
+
+async function barcodeTaken(barcode: string | null, self: string | null) {
+  if (!barcode) return null;
+  const owner = await db.product.findUnique({
+    where: { barcode },
     select: { id: true },
   });
-  return { ok: true, id: created.id };
+  return owner && owner.id !== self ? BARCODE_TAKEN : null;
+}
+
+// Two saves at once can still meet the unique indexes: explain, not crash.
+function uniqueClash(error: unknown): { ok: false; errors: FieldError[] } {
+  if ((error as { code?: string }).code !== "P2002") throw error;
+  const where = JSON.stringify((error as { meta?: unknown }).meta ?? "");
+  return where.includes("barcode")
+    ? BARCODE_TAKEN
+    : {
+        ok: false,
+        errors: [
+          {
+            field: "name",
+            message: "A Product with this brand and name already exists",
+          },
+        ],
+      };
 }
 
 /** Changes some fields of a Product; the whole Product is checked again. */
@@ -67,13 +114,19 @@ export async function updateProduct(
     return { ok: false, errors: [{ field: "", message: "No such Product" }] };
   const checked = validate({ ...pick(current), ...patch });
   if (!checked.ok) return checked;
-  await db.product.update({
-    where: { id },
-    data: {
-      ...checked.fields,
-      archivedAt: archivedAtFor(checked.fields.status, current.archivedAt),
-    },
-  });
+  const taken = await barcodeTaken(checked.fields.barcode, id);
+  if (taken) return taken;
+  try {
+    await db.product.update({
+      where: { id },
+      data: {
+        ...checked.fields,
+        archivedAt: archivedAtFor(checked.fields.status, current.archivedAt),
+      },
+    });
+  } catch (error) {
+    return uniqueClash(error);
+  }
   return { ok: true };
 }
 
