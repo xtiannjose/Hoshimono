@@ -18,7 +18,7 @@ Status: draft v0.1. Decisions that are expensive to reverse are recorded in [doc
                       +------------------+
    Customer phone --->|                  |---> Postgres (orders, catalogue, stock)
    (PWA / browser)    |   Next.js app    |---> Object storage + CDN (product images)
-                      |                  |---> Redis / KV (rate limits, optional cache)
+                      |                  |---> Postgres rate-limit table (ADR 0006)
    Staff (admin,  --->|  storefront      |
    picker, dispatch)  |  admin           |<--- Payment provider webhooks (Xendit/PayMongo)
                       |  API + webhooks  |---> Payment provider API (create/charge/refund)
@@ -45,6 +45,7 @@ Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/`
 | `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                      |
 | `content`       | Recipe, Article                                 | `getRecipe`, `recipeToCart`                                       |
 | `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                        |
+| `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                       |
 | `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                           |
 | `claims`        | Freshness Claims                                | `openClaim`, `resolveClaim`                                       |
 
@@ -65,13 +66,13 @@ app routes / server actions
 
 ## 4. Routes and rendering
 
-| Route group | Examples                                                           | Rendering                                                                                                    |
-| ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `(shop)`    | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes/[slug]` | Server-rendered with incremental revalidation; tag-based invalidation when admin edits a Product or Category |
-| `(account)` | `/account`, `/account/orders/[id]`, `/account/addresses`           | Dynamic, authenticated                                                                                       |
-| `checkout`  | `/cart`, `/checkout`, `/checkout/confirmed/[orderNo]`              | Dynamic, no caching                                                                                          |
-| `admin`     | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]`        | Dynamic, role-gated                                                                                          |
-| `api`       | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health`       | Route handlers                                                                                               |
+| Route group | Examples                                                                 | Rendering                                                                                                    |
+| ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `(shop)`    | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes/[slug]`       | Server-rendered with incremental revalidation; tag-based invalidation when admin edits a Product or Category |
+| `(account)` | `/account`, `/account/orders`, `/orders/[orderNo]`, `/account/addresses` | Dynamic, authenticated                                                                                       |
+| `checkout`  | `/cart`, `/checkout`, `/checkout/confirmed/[orderNo]`                    | Dynamic, no caching                                                                                          |
+| `admin`     | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]`              | Dynamic, role-gated                                                                                          |
+| `api`       | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health`             | Route handlers                                                                                               |
 
 Use the caching primitives of the Next.js version installed at setup time; read its docs then, because caching APIs change between major versions. Product URLs follow `/p/<slug>-<id>`; the id resolves the Product, the slug is cosmetic and redirects if stale.
 
@@ -94,7 +95,7 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 3. `confirmSlot(slotId)`: atomically increment `booked` only while `booked < capacity`; the earlier 10-minute hold is released into this booking.
 4. `reserve(lines)` at the Hub: atomically increase `reserved` only while `onHand - reserved >= qty` for each line. Any shortfall rolls the whole transaction back and returns the unavailable lines.
 5. Create the Order and Order Lines with snapshotted price, name, tax class and VAT amount.
-6. Create the Payment: COD is `pending_cod`; online methods call the provider and return a redirect or invoice URL.
+6. Create the Payment: COD is `cod_pending`; online methods call the provider and return a redirect or invoice URL.
 7. Commit, then enqueue notifications.
 
 If an online payment is not completed in 15 minutes, a cron job cancels the Order, releases stock and frees the Slot.
@@ -109,7 +110,7 @@ As built (Batch 2.4, `src/modules/orders/internal/place-order.ts`):
 
 ## 7. Order lifecycle
 
-Order status and payment status are separate fields. Only `orders.transition()` changes Order status; each call writes a status-history row with actor and reason.
+Order status and payment status are separate fields. Only `transitionOrder()` (orders module) changes Order status; each call writes a status-history row with actor and reason. Cancelling a COD Order sets its Payment to `unpaid`.
 
 ```mermaid
 stateDiagram-v2
@@ -177,7 +178,7 @@ As built (Batch 2.5):
 
 - **Customers:** mobile OTP, email magic link, Google. Sessions are HTTP-only cookies.
 - **Staff:** email plus Google Workspace or passkey; roles `admin`, `merchandiser`, `picker`, `dispatcher`.
-- Authorisation is checked in three places: route middleware (coarse), server action (per operation) and data access (row ownership). A missing check in one layer must not expose data.
+- Authorisation is checked in two places: the page or Server Action (`requireCustomer`, `requireStaff` per operation) and data access (row ownership, every query filtered by the Customer). There is no route middleware layer: Next 16 pages render inside Suspense and each one checks on its own. A missing check in one layer must not expose data.
 - Rate-limit OTP sends, login and checkout creation per IP and per phone number.
 - Audit log for every admin write: who, what, before, after.
 

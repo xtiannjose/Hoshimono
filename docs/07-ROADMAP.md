@@ -46,7 +46,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Media           | Object storage + CDN, `next/image`                                                          | Product photos converted to WebP/AVIF at the right sizes                                                                                       | Phase 1                                         |
 | Maps            | Geocoding and map pin provider                                                              | Address pin and Zone check                                                                                                                     | Phase 2                                         |
 | Jobs            | `jobs` table + Vercel Cron calling `/api/cron/[job]`                                        | Expire holds and unpaid Orders, retry notices, reminders                                                                                       | Phase 2                                         |
-| Rate limits     | Redis or KV store                                                                           | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
+| Rate limits     | Postgres table (ADR 0006)                                                                   | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
 | Admin tables    | TanStack Table                                                                              | Dense, sortable admin lists                                                                                                                    | Phase 1                                         |
 | i18n            | `next-intl`                                                                                 | Filipino language pass                                                                                                                         | Phase 5                                         |
 | PWA             | Web manifest + service worker                                                               | Installable app, offline-friendly cart and browse shell                                                                                        | Phase 5                                         |
@@ -158,7 +158,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
 
-**Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
+**Batch 2.2 Cart** (W5). Stack: Server Actions, a hashed random cookie token, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
 - [x] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
 - [x] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)

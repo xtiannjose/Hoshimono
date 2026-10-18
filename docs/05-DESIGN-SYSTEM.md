@@ -200,3 +200,10 @@ Token values live once in `:root` and the dark blocks (copy them from `mockup-v2
 - Dark mode is driven by `data-theme` on `<html>`, set by `next-themes`, with the `prefers-color-scheme` block as a no-JavaScript fallback. The Tailwind `dark:` variant matches `[data-theme="dark"]`.
 
 Type utilities `type-display`, `type-h1` to `type-h3`, `type-lead`, `type-small`, `type-fine`, `type-price`, the marker `hl` and the page width `wrap` are defined there too.
+
+### As built in Phase 2 (deviations to revisit)
+
+- `CartDrawer` is built on vaul: a bottom sheet on phones and a right sheet from `md`, both following the finger and closing on a fast or long drag. It uses vaul's own transition, not the Motion spring from section 7, and has no detents (the Cart has one height). Its delivery row says Slots are chosen at Checkout rather than showing a held Slot.
+- `CartButton` shows the goods total, not the total with delivery: the fee depends on the address chosen at Checkout.
+- Customer copy says "delivery slot", never "delivery window" (GLOSSARY).
+- The selected Slot shows when its hold ends ("Held for you until 4:12 PM") and stops promising it once the hold lapses.

@@ -44,6 +44,14 @@ _Avoid_: Basket, bag
 One Product in a Cart with a quantity and a Substitution Preference.
 _Avoid_: Cart item, entry
 
+**Guest Cart**:
+A Cart kept for a visitor who has not signed in, found through a random token in a cookie (only its hash is stored). Signing in merges it into the Customer's Cart.
+_Avoid_: Anonymous cart, session cart
+
+**Picker Note**:
+A short note on a Cart Line for the Picker, such as "lean cuts" or "ripe ones", copied to the Order Line.
+_Avoid_: Special instructions, comment
+
 **Substitution Preference**:
 The customer's instruction for a Cart Line if the Product is out of stock at pick time: allow any suitable swap, choose a specific alternative, or do not substitute.
 _Avoid_: Replacement setting, swap rule
@@ -59,6 +67,10 @@ _Avoid_: Purchase, transaction, booking
 **Order Line**:
 One Product on an Order, with the price, name and tax snapshotted at placement, an ordered quantity, and a fulfilled quantity.
 _Avoid_: Line item, order item
+
+**Order Number**:
+The human-facing reference of an Order, `SW-YYMMDD-XXXX` (Manila date and four characters without 0, O, 1 or I), used in messages and tracking links.
+_Avoid_: Order ID (the internal UUID), reference code
 
 **Reorder**:
 Creating a new Cart from a past Order's lines.
@@ -79,8 +91,16 @@ A geographic area a Hub serves, defined by city and barangay lists, with its own
 _Avoid_: Region, coverage area, delivery area
 
 **Slot**:
-A bookable delivery window at a Hub for a date, with a capacity of Orders.
+A bookable delivery window at a Hub for a date, with a capacity of Orders. Customer copy says "delivery slot".
 _Avoid_: Timeslot, delivery window, appointment
+
+**Slot Hold**:
+A place in a Slot kept for one Cart for 10 minutes while the Customer checks out. A Cart holds one Slot at a time.
+_Avoid_: Reservation (that word is for stock), booking
+
+**Slot Cutoff**:
+How long before a Slot starts it stops taking new holds and Orders (90 minutes for now), leaving time to pick and travel.
+_Avoid_: Deadline, closing time
 
 **Picking**:
 Collecting the Order Lines of an Order from Hub shelves and chillers into totes.
