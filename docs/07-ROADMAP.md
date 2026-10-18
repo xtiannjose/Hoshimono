@@ -196,6 +196,20 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 Never cut: server re-pricing, atomic stock reservation, atomic Slot booking, the concurrency tests, cancel before picking (PRD ACC-5).
 
+**Review of Phases 1 and 2** (18 Oct, PR #5). Reviewers checked both phases. Every confirmed finding that needs no outside account is fixed:
+
+- [x] Security: open redirect after sign-in closed (`safeNext`); cron secret compared in constant time; text-message codes limited per number and IP, per number (10 an hour) and on verify; new Guest Carts limited to 60 per IP an hour; console senders and the dev mailbox can never run on a real domain (`src/lib/test-mode.ts`)
+- [x] Admin: CSV import keeps columns missing from the file, matches by slug, brand and name, or name alone, skips blank rows and checks barcodes; audit entries carry before and after values; saving keeps the Unit Price basis; price capped at PHP 100,000; photo uploads up to 10 MB, padded to square instead of cropped; forms keep a select's value after an error
+- [x] Orders: `placeOrder` re-checks the Cart version inside its transaction and retries deadlocks; COD limited to 3 open Orders and PHP 20,000 an Order; Slot holds and bookings check the Hub and a 7-day window; cancelling releases the Slot, the stock and the COD Payment (new `payments` module); no delivery fee when nothing is priced; the VAT split includes the fee; weighed items say "about" and show an estimated total
+- [x] Cart and Checkout: writes lock the open Cart; archived lines can be removed; an older Cart view never overwrites a newer one; a late Slot answer cannot replace a newer choice; "Held for you until" with expiry; inline address step; an address in another Zone re-prices the Order
+- [x] Ops: cron steps run in isolation with logged errors; purge of idle Guest Carts, old checked-out Carts and finished jobs (partial indexes); Vercel region `sin1`
+- [x] Storefront: filters and sort keep each other; pages past the end redirect; 44 px Cart controls and 16 px fields; long-press stepper; search keeps text typed before hydration; Cart drawer as a sheet with a delivery row; `/delivery` coverage page; copy says cash on delivery only
+- [x] Performance: Product and Category headings render in the page shell (Lighthouse Product 79 to 85-88). Both pages set `instant = false`, so a Product or Category added after the build renders on its first visit without a skeleton
+- [x] Tests: CI runs e2e against a production build (`E2E_PROD=1`); 220 Vitest tests and 41 Playwright tests green on the dev server and the production build
+- [x] Docs: Glossary adds Guest Cart, Picker Note, Order Number, Slot Hold and Slot Cutoff; docs 03, 04 and 05 match the code
+
+Refuted during verification, so not changed: weighed items sold per piece (unreachable), the Order text to an unverified number, `x-forwarded-for` spoofing. What is still open is in the carry-over list in section 9.
+
 ## 8. Phase 3: Online payments (W8 to W9, 7 to 18 Dec)
 
 **Goal:** GCash and card payments that can never double-charge or lose an Order.
@@ -223,6 +237,17 @@ Never cut: server re-pricing, atomic stock reservation, atomic Slot booking, the
 ## 9. Holiday buffer (W10 to W11, 21 Dec to 1 Jan)
 
 No new features over Christmas and New Year. Use the time for bugs from Phases 0 to 3, test gaps, docs and the business tracks (Hub fit-out, Rider hiring, BIR registration). This is also where items cut from Phase 2 land (see the cut order in section 7).
+
+**Carried over from the Phase 1 and 2 review** (18 Oct):
+
+- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5): measure on a Vercel preview, then self-host subset fonts. Blocked: Vercel account
+- [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
+- [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
+- [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
+- [ ] Cart drawer delivery row shows the held Slot, not a generic line
+- [ ] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
+- [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
+- [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
 
 ## 10. Phases 4 to 6 and launch
 
