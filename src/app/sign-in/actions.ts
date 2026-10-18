@@ -21,6 +21,9 @@ const QUARTER_HOUR = 15 * 60;
 const PER_TARGET = 3;
 const PER_IP = 30;
 const CODE_CHECKS = 10;
+// Codes count per number and IP, so a stranger elsewhere cannot use up a
+// Customer's tries. This higher per-number cap bounds what SMS can cost.
+const CODES_PER_NUMBER = 10;
 
 async function limited(
   ...rules: [key: string, limit: number][]
@@ -98,9 +101,11 @@ export async function requestSignInCode(
       message: "Enter a mobile number like 0917 123 4567.",
     };
   }
+  const from = await ip();
   const tooMany = await limited(
-    [`code:ip:${await ip()}`, PER_IP],
-    [`code:phone:${phone}`, PER_TARGET]
+    [`code:ip:${from}`, PER_IP],
+    [`code:phone-ip:${phone}:${from}`, PER_TARGET],
+    [`code:phone:${phone}`, CODES_PER_NUMBER]
   );
   if (tooMany) return { step: "number", typed, message: tooMany };
   try {
@@ -126,7 +131,10 @@ export async function verifySignInCodeAction(
   if (!/^\d{6}$/.test(code)) {
     return { ...prev, step: "code", phone, message: "Enter the 6-digit code." };
   }
-  const tooMany = await limited([`verify:phone:${phone}`, CODE_CHECKS]);
+  const tooMany = await limited([
+    `verify:phone-ip:${phone}:${await ip()}`,
+    CODE_CHECKS,
+  ]);
   if (tooMany) return { ...prev, step: "code", phone, message: tooMany };
   if (!(await verifySignInCode(phone, code))) {
     return {

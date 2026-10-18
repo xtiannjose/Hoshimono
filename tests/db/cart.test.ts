@@ -5,6 +5,7 @@ import type { Product, StockLevel } from "@/generated/prisma/client";
 import {
   getCart,
   getCartQuantities,
+  hasGuestCart,
   mergeGuestCart,
   newGuestToken,
   setLineNote,
@@ -198,6 +199,54 @@ describe("Cart lines", () => {
   });
 });
 
+describe("Cart housekeeping", () => {
+  it("removes a line whose Product is no longer sold", async () => {
+    const owner = guest();
+    await setLineQuantity(owner, MILK, 1, HUB);
+    await db.product.update({
+      where: { id: MILK },
+      data: { status: "archived" },
+    });
+    expect(await setLineQuantity(owner, MILK, 0, HUB)).toEqual({
+      ok: true,
+      quantity: 0,
+      capped: false,
+    });
+    expect((await getCart(owner, ctx)).unavailableCount).toBe(0);
+  });
+
+  it("puts a line set after checkout into a new Cart, never the closed one", async () => {
+    const owner = await customer("ligaya@example.com");
+    await setLineQuantity(owner, MILK, 1, HUB);
+    const closed = await db.cart.findFirstOrThrow();
+    await db.cart.update({
+      where: { id: closed.id },
+      data: { checkedOutAt: new Date() },
+    });
+    await setLineQuantity(owner, LIEMPO, 1, HUB);
+    expect(await db.cartLine.count({ where: { cartId: closed.id } })).toBe(1);
+    expect(await getCartQuantities(owner)).toEqual({ [LIEMPO]: 1 });
+  });
+
+  it("knows whether a guest token still has a Cart", async () => {
+    const owner = guest();
+    const token = (owner as { guestToken: string }).guestToken;
+    expect(await hasGuestCart(token)).toBe(false);
+    await setLineQuantity(owner, MILK, 1, HUB);
+    expect(await hasGuestCart(token)).toBe(true);
+    expect(await hasGuestCart("forged")).toBe(false);
+  });
+
+  it("changes its version when a line changes, for the checkout check", async () => {
+    const owner = guest();
+    await setLineQuantity(owner, MILK, 1, HUB);
+    const before = (await getCart(owner, ctx)).version;
+    expect((await getCart(owner, ctx)).version).toBe(before);
+    await setLineQuantity(owner, MILK, 2, HUB);
+    expect((await getCart(owner, ctx)).version).not.toBe(before);
+  });
+});
+
 describe("Cart change flags", () => {
   it("flags a price change until the line is touched again", async () => {
     const owner = guest();
@@ -344,6 +393,26 @@ describe("mergeGuestCart", () => {
     ).toBe("none");
     expect(await getCartQuantities(shopper)).toEqual({});
     expect(await db.cart.count()).toBe(1);
+  });
+
+  it("keeps a guest line that sold out, flagged, instead of dropping it", async () => {
+    const shopper = guest();
+    const signedIn = await customer("ligaya@example.com");
+    await setLineQuantity(signedIn, LIEMPO, 1, HUB);
+    await setLineQuantity(shopper, MILK, 2, HUB);
+    await db.stockLevel.update({
+      where: { productId_hubId: { productId: MILK, hubId: HUB } },
+      data: { onHand: 0 },
+    });
+    await mergeGuestCart(
+      (shopper as { guestToken: string }).guestToken,
+      (signedIn as { customerId: string }).customerId,
+      HUB
+    );
+    const milk = (await getCart(signedIn, ctx)).lines.find(
+      (l) => l.product.id === MILK
+    );
+    expect(milk).toMatchObject({ quantity: 2, stock: "out" });
   });
 
   it("hands the guest Cart over when the Customer has none", async () => {

@@ -1,6 +1,7 @@
 import { toNextJsHandler } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 
 import type { StaffRole } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
@@ -14,31 +15,42 @@ export type { AuthUserInfo } from "./internal/link";
 /** Better Auth endpoints for /api/auth/[...all]. */
 export const authHandler = toNextJsHandler(auth);
 
-/** Only same-site paths, so `?next=` cannot redirect to another site. */
+/**
+ * Only same-site paths, so `?next=` cannot redirect to another site. Control
+ * characters and backslashes are refused outright: browsers drop tabs and
+ * newlines, which would turn "/\t/evil.example" into "//evil.example".
+ */
 export function safeNext(next: string | null | undefined): string {
-  return next && /^\/(?![/\\])/.test(next) ? next : "/account";
+  if (!next || !next.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(next)) {
+    return "/account";
+  }
+  const url = new URL(next, "https://same.site");
+  return url.origin === "https://same.site" && !next.startsWith("//")
+    ? next
+    : "/account";
 }
 
-async function currentUser() {
+// Cached per request: the header, the page and its actions all ask.
+const currentUser = cache(async () => {
   // Read headers first: touching auth.api starts Better Auth, which reads
   // the clock, and that must not happen while Next prerenders the shell.
   const requestHeaders = await headers();
   const session = await auth.api.getSession({ headers: requestHeaders });
   return session?.user ?? null;
-}
+});
 
 /** The signed-in Customer, or a redirect to sign-in. */
 export async function requireCustomer(next = "/account") {
-  const user = await currentUser();
-  if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
-  return customerForUser(db, user);
+  const customer = await currentCustomer();
+  if (!customer) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
+  return customer;
 }
 
 /** The signed-in Customer, or null for guests. Never redirects. */
-export async function currentCustomer() {
+export const currentCustomer = cache(async () => {
   const user = await currentUser();
   return user ? customerForUser(db, user) : null;
-}
+});
 
 /** The signed-in Staff member with `role`. Others get a 404, not a hint. */
 export async function requireStaff(role: StaffRole, next = "/admin") {

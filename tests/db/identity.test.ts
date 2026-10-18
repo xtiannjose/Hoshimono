@@ -21,12 +21,22 @@ describe("safeNext", () => {
   it("keeps same-site paths", () => {
     expect(safeNext("/account")).toBe("/account");
     expect(safeNext("/admin?tab=orders")).toBe("/admin?tab=orders");
+    expect(safeNext("/orders/SW-261018-ABCD#top")).toBe(
+      "/orders/SW-261018-ABCD#top"
+    );
+    // An encoded tab stays a harmless path segment.
+    expect(safeNext("/%09/evil.example")).toBe("/%09/evil.example");
   });
 
   it("falls back to /account for anything that could leave the site", () => {
     for (const bad of [
       "//evil.example",
       "/\\evil.example",
+      // Browsers drop tabs and newlines in URLs, so these become //evil.example.
+      "/\t/evil.example",
+      "/\n/evil.example",
+      "/\r//evil.example",
+      "/\u0000/evil.example",
       "https://evil.example",
       "account",
       "",

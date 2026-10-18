@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 
 import { connection } from "next/server";
 
@@ -9,15 +9,14 @@ import { expireUnpaidOrders } from "@/modules/orders";
 
 import { jobHandlers } from "../handlers";
 
+const digest = (text: string) => createHash("sha256").update(text).digest();
+
+// Same-length digests, so any header compares in constant time and never throws.
 function authorised(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
-  const sent = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${secret}`;
-  return (
-    !!secret &&
-    sent.length === expected.length &&
-    timingSafeEqual(Buffer.from(sent), Buffer.from(expected))
-  );
+  if (!secret) return false;
+  const sent = digest(request.headers.get("authorization") ?? "");
+  return timingSafeEqual(sent, digest(`Bearer ${secret}`));
 }
 
 /**
