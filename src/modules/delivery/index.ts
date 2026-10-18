@@ -3,8 +3,10 @@
 export { getDefaultHubId } from "./internal/hubs";
 export {
   getZone,
+  listCoverage,
   listServiceAreas,
   resolveZone,
+  type ZoneCoverage,
   type ZoneMatch,
 } from "./internal/zones";
 export {

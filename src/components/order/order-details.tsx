@@ -5,11 +5,13 @@ import type { OrderDetail } from "@/modules/orders";
 /** Delivery, items and totals of an Order, as stored at checkout. */
 export function OrderDetails({ order }: { order: OrderDetail }) {
   const { address } = order;
+  // Weighed Products are charged by packed weight: the total is an estimate.
+  const estimated = order.lines.some((l) => l.weighed);
   return (
     <div className="grid gap-6">
       <dl className="grid gap-3 sm:grid-cols-2">
         <div>
-          <dt className="text-muted-foreground text-sm">Delivery window</dt>
+          <dt className="text-muted-foreground text-sm">Delivery slot</dt>
           <dd className="font-semibold">
             {formatSlot(order.slot.startsAt, order.slot.endsAt)}
           </dd>
@@ -77,14 +79,14 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
             </dd>
           </div>
           <div className="border-border font-display flex justify-between border-t pt-2 text-xl font-semibold">
-            <dt>Total</dt>
+            <dt>{estimated ? "Estimated total" : "Total"}</dt>
             <dd data-testid="order-total">{formatMoney(order.totalCents)}</dd>
           </div>
         </dl>
         <p className="text-muted-foreground mt-2 text-[13px]">
           VAT included ({formatMoney(order.vatCents)}).
-          {order.lines.some((l) => l.weighed) &&
-            " Weighed items may change the final amount a little."}
+          {estimated &&
+            " Weighed items are charged by the weight we pack, so the final amount may change a little."}
         </p>
       </div>
     </div>

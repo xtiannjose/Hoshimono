@@ -17,7 +17,13 @@ export function googleEnabled(): boolean {
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
   user: { modelName: "authUser" },
-  session: { modelName: "authSession" },
+  session: {
+    modelName: "authSession",
+    // A signed copy of the session in a cookie: the header, the page and
+    // its actions read it without a database lookup. A sign-out elsewhere
+    // takes effect within 5 minutes.
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
   account: { modelName: "authAccount" },
   verification: { modelName: "authVerification" },
   // Sign-in links, codes and Google start only from our Server Actions,

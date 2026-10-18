@@ -39,6 +39,7 @@ async function Confirmed({
   const customer = await requireCustomer(`/checkout/confirmed/${orderNo}`);
   const order = await getOrder(customer.id, orderNo);
   if (!order) notFound();
+  const estimated = order.lines.some((l) => l.weighed);
   // The header still shows the Cart that became this Order; hand it the new one.
   const owner = await readCartOwner();
   const cart = await getCart(owner, await cartContext(owner));
@@ -50,14 +51,21 @@ async function Confirmed({
         <h1 className="type-h1">Salamat! Your order is in.</h1>
         <p>
           Order number <b className="tabular-nums">{order.orderNo}</b>. We sent
-          the details to your email and phone.
+          the details to{" "}
+          {customer.email ? "your email and phone" : "your phone"}.
         </p>
-        {order.paymentMethod === "cod" && (
-          <p>
-            Please have <b>{formatMoney(order.totalCents)}</b> ready in cash for
-            the Rider.
-          </p>
-        )}
+        {order.paymentMethod === "cod" &&
+          (estimated ? (
+            <p>
+              Please have about <b>{formatMoney(order.totalCents)}</b> ready in
+              cash. The final amount follows the weight we pack.
+            </p>
+          ) : (
+            <p>
+              Please have <b>{formatMoney(order.totalCents)}</b> ready in cash
+              for the Rider.
+            </p>
+          ))}
         <Link href={`/orders/${order.orderNo}`} className={PRIMARY_BUTTON}>
           Track your order
         </Link>

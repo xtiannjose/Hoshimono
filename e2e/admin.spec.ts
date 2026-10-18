@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { freshEmail, RUN } from "./run-tag";
 import { signIn } from "./sign-in";
 
 // Phase 1 exit criterion: a non-developer imports a 500-row CSV, edits a
@@ -48,7 +49,7 @@ test("a 500-row CSV imports and the Products appear in search", async ({
   const rows = Array.from(
     { length: 500 },
     (_, i) =>
-      `Import Test Rice ${i + 1},E2E Mills,rice,1000,g,${(60 + (i % 40)).toFixed(2)},,vat_exempt,no,ambient,active,,,,`
+      `Import Test Rice ${i + 1},E2E Mills ${RUN},rice,1000,g,${(60 + (i % 40)).toFixed(2)},,vat_exempt,no,ambient,active,,,,`
   );
   await signIn(page, MERCHANDISER, "/admin/import");
   await page.goto("/admin/import", { waitUntil: "networkidle" });
@@ -100,19 +101,19 @@ test("the export downloads every Product as CSV", async ({ page }) => {
 test("a Merchandiser adds a Category", async ({ page }) => {
   await signIn(page, MERCHANDISER, "/admin/categories");
   await page.goto("/admin/categories");
-  await page.getByLabel("New Category name").fill("Baby Food");
+  await page.getByLabel("New Category name").fill(`Baby Food ${RUN}`);
   await page.getByLabel("Under").selectOption({ label: "Pantry" });
   await page.getByRole("button", { name: "Add Category" }).click();
   await expect(
     page.getByRole("status").filter({ hasText: "Category added" })
   ).toBeVisible();
   await expect(
-    page.getByRole("textbox", { name: "Name of Baby Food" })
+    page.getByRole("textbox", { name: `Name of Baby Food ${RUN}` })
   ).toBeVisible();
 });
 
 test("Customers cannot open the admin", async ({ page }) => {
-  await signIn(page, "ligaya@example.com", "/account");
+  await signIn(page, freshEmail("not-staff"), "/account");
   const res = await page.goto("/admin/products");
   await expect(
     page.getByRole("heading", { name: "We could not find that page" })

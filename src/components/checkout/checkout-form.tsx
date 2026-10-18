@@ -3,7 +3,13 @@
 import { CheckCircleIcon, MoneyIcon, ScalesIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useState, type ReactNode } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import {
   holdSlotAction,
@@ -12,6 +18,7 @@ import {
 } from "@/app/checkout/actions";
 import { CartSummary } from "@/components/cart/cart-summary";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { CartView } from "@/modules/cart";
 import type { AddressView } from "@/modules/customers";
@@ -64,6 +71,7 @@ export function CheckoutForm({
   cart,
   slots,
   heldSlotId,
+  heldExpiresAt,
   phone,
 }: {
   idempotencyKey: string;
@@ -73,6 +81,8 @@ export function CheckoutForm({
   cart: CartView;
   slots: SlotChoice[];
   heldSlotId: string | null;
+  /** When the cart's current hold ends. */
+  heldExpiresAt: Date | null;
   phone: string;
 }) {
   const router = useRouter();
@@ -82,6 +92,19 @@ export function CheckoutForm({
     state.values?.slotId ?? heldSlotId ?? ""
   );
   const [slotMessage, setSlotMessage] = useState<string | null>(null);
+  // When the hold on the chosen Slot ends; null means no live hold shown.
+  const [heldUntil, setHeldUntil] = useState<Date | null>(
+    heldSlotId && slotId === heldSlotId ? heldExpiresAt : null
+  );
+  const [now, setNow] = useState(() => Date.now());
+  // Re-render when the hold lapses, so the label stops promising it.
+  useEffect(() => {
+    if (!heldUntil) return;
+    const wait = heldUntil.getTime() - Date.now();
+    const timer = setTimeout(() => setNow(Date.now()), Math.max(0, wait) + 50);
+    return () => clearTimeout(timer);
+  }, [heldUntil]);
+  const holdLive = heldUntil !== null && heldUntil.getTime() > now;
   const days = [
     ...new Map(slots.map((s) => [s.date, splitLabel(s.label).day])),
   ];
@@ -92,11 +115,18 @@ export function CheckoutForm({
   const blocked =
     !zone || priced.lines.length === 0 || priced.belowMinimumByCents > 0;
 
+  const latestChoice = useRef<string | null>(null);
   async function choose(id: string) {
+    latestChoice.current = id;
     setSlotId(id);
     setSlotMessage(null);
-    const result = await holdSlotAction(id);
-    if (!result.ok) {
+    setHeldUntil(null);
+    const result = await holdSlotAction(id, addressId);
+    // A slow answer for an earlier choice must not undo a newer one.
+    if (latestChoice.current !== id) return;
+    if (result.ok) {
+      setHeldUntil(new Date(result.expiresAt));
+    } else {
       setSlotId("");
       setSlotMessage(result.message);
     }
@@ -151,8 +181,11 @@ export function CheckoutForm({
           </fieldset>
           {zone ? (
             <p className="text-muted-foreground text-sm">
-              Delivery area: {zone.name}. Delivery fee{" "}
-              {formatMoney(zone.deliveryFeeCents)}.
+              Delivery to {zone.name}:{" "}
+              {priced.deliveryFeeCents === 0
+                ? "free for this order"
+                : formatMoney(zone.deliveryFeeCents)}
+              .
             </p>
           ) : (
             <p
@@ -168,12 +201,6 @@ export function CheckoutForm({
               className="underline underline-offset-[3px]"
             >
               Edit {address.label}
-            </Link>
-            <Link
-              href="/account/addresses/new?next=/checkout"
-              className="underline underline-offset-[3px]"
-            >
-              Add another address
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -210,11 +237,9 @@ export function CheckoutForm({
           </div>
         </Panel>
 
-        <Panel title="Delivery window">
+        <Panel title="Delivery slot">
           {slots.length === 0 ? (
-            <p>
-              No delivery windows are open right now. Please check back soon.
-            </p>
+            <p>No delivery slots are open right now. Please check back soon.</p>
           ) : (
             <>
               {/* Fieldsets default to min-content width; let the chips scroll. */}
@@ -272,7 +297,9 @@ export function CheckoutForm({
                             {slotId === s.id ? (
                               <>
                                 <CheckCircleIcon size={16} aria-hidden />
-                                Held for you for 10 minutes
+                                {holdLive && heldUntil
+                                  ? `Held for you until ${formatTime(heldUntil)}`
+                                  : "Chosen"}
                               </>
                             ) : full ? (
                               "Full"
@@ -411,7 +438,7 @@ export function CheckoutForm({
         </button>
         {!slotId && !blocked && (
           <p className="text-muted-foreground text-center text-[13px]">
-            Choose a delivery window to continue.
+            Choose a delivery slot to continue.
           </p>
         )}
         <Link

@@ -1,6 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
+import { revalidateTag } from "next/cache";
 import { connection } from "next/server";
+
+import { STOCK_TAG } from "@/app/_data/storefront";
 
 import { purgeRateLimits } from "@/lib/rate-limit";
 import { purgeExpiredHolds } from "@/modules/delivery";
@@ -37,6 +40,7 @@ export async function GET(
   const now = new Date();
   const holds = await purgeExpiredHolds(now);
   const unpaidOrders = await expireUnpaidOrders(now);
+  if (unpaidOrders > 0) revalidateTag(STOCK_TAG, "max");
   const jobs = await runDueJobs(jobHandlers, { now });
   const rateLimits = await purgeRateLimits(now);
   return Response.json({ holds, unpaidOrders, jobs, rateLimits });

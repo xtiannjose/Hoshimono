@@ -1,7 +1,7 @@
 import { toNextJsHandler } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { cache } from "react";
+import { connection } from "next/server";
 
 import type { StaffRole } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
@@ -30,14 +30,19 @@ export function safeNext(next: string | null | undefined): string {
     : "/account";
 }
 
-// Cached per request: the header, the page and its actions all ask.
-const currentUser = cache(async () => {
+// Not memoised with React cache: a promise shared between two parts of a
+// page is attributed to the prerender and trips Next. Better Auth's session
+// cookie cache makes repeat calls cheap instead (internal/auth.ts).
+async function currentUser() {
   // Read headers first: touching auth.api starts Better Auth, which reads
   // the clock, and that must not happen while Next prerenders the shell.
+  // Headers count as runtime data that Next may still prerender with
+  // (partialPrefetching), so connection() marks this truly per request.
   const requestHeaders = await headers();
+  await connection();
   const session = await auth.api.getSession({ headers: requestHeaders });
   return session?.user ?? null;
-});
+}
 
 /** The signed-in Customer, or a redirect to sign-in. */
 export async function requireCustomer(next = "/account") {
@@ -47,10 +52,10 @@ export async function requireCustomer(next = "/account") {
 }
 
 /** The signed-in Customer, or null for guests. Never redirects. */
-export const currentCustomer = cache(async () => {
+export async function currentCustomer() {
   const user = await currentUser();
   return user ? customerForUser(db, user) : null;
-});
+}
 
 /** The signed-in Staff member with `role`. Others get a 404, not a hint. */
 export async function requireStaff(role: StaffRole, next = "/admin") {

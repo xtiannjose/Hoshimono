@@ -6,11 +6,35 @@ import type { Prisma } from "@/generated/prisma/client";
 import { manilaDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
-import { checkOutCart, getCart, getCartId } from "@/modules/cart";
+import {
+  checkOutCart,
+  getCart,
+  getCartId,
+  readCartVersion,
+} from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
 import { bookSlot, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
+import { createCodPayment } from "@/modules/payments";
+
+/**
+ * Cash-on-delivery Orders hold stock and Slot places without payment, so
+ * one Customer may have only a few open at once, each under a cash limit.
+ * Assumed values until operations set them.
+ */
+export const MAX_OPEN_COD_ORDERS = 3;
+export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
+
+// Statuses where an Order still holds stock or a Slot place.
+const OPEN_STATUSES = [
+  "pending_payment",
+  "confirmed",
+  "picking",
+  "picked",
+  "out_for_delivery",
+  "delivery_failed",
+] as const;
 
 /** Job that sends the order confirmed email and SMS (Batch 2.5). */
 export const ORDER_CONFIRMED_JOB = "order.confirmed";
@@ -35,6 +59,7 @@ export type PlaceOrderResult =
   | { ok: false; reason: "total_changed"; totalCents: number }
   | { ok: false; reason: "below_minimum"; shortByCents: number }
   | { ok: false; reason: "out_of_stock"; productIds: string[] }
+  | { ok: false; reason: "over_cod_limit"; limitCents: number }
   | {
       ok: false;
       reason:
@@ -44,7 +69,10 @@ export type PlaceOrderResult =
         | "out_of_zone"
         | "empty_cart"
         | "slot_unavailable"
-        | "already_placed";
+        | "already_placed"
+        | "nothing_in_stock"
+        | "too_many_open_orders"
+        | "cart_changed";
     };
 
 const input = z.object({
@@ -99,6 +127,17 @@ async function replay(
 const isUniqueViolation = (error: unknown) =>
   (error as { code?: string }).code === "P2002";
 
+// Postgres gave up on the transaction (a deadlock or a write conflict):
+// nothing was saved, so trying again is safe.
+const isRetryable = (error: unknown) => {
+  const code = (error as { code?: string }).code;
+  return (
+    code === "P2034" ||
+    code === "40P01" ||
+    /deadlock detected|could not serialize/i.test(String(error))
+  );
+};
+
 /**
  * Turn the Customer's Cart into an Order (docs/03-ARCHITECTURE.md section 6).
  * Prices are recomputed here; nothing the browser sends is trusted except
@@ -135,12 +174,22 @@ export async function placeOrder(
     ...p,
     line: cart.lines.find((l) => l.product.id === p.productId)!,
   }));
-  if (!cartId || lines.length === 0) return { ok: false, reason: "empty_cart" };
+  if (!cartId || cart.lines.length === 0) {
+    return { ok: false, reason: "empty_cart" };
+  }
+  if (lines.length === 0) return { ok: false, reason: "nothing_in_stock" };
   if (priced.belowMinimumByCents > 0) {
     return {
       ok: false,
       reason: "below_minimum",
       shortByCents: priced.belowMinimumByCents,
+    };
+  }
+  if (priced.totalCents > MAX_COD_TOTAL_CENTS) {
+    return {
+      ok: false,
+      reason: "over_cod_limit",
+      limitCents: MAX_COD_TOTAL_CENTS,
     };
   }
   if (priced.totalCents !== order.expectedTotalCents) {
@@ -155,7 +204,28 @@ export async function placeOrder(
     if (!(await checkOutCart(tx, cartId, now))) {
       throw new Refused({ ok: false, reason: "already_placed" });
     }
-    if (!(await bookSlot(tx, { slotId: order.slotId, cartId, now }))) {
+    // The Cart row is now locked: a line saved in another tab after it was
+    // read above shows up here, and the Customer checks the Cart again.
+    if ((await readCartVersion(tx, cartId)) !== cart.version) {
+      throw new Refused({ ok: false, reason: "cart_changed" });
+    }
+    const open = await tx.order.count({
+      where: {
+        customerId: order.customerId,
+        status: { in: [...OPEN_STATUSES] },
+      },
+    });
+    if (open >= MAX_OPEN_COD_ORDERS) {
+      throw new Refused({ ok: false, reason: "too_many_open_orders" });
+    }
+    if (
+      !(await bookSlot(tx, {
+        slotId: order.slotId,
+        cartId,
+        hubId: zone.hubId,
+        now,
+      }))
+    ) {
       throw new Refused({ ok: false, reason: "slot_unavailable" });
     }
     const created = await tx.order.create({
@@ -225,13 +295,9 @@ export async function placeOrder(
         at: now,
       },
     });
-    await tx.payment.create({
-      data: {
-        orderId: created.id,
-        method: "cod",
-        amountCents: priced.totalCents,
-        status: "cod_pending",
-      },
+    await createCodPayment(tx, {
+      orderId: created.id,
+      amountCents: priced.totalCents,
     });
     // In the same transaction, so a placed Order always gets its notice.
     await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId: created.id });
@@ -240,7 +306,10 @@ export async function placeOrder(
 
   for (let attempt = 1; ; attempt++) {
     try {
-      const created = await db.$transaction(write);
+      const created = await db.$transaction(write, {
+        maxWait: 5_000,
+        timeout: 15_000,
+      });
       return {
         ok: true,
         orderId: created.id,
@@ -259,8 +328,10 @@ export async function placeOrder(
           productIds: error.productIds,
         };
       }
-      // Two Orders drew the same number: draw again.
-      if (isUniqueViolation(error) && attempt < 3) continue;
+      // Two Orders drew the same number, or Postgres broke a deadlock: again.
+      if ((isUniqueViolation(error) || isRetryable(error)) && attempt < 3) {
+        continue;
+      }
       throw error;
     }
   }

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { devices, expect, test } from "@playwright/test";
 
+import { freshEmail } from "./run-tag";
 import { signIn } from "./sign-in";
 
 // Phase 2 exit: a Customer places and tracks a COD order on a phone.
@@ -23,10 +24,23 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
 
   // Checkout asks a guest to sign in, then keeps the Cart.
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fcheckout/);
-  await signIn(page, "ligaya@example.com", "/checkout");
+  await signIn(page, freshEmail("checkout"), "/checkout");
   await expect(
     page.getByRole("heading", { level: 1, name: "Checkout" })
   ).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  // A new Customer gives the address right here (PRD CHK-1).
+  await expect(
+    page.getByRole("heading", { name: "Where should we deliver?" })
+  ).toBeVisible();
+  await page
+    .getByLabel("House or unit number and street")
+    .fill("12 Sampaguita Street");
+  await page.getByLabel("City").selectOption("Pasig");
+  await page.getByLabel("Barangay").fill("Kapitolyo");
+  await page.getByLabel("Landmark").fill("Across the green sari-sari store");
+  await page.getByRole("button", { name: "Deliver here" }).click();
   await page.waitForLoadState("networkidle");
   const summary = page.getByRole("complementary", { name: "Order summary" });
   await expect(summary.getByText("Magnolia Fresh Milk")).toBeVisible();
@@ -35,7 +49,7 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
   // Hold a delivery window.
   const window = page.locator('input[name="slot"]:not([disabled])').first();
   await window.locator("xpath=..").click();
-  await expect(page.getByText("Held for you for 10 minutes")).toBeVisible();
+  await expect(page.getByText(/Held for you until \d/)).toBeVisible();
   await page.getByLabel("Mobile number").fill("0917 555 0142");
   // Nothing scrolls sideways on a phone.
   expect(

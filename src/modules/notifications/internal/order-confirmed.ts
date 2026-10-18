@@ -19,6 +19,8 @@ export type OrderConfirmedNotice = {
   trackingUrl: string;
   lines: { name: string; quantity: number }[];
   cashOnDelivery: boolean;
+  /** The Order has Weighed Products, so the total is an estimate. */
+  estimated: boolean;
 };
 
 const TEMPLATE = "order_confirmed";
@@ -41,9 +43,15 @@ export async function sendOrderConfirmed(
   notice: OrderConfirmedNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
-  const pay = notice.cashOnDelivery
-    ? `Please have ${notice.total} ready in cash for the Rider.`
-    : `Total ${notice.total}.`;
+  // Weighed Products are charged by the packed weight (CLAUDE.md), so the
+  // amount here is an estimate and must say so.
+  const pay = notice.estimated
+    ? notice.cashOnDelivery
+      ? `Please have about ${notice.total} ready in cash. The final amount follows the weight we pack.`
+      : `Estimated total ${notice.total}. The final amount follows the weight we pack.`
+    : notice.cashOnDelivery
+      ? `Please have ${notice.total} ready in cash for the Rider.`
+      : `Total ${notice.total}.`;
 
   if (notice.email && !(await alreadySent(notice.orderId, "email"))) {
     const sent = await (providers.email ?? emailProvider()).send({

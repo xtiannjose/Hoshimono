@@ -48,6 +48,12 @@ export type CartView = {
    * inside the Order transaction to catch a change made in another tab.
    */
   version: string;
+  /**
+   * Server time the Cart was read (ms). Views reach the browser out of
+   * order (an action's answer, then a page refresh rendered earlier), so the
+   * client keeps the newest.
+   */
+  readAt: number;
 };
 
 export type SetQuantityResult =
@@ -205,6 +211,8 @@ export async function getCart(
   owner: CartOwner | null,
   context: CartContext
 ): Promise<CartView> {
+  // Wall-clock ms without Date.now(), which Next refuses while prerendering.
+  const readAt = Math.round(performance.timeOrigin + performance.now());
   const where = ownerWhere(owner);
   const cart = where
     ? await db.cart.findFirst({
@@ -276,6 +284,7 @@ export async function getCart(
     priced,
     itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
     version: cartVersion(rows),
+    readAt,
   };
 }
 

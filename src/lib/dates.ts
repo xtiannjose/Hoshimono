@@ -40,6 +40,11 @@ const clock = (date: Date) =>
     .replace(/\s?([AP]M)$/i, " $1")
     .toUpperCase();
 
+/** "4:12 PM" in Manila. */
+export function formatTime(date: Date): string {
+  return clock(date);
+}
+
 /** "Today, 2:00 to 4:00 PM" or "Thu, Oct 22, 8:00 to 10:00 AM". */
 export function formatSlot(
   startsAt: Date,

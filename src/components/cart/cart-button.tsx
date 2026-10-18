@@ -2,6 +2,8 @@
 
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
+import { useReducedMotion } from "motion/react";
+import * as m from "motion/react-m";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -26,7 +28,12 @@ export function CartSync({ view }: { view: CartView }) {
  */
 export function CartButton() {
   const count = useCart((s) => s.view?.itemCount ?? 0);
-  const total = useCart((s) => s.view?.priced.totalCents ?? 0);
+  // Goods only: the delivery fee depends on the address chosen at Checkout,
+  // so the header and Checkout never disagree.
+  const total = useCart((s) =>
+    s.view ? s.view.priced.subtotalCents - s.view.priced.discountCents : 0
+  );
+  const reduce = useReducedMotion();
   const drawerLoaded = useCart((s) => s.drawerLoaded);
 
   return (
@@ -43,10 +50,17 @@ export function CartButton() {
           <>
             <span className="sr-only">Cart:</span>
             <span className="tabular-nums">{formatMoney(total)}</span>
-            <span className="rounded-pill bg-btn-fg text-btn min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums">
+            <m.span
+              key={count}
+              // Count bump (docs/05 section 7): enlarge, settle.
+              initial={reduce ? false : { scale: 1.18 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", visualDuration: 0.2, bounce: 0.1 }}
+              className="rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums"
+            >
               {count}
               <span className="sr-only"> {count === 1 ? "item" : "items"}</span>
-            </span>
+            </m.span>
           </>
         ) : (
           <span>Cart</span>
@@ -58,7 +72,7 @@ export function CartButton() {
   );
 }
 
-/** Phones: a floating bar with count, "View cart" and total. */
+/** Phones: a floating bar with count, "View cart" and the goods total. */
 function CartBar({ count, total }: { count: number; total: number }) {
   const open = useCart((s) => s.open);
   if (count === 0 || open) return null;

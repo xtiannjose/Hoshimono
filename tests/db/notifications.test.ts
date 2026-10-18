@@ -65,6 +65,7 @@ const notice = () => ({
   trackingUrl: "http://localhost:3000/orders/SW-261002-TEST",
   lines: [{ name: "Magnolia Fresh Milk", quantity: 1 }],
   cashOnDelivery: true,
+  estimated: false,
 });
 
 describe("sendOrderConfirmed", () => {
@@ -79,5 +80,35 @@ describe("sendOrderConfirmed", () => {
     expect(sent[1].text).toContain("SW-261002-TEST");
     expect(sent[1].text).toContain("₱164.00 ready in cash");
     expect(await db.notification.count({ where: { orderId } })).toBe(2);
+  });
+
+  it("after a failed SMS, the retry sends only the SMS", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    let smsDown = true;
+    const flaky = {
+      email: providers.email,
+      sms: {
+        send: async (m: { to: string; text: string }) => {
+          if (smsDown) throw new Error("SMS gateway down");
+          return providers.sms.send(m);
+        },
+      },
+    };
+    await expect(sendOrderConfirmed(notice(), flaky)).rejects.toThrow(
+      "SMS gateway down"
+    );
+    smsDown = false;
+    await sendOrderConfirmed(notice(), flaky);
+    expect(sent.map((s) => s.channel)).toEqual(["email", "sms"]);
+    expect(await db.notification.count({ where: { orderId } })).toBe(2);
+  });
+
+  it("calls a weighed total an estimate", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    await sendOrderConfirmed({ ...notice(), estimated: true }, providers);
+    expect(sent[1].text).toContain("about ₱164.00");
+    expect(sent[1].text).toContain("follows the weight");
   });
 });

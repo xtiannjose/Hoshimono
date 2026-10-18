@@ -1,5 +1,4 @@
 import { cookies, headers } from "next/headers";
-import { cache } from "react";
 
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import {
@@ -23,9 +22,10 @@ const NEW_CARTS_PER_HOUR = 60;
 
 /**
  * Who owns the Cart on this request, or null for a guest with no Cart yet.
- * Cached per request: the header and the page both ask.
+ * Not memoised: an action may set the guest cookie and then re-render the
+ * page in the same request, and that render must read the cookie again.
  */
-export const readCartOwner = cache(async (): Promise<CartOwner | null> => {
+export async function readCartOwner(): Promise<CartOwner | null> {
   const [customer, jar] = await Promise.all([currentCustomer(), cookies()]);
   const token = jar.get(GUEST_COOKIE)?.value;
   if (customer) {
@@ -42,7 +42,7 @@ export const readCartOwner = cache(async (): Promise<CartOwner | null> => {
     return owner;
   }
   return isGuestToken(token) ? { guestToken: token } : null;
-});
+}
 
 /**
  * For Server Actions: like readCartOwner, but starts a guest Cart if
@@ -79,14 +79,14 @@ export async function writeCartOwner(): Promise<CartOwner | null> {
  * Hub and Zone for pricing and stock: the Zone of a signed-in Customer's
  * default address, else the default Hub with delivery shown "at checkout".
  */
-export const cartContext = cache(
-  async (owner: CartOwner | null): Promise<CartContext> => {
-    const address =
-      owner && "customerId" in owner
-        ? await getDefaultAddress(owner.customerId)
-        : null;
-    const zone = address ? await resolveZone(address) : null;
-    if (zone) return { hubId: zone.hubId, zone: zone.fees };
-    return { hubId: await getDefaultHubId(), zone: null };
-  }
-);
+export async function cartContext(
+  owner: CartOwner | null
+): Promise<CartContext> {
+  const address =
+    owner && "customerId" in owner
+      ? await getDefaultAddress(owner.customerId)
+      : null;
+  const zone = address ? await resolveZone(address) : null;
+  if (zone) return { hubId: zone.hubId, zone: zone.fees };
+  return { hubId: await getDefaultHubId(), zone: null };
+}

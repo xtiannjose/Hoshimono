@@ -8,8 +8,8 @@ export const SLOT_HOLD_MINUTES = 10;
  * pick and travel. Assumption until operations set it.
  */
 export const SLOT_CUTOFF_MINUTES = 90;
-/** At or under this many places left, a Slot shows "Only a few left". */
-const FEW_LEFT = 3;
+/** Bookable this many days ahead, the same window listSlots shows. */
+const BOOKING_DAYS = 7;
 
 export type SlotState = "open" | "few" | "full";
 
@@ -27,6 +27,14 @@ export type SlotOption = {
 export type HoldResult =
   | { ok: true; expiresAt: Date }
   | { ok: false; reason: "full" | "closed" | "not_found" };
+
+type SlotRequest = {
+  slotId: string;
+  cartId: string;
+  /** The Hub that serves the Order's address; Slots of other Hubs are refused. */
+  hubId: string;
+  now: Date;
+};
 
 const addMinutes = (date: Date, minutes: number) =>
   new Date(date.getTime() + minutes * 60_000);
@@ -73,7 +81,8 @@ export async function listSlots(
       date: row.date.toISOString().slice(0, 10),
       startsAt: row.starts_at,
       endsAt: row.ends_at,
-      state: left <= 0 ? "full" : left <= FEW_LEFT ? "few" : "open",
+      // "Only a few left" under 20% of capacity (docs/05 SlotPicker).
+      state: left <= 0 ? "full" : left * 5 < row.capacity ? "few" : "open",
       held: row.mine,
     };
   });
@@ -81,15 +90,18 @@ export async function listSlots(
 
 // Locks the Slot row so holds and bookings for it run one at a time; then
 // counts live holds by other carts.
+// Only a Slot of the Order's Hub, inside the booking window, is found.
 async function lockSlot(
   tx: Prisma.TransactionClient,
-  slotId: string,
-  cartId: string,
-  now: Date
+  { slotId, cartId, hubId, now }: SlotRequest
 ) {
   const [slot] = await tx.$queryRaw<
     { capacity: number; booked: number; starts_at: Date }[]
-  >`SELECT capacity, booked, starts_at FROM slots WHERE id = ${slotId}::uuid FOR UPDATE`;
+  >`
+    SELECT capacity, booked, starts_at FROM slots
+    WHERE id = ${slotId}::uuid AND hub_id = ${hubId}::uuid
+      AND starts_at < ${addMinutes(now, BOOKING_DAYS * 24 * 60)}
+    FOR UPDATE`;
   if (!slot) return null;
   const [{ others, mine }] = await tx.$queryRaw<
     { others: number; mine: boolean }[]
@@ -108,12 +120,12 @@ async function lockSlot(
 export async function holdSlot(
   cartId: string,
   slotId: string,
-  now = new Date()
+  { hubId, now = new Date() }: { hubId: string; now?: Date }
 ): Promise<HoldResult> {
   const UUID = /^[0-9a-f-]{36}$/i;
   if (!UUID.test(slotId)) return { ok: false, reason: "not_found" };
   return db.$transaction(async (tx) => {
-    const slot = await lockSlot(tx, slotId, cartId, now);
+    const slot = await lockSlot(tx, { slotId, cartId, hubId, now });
     if (!slot) return { ok: false, reason: "not_found" } as const;
     if (slot.starts_at <= addMinutes(now, SLOT_CUTOFF_MINUTES)) {
       return { ok: false, reason: "closed" } as const;
@@ -149,13 +161,11 @@ export async function getSlotHold(
  */
 export async function bookSlot(
   tx: Prisma.TransactionClient,
-  {
-    slotId,
-    cartId,
-    now = new Date(),
-  }: { slotId: string; cartId: string; now?: Date }
+  request: Omit<SlotRequest, "now"> & { now?: Date }
 ): Promise<boolean> {
-  const slot = await lockSlot(tx, slotId, cartId, now);
+  const now = request.now ?? new Date();
+  const { slotId, cartId } = request;
+  const slot = await lockSlot(tx, { ...request, now });
   if (!slot) return false;
   const closesAt = slot.mine ? now : addMinutes(now, SLOT_CUTOFF_MINUTES);
   if (slot.starts_at <= closesAt || slot.free <= 0) return false;

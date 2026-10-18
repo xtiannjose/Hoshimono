@@ -10,7 +10,8 @@ const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 export const jobHandlers: JobHandlers = {
   async [ORDER_CONFIRMED_JOB](payload) {
     const order = await getOrderForNotice(String(payload.orderId));
-    if (!order) return;
+    // Cancelled before the job ran: a "confirmed" message would mislead.
+    if (!order || order.status === "cancelled") return;
     await sendOrderConfirmed({
       orderId: order.id,
       orderNo: order.orderNo,
@@ -24,6 +25,7 @@ export const jobHandlers: JobHandlers = {
         quantity: l.orderedQty,
       })),
       cashOnDelivery: order.payments[0]?.method === "cod",
+      estimated: order.lines.some((l) => l.orderedWeightGrams !== null),
     });
   },
 };

@@ -12,7 +12,7 @@ type Status = OrderDetail["status"];
 const STEPS: { status: Status; label: string }[] = [
   { status: "confirmed", label: "Order confirmed" },
   { status: "picking", label: "Picking your items" },
-  { status: "picked", label: "Packed" },
+  { status: "picked", label: "Ready for the Rider" },
   { status: "out_for_delivery", label: "On the way" },
   { status: "delivered", label: "Delivered" },
 ];

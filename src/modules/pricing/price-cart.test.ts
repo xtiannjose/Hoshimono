@@ -132,6 +132,45 @@ describe("priceCart", () => {
     expect(priced.weighedSubtotalCents).toBe(19500);
   });
 
+  it("charges no delivery when nothing in the Cart can be sold", () => {
+    const empty = priceCart([], { zone: ZONE });
+    expect(empty).toMatchObject({
+      deliveryFeeCents: 0,
+      totalCents: 0,
+      vatCents: 0,
+    });
+    expect(empty.freeDeliveryRemainingCents).toBe(150000);
+  });
+
+  it("splits sales by tax class for the receipt, the fee counted as vatable", () => {
+    const priced = priceCart(
+      [
+        line({ productId: "milk", unitPriceCents: 11500, taxClass: "vatable" }),
+        line({
+          productId: "pork",
+          unitPriceCents: 19500,
+          taxClass: "vat_exempt",
+        }),
+        line({
+          productId: "export",
+          unitPriceCents: 3000,
+          taxClass: "zero_rated",
+        }),
+      ],
+      { zone: ZONE }
+    );
+    expect(priced).toMatchObject({
+      vatableSalesCents: 11500 + 4900,
+      vatExemptSalesCents: 19500,
+      zeroRatedSalesCents: 3000,
+    });
+    expect(
+      priced.vatableSalesCents +
+        priced.vatExemptSalesCents +
+        priced.zeroRatedSalesCents
+    ).toBe(priced.totalCents);
+  });
+
   it("refuses quantities and prices a Cart can never hold", () => {
     for (const bad of [
       { quantity: 0 },

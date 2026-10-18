@@ -125,13 +125,18 @@ export async function getOrderForNotice(orderId: string) {
     select: {
       id: true,
       orderNo: true,
+      status: true,
       contactPhone: true,
       totalCents: true,
       customer: { select: { email: true } },
       slot: { select: { startsAt: true, endsAt: true } },
       lines: {
         orderBy: { createdAt: "asc" },
-        select: { nameSnapshot: true, orderedQty: true },
+        select: {
+          nameSnapshot: true,
+          orderedQty: true,
+          orderedWeightGrams: true,
+        },
       },
       payments: {
         take: 1,
