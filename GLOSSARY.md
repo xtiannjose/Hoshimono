@@ -26,6 +26,10 @@ _Avoid_: Variable-weight item, catch-weight, loose item
 A time-boxed price reduction or offer attached to Products or a Cart.
 _Avoid_: Sale, deal, discount (use Voucher for code-based reductions)
 
+**Search Synonym**:
+Words Customers use for the same thing, often Filipino and English ("gatas" and "milk"). Search treats every word in a group as a match for the others.
+_Avoid_: Alias, keyword, tag
+
 **Voucher**:
 A code a customer enters to reduce an Order total, with its own eligibility rules and usage limits.
 _Avoid_: Coupon, promo code

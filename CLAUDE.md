@@ -32,7 +32,7 @@ Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning 
 ## Environment
 
 - Windows 10, Git Bash and PowerShell. Use `npm` (pnpm is not installed).
-- Dev database is a managed Postgres branch on Neon (ADR 0005). Until that account exists: Docker container `hoshimono-db` on port 5433 (`hoshimono` for dev, `hoshimono_test` for Vitest); see `docs/06-SETUP.md` section 6.
+- Dev database is a managed Postgres branch on Neon (ADR 0005). Until that account exists: Docker container `hoshimono-db` on port 5433 (`hoshimono` for dev, `hoshimono_test` for Vitest, `hoshimono_e2e` for Playwright); see `docs/06-SETUP.md` section 6.
 - Never commit `.env*` except `.env.example`. Secrets only in `.env.local` and the hosting dashboard.
 
 ## Test and commit discipline

@@ -32,21 +32,21 @@ Status: draft v0.1. Decisions that are expensive to reverse are recorded in [doc
 
 Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/` (private), and its own tests. A module owns its tables: only that module reads or writes them. Others call its interface.
 
-| Module | Owns | Public interface (examples) |
-|---|---|---|
-| `catalog` | Product, Category, ProductImage, search index | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree` |
-| `pricing` | Promotion, Voucher, price rules | `priceCart(lines, context)` (pure), `validateVoucher` |
-| `inventory` | StockLevel, reservations | `reserve(orderId, lines)`, `release`, `adjust`, `availability` |
-| `cart` | Cart, CartLine | `getCart`, `addLine`, `setQuantity`, `mergeGuestCart` |
-| `delivery` | Hub, Zone, Slot, Address resolution | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot` |
-| `orders` | Order, OrderLine, status history, Substitution | `placeOrder`, `transition(orderId, event)`, `cancelOrder` |
-| `payments` | Payment, PaymentEvent, provider adapters | `createPayment`, `handleWebhook`, `refund` |
-| `fulfilment` | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch` |
-| `customers` | Customer profile, Address book, Referral | `getProfile`, `saveAddress`, `applyReferral` |
-| `content` | Recipe, Article | `getRecipe`, `recipeToCart` |
-| `notifications` | Message templates and delivery log | `notify(event, recipient)` |
-| `identity` | Sessions, roles (wraps Better Auth) | `requireCustomer`, `requireStaff(role)` |
-| `claims` | Freshness Claims | `openClaim`, `resolveClaim` |
+| Module          | Owns                                            | Public interface (examples)                                       |
+| --------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
+| `catalog`       | Product, Category, ProductImage, search index   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree` |
+| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `validateVoucher`             |
+| `inventory`     | StockLevel, reservations                        | `reserve(orderId, lines)`, `release`, `adjust`, `availability`    |
+| `cart`          | Cart, CartLine                                  | `getCart`, `addLine`, `setQuantity`, `mergeGuestCart`             |
+| `delivery`      | Hub, Zone, Slot, Address resolution             | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot`    |
+| `orders`        | Order, OrderLine, status history, Substitution  | `placeOrder`, `transition(orderId, event)`, `cancelOrder`         |
+| `payments`      | Payment, PaymentEvent, provider adapters        | `createPayment`, `handleWebhook`, `refund`                        |
+| `fulfilment`    | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch`    |
+| `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                      |
+| `content`       | Recipe, Article                                 | `getRecipe`, `recipeToCart`                                       |
+| `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                        |
+| `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                           |
+| `claims`        | Freshness Claims                                | `openClaim`, `resolveClaim`                                       |
 
 Allowed dependency direction (arrow means "may call"):
 
@@ -64,13 +64,13 @@ app routes / server actions
 
 ## 4. Routes and rendering
 
-| Route group | Examples | Rendering |
-|---|---|---|
-| `(shop)` | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes/[slug]` | Server-rendered with incremental revalidation; tag-based invalidation when admin edits a Product or Category |
-| `(account)` | `/account`, `/account/orders/[id]`, `/account/addresses` | Dynamic, authenticated |
-| `checkout` | `/cart`, `/checkout`, `/checkout/confirmed/[orderNo]` | Dynamic, no caching |
-| `admin` | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]` | Dynamic, role-gated |
-| `api` | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health` | Route handlers |
+| Route group | Examples                                                           | Rendering                                                                                                    |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `(shop)`    | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes/[slug]` | Server-rendered with incremental revalidation; tag-based invalidation when admin edits a Product or Category |
+| `(account)` | `/account`, `/account/orders/[id]`, `/account/addresses`           | Dynamic, authenticated                                                                                       |
+| `checkout`  | `/cart`, `/checkout`, `/checkout/confirmed/[orderNo]`              | Dynamic, no caching                                                                                          |
+| `admin`     | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]`        | Dynamic, role-gated                                                                                          |
+| `api`       | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health`       | Route handlers                                                                                               |
 
 Use the caching primitives of the Next.js version installed at setup time; read its docs then, because caching APIs change between major versions. Product URLs follow `/p/<slug>-<id>`; the id resolves the Product, the slug is cosmetic and redirects if stale.
 
@@ -141,6 +141,15 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 
 MVP: PostgreSQL full-text search with `pg_trgm` and `unaccent` for typo tolerance and Filipino/Spanish-derived spellings, behind a `SearchIndex` interface in `catalog`. If relevance, speed or faceting outgrows it (roughly beyond 10,000 Products or when merchandising needs synonyms and boosting), swap in Meilisearch or Typesense without changing callers.
 
+As built in Batch 1.1 (`src/modules/catalog/internal/search/`):
+
+1. **Words.** The query is folded to lowercase ASCII words (accents removed); pack sizes such as `5kg` or `12 pcs` are dropped.
+2. **Full text.** Every word must match. The typed word matches as a prefix; synonyms (a fixed Filipino and English list in `synonyms.ts`, such as gatas and milk) match as whole words. A Product matches on its own name, brand and description plus its Category's name and its parent Category's name. A parent that joins two topics ("Meat and fish") lends only the topic none of its children owns, so Pork gets "meat" but "fish" and "fresh fish" stay in the fish aisle. Two-word synonyms ("bitter gourd") match as phrases.
+3. **Ranking.** Whole-word matches on the Product's own words first, then prefix matches, then matches through its own Category, then text rank, then name.
+4. **No results.** Correct up to three words to the closest catalogue word (a swap for short words, one edit up to 8 letters, two beyond), and return the corrected query for "Showing results for ...". Then try the words joined ("pan de sal"). Then trigram similarity on brand and name, every word required.
+
+The index narrows candidates first (any one word hits the Product or its Category), then every word must match. Measured on 5,000 Products in local Postgres: 14 to 22 ms per search, 66 ms in the worst case (eight unknown words through every fallback), 14 to 21 ms per suggestion.
+
 ## 11. Background work
 
 No queue service in the MVP. A `jobs` table plus a cron endpoint called every minute by the host handles: expiring Slot holds and unpaid Orders, retrying notifications, releasing stale reservations, sending abandoned-cart nudges (V1). Jobs are idempotent and lock rows with `FOR UPDATE SKIP LOCKED`. Move to a managed queue only when jobs need fan-out or long runtimes.
@@ -159,15 +168,15 @@ Product images are stored in object storage behind a CDN and served through `nex
 
 ## 14. Quality gates and delivery
 
-| Gate | Tool | When |
-|---|---|---|
-| Format and lint | Prettier, ESLint | Pre-commit (Husky + lint-staged), CI |
-| Types | `tsc --noEmit` | Pre-commit, CI |
-| Unit and integration | Vitest against a real Postgres test branch | CI; test-first for pricing, cart, inventory, orders, payments |
-| End to end | Playwright: browse, add to cart, checkout (COD), order tracking | CI on main and release branches |
-| Accessibility | `axe` checks inside Playwright on key pages | CI |
-| Performance | Lighthouse CI budget for Home, Category, Product | Weekly and before launch |
-| Security | `npm audit`, dependency review, secret scanning | CI |
+| Gate                 | Tool                                                            | When                                                          |
+| -------------------- | --------------------------------------------------------------- | ------------------------------------------------------------- |
+| Format and lint      | Prettier, ESLint                                                | Pre-commit (Husky + lint-staged), CI                          |
+| Types                | `tsc --noEmit`                                                  | Pre-commit, CI                                                |
+| Unit and integration | Vitest against a real Postgres test branch                      | CI; test-first for pricing, cart, inventory, orders, payments |
+| End to end           | Playwright: browse, add to cart, checkout (COD), order tracking | CI on main and release branches                               |
+| Accessibility        | `axe` checks inside Playwright on key pages                     | CI                                                            |
+| Performance          | Lighthouse CI budget for Home, Category, Product                | Weekly and before launch                                      |
+| Security             | `npm audit`, dependency review, secret scanning                 | CI                                                            |
 
 Environments: **local** (dev DB branch), **preview** (per pull request, own DB branch), **staging** (production-like, provider sandbox), **production**. Migrations run with `prisma migrate deploy` as a release step, never at app start.
 

@@ -50,3 +50,13 @@ export async function sendSignInLink(email: string, next: string) {
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
 }
+export { recordAudit } from "./internal/audit";
+
+/** The signed-in Staff member with `role`, or null. For route handlers. */
+export async function getStaff(role: StaffRole) {
+  const user = await currentUser();
+  return user ? staffForUser(db, user, role) : null;
+}
+
+// Development and end-to-end tests only; off in production.
+export { devMailboxEnabled, lastLink } from "./internal/dev-mailbox";

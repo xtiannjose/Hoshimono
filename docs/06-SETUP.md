@@ -145,9 +145,10 @@ Local Postgres alternative (used while the Neon account is deferred). Port 5433 
 ```powershell
 docker run --name hoshimono-db -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=hoshimono -v hoshimono-pgdata:/var/lib/postgresql/data -p 127.0.0.1:5433:5432 --restart unless-stopped -d postgres:17
 docker exec hoshimono-db psql -U postgres -c "CREATE DATABASE hoshimono_test;"
+docker exec hoshimono-db psql -U postgres -c "CREATE DATABASE hoshimono_e2e;"
 ```
 
-Point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5433/hoshimono`, and the Vitest URL in `.env.test` at `postgresql://postgres:dev@localhost:5433/hoshimono_test`.
+Point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5433/hoshimono`, and the Vitest URL in `.env.test` at `postgresql://postgres:dev@localhost:5433/hoshimono_test`. `npm run test:e2e` starts its own dev server on port 3100 against `hoshimono_e2e`, which it migrates, empties and re-seeds on every run (stop any other `next dev` first: two dev servers cannot share `.next`). Uploaded Product photos land in `public/media/` (git-ignored) until the R2 store exists.
 
 ## 7. Scripts to define in `package.json`
 
@@ -191,7 +192,7 @@ Phase 0 is only done when all of these pass:
 - [x] `GET /api/health` returns `{ "ok": true }` and confirms the database connection
 - [x] `npm run check` passes with at least one real test
 - [x] A commit triggers the pre-commit hook
-- [ ] A pull request produces a green CI run and a Vercel preview URL (blocked until the branch is pushed and the Vercel account exists)
+- [ ] A pull request produces a green CI run and a Vercel preview URL (CI green on PR #2; Vercel preview blocked until the account exists)
 - [x] `npx prisma db seed` loads the seed data and Prisma Studio shows it
 
 ## 10. Troubleshooting

@@ -110,7 +110,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] Identity shell: sign-in page (email magic link; links go to the dev server log until Batch 2.5), `requireCustomer`, `requireStaff(role)`
 - [x] `/api/health` with DB check
-- [ ] CI workflow written (`.github/workflows/ci.yml`); tick after its first green run on GitHub
+- [x] CI workflow (`.github/workflows/ci.yml`), green on its first run in PR #2
 - [ ] Vercel project with preview deployments; Sentry connected (blocked: accounts deferred)
 
 **Exit criteria:** the six checks in [06-SETUP.md](06-SETUP.md) section 9 pass.
@@ -121,32 +121,32 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 1.1 Catalogue core and search** (W2). Stack: Prisma, Postgres full-text, `pg_trgm`, `unaccent`. Skills: `codebase-design`, `tdd`.
 
-- [ ] `catalog` module: `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`
-- [ ] Search: full-text plus trigram, suggestions, zero-result state (backend and `SearchIndex` interface)
+- [x] `catalog` module: `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`
+- [x] Search: full-text plus trigram, suggestions, zero-result state (backend and `SearchIndex` interface); Filipino synonyms and typo correction, see [03-ARCHITECTURE.md](03-ARCHITECTURE.md) section 10
 
 **Batch 1.2 Storefront shell and Home** (W2 to W3). Stack: Server Components, Tailwind, shadcn/ui, Motion, `next/image`. Skills: `design-taste-frontend`, `motion`.
 
-- [ ] Home page v1 following [mockup v2](mockup-v2/README.md): hero, service strip, category mosaic, product grid, delivery button
-- [ ] `ProductCard`, `PriceTag`, `QuantityStepper`, `StockBadge` with every state (default, hover, focus, loading, out of stock)
-- [ ] Skeletons, empty and error states on every list
+- [x] Home page v1 following [mockup v2](mockup-v2/README.md): hero, service strip, category mosaic, product grid, delivery button
+- [x] `ProductCard`, `PriceTag`, `QuantityStepper`, `StockBadge` with every state (default, hover, focus, loading, out of stock); Add keeps a local quantity until Batch 2.2
+- [x] Skeletons, empty and error states on every list
 
 **Batch 1.3 Category, Product and Search pages** (W3). Stack: Server Components, structured data. Skills: `design-taste-frontend`.
 
-- [ ] Category page with filters and sort; Unit Price computed and shown
-- [ ] Product page with images, details, allergens, related Products, structured data
-- [ ] Search page with suggestions and zero-result guidance
+- [x] Category page with filters and sort; Unit Price computed and shown
+- [x] Product page with images, details, allergens, related Products, structured data
+- [x] Search page with suggestions and zero-result guidance
 
 **Batch 1.4 Admin catalogue** (W3 to W4). Stack: TanStack Table, React Hook Form + Zod, object storage + CDN. Skills: `anthropic-skills:xlsx` for the import template, `tdd` for CSV validation.
 
-- [ ] Admin: Product list, create/edit, image upload, status, bulk CSV import/export with validation report
-- [ ] Admin: Category tree editor
-- [ ] Image pipeline: upload, convert to WebP/AVIF, sizes, CDN
+- [x] Admin: Product list, create/edit, image upload, status, bulk CSV import/export with validation report (plain server-rendered table instead of TanStack Table; react-hook-form not needed)
+- [x] Admin: Category tree editor
+- [x] Image pipeline: upload, convert to WebP/AVIF, sizes, CDN (1200 px WebP master, next/image serves AVIF/WebP sizes; storage is local disk behind `MediaStore` until the R2 account exists)
 
 **Batch 1.5 SEO and performance** (W4). Stack: Next.js metadata, sitemaps, Lighthouse CI, axe-core. Skills: `playwright-cli`, `run`.
 
-- [ ] Sitemaps (static, products), `robots.txt`, canonical URLs, Open Graph images
-- [ ] Tag-based revalidation so admin edits reach the storefront within a minute
-- [ ] Lighthouse budget met on Home, Category, Product
+- [x] Sitemaps (static, products), `robots.txt`, canonical URLs, Open Graph images
+- [x] Tag-based revalidation so admin edits reach the storefront within a minute (`updateTag` in every admin action: immediate)
+- [ ] Lighthouse budget met on Home, Category, Product. Not yet: median mobile performance 78 (Home), 79 (Category), 84 (Product) on the local dev machine under load; accessibility, best practices and SEO 100 on all three. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
 
 **Exit criteria:** a non-developer imports a 500-row CSV, edits a Product in admin, and sees the change on the storefront within a minute; search finds "gatas" and "milk" and tolerates one typo; Lighthouse performance 90+ on mobile profile for the three key pages.
 

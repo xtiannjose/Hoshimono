@@ -37,3 +37,6 @@ dist/
 
 # Prisma client (generated)
 src/generated/
+
+# Uploaded media in development (production uses object storage)
+public/media/
