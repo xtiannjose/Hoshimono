@@ -165,7 +165,12 @@ async function CategoryListing({ params, searchParams }: Props) {
 
 function ListingSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading products" className="pt-5">
+    <div
+      role="status"
+      aria-busy="true"
+      aria-label="Loading products"
+      className="pt-5"
+    >
       <div className="rounded-pill bg-muted h-5 w-48 animate-pulse" />
       <div className="rounded-pill bg-muted mt-6 mb-6 h-12 w-64 animate-pulse" />
       <ProductGridSkeleton count={8} />

@@ -73,7 +73,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
 | Maps and geocoding     | Google Maps, Mapbox or similar                                                                | Batch 2.3 |
 | SMS provider           | Semaphore or Twilio                                                                           | Batch 2.5 |
-| Rate-limit store       | Upstash Redis, Vercel KV or Postgres-based                                                    | Batch 2.6 |
+| Rate-limit store       | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6 |
 | Payment provider       | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1 |
 | Weighed-item charging  | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3 |
 | PWA tooling and push   | Service worker library; whether to send web push                                              | Batch 5.5 |
@@ -156,36 +156,36 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.1 Pricing core** (W5). Stack: pure TypeScript, Vitest. Skills: `tdd`, `grilling` for VAT and rounding rules.
 
-- [ ] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
+- [x] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
 
 **Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
-- [ ] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
-- [ ] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
+- [x] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
+- [x] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
 
 **Batch 2.3 Delivery and addresses** (W6). Stack: atomic SQL updates, maps and geocoding. Skills: `tdd`, `codebase-design`.
 
-- [ ] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
-- [ ] Address book with map pin, landmark, Zone coverage check
+- [x] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
+- [x] Address book with landmark and Zone coverage check (`customers` module, `/account/addresses`). Map pin deferred until a maps provider is chosen; Zones match by city and barangay name
 
 **Batch 2.4 Inventory and orders** (W6). Stack: Postgres transactions, guarded `UPDATE ... WHERE`. Skills: `tdd`.
 
-- [ ] `inventory` module: availability, atomic reserve/release, movements log
-- [ ] `orders` module: `placeOrder` (idempotent), status machine, history events
-- [ ] Concurrency tests: two checkouts competing for the last unit and the last Slot
+- [x] `inventory` module: availability, atomic reserve/release, movements log
+- [x] `orders` module: `placeOrder` (idempotent), status machine, history events
+- [x] Concurrency tests: two checkouts competing for the last unit and the last Slot
 
 **Batch 2.5 Checkout, confirmation and notices** (W7). Stack: React Hook Form + Zod, Resend + React Email, SMS provider, Vercel Cron. Skills: `design-taste-frontend`.
 
-- [ ] Checkout page: Address, Slot, contact, COD, summary, server re-pricing
-- [ ] Order confirmation page and tracking page
-- [ ] `notifications`: order confirmed email and SMS
-- [ ] Jobs table and cron: expire holds and stale reservations
+- [x] Checkout page: Address, Slot, contact, COD, summary, server re-pricing (forms use `useActionState`; React Hook Form stays deferred, see 06-SETUP)
+- [x] Order confirmation page and tracking page (`/checkout/confirmed/[orderNo]`, `/orders/[orderNo]`, cancel before picking)
+- [x] `notifications`: order confirmed email and SMS through console providers and a delivery log. Resend and the SMS sender plug in when those accounts exist (business tracks)
+- [x] Jobs table and cron: `/api/cron/tick` purges Slot holds, cancels unpaid online Orders and runs the jobs outbox (`vercel.json`, `CRON_SECRET`)
 
 **Batch 2.6 Accounts and the full journey** (W7). Stack: Better Auth, rate-limit store, Playwright. Skills: `security-review`, `playwright-cli`.
 
-- [ ] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1)
-- [ ] Account area: profile, addresses, order history, cancel before picking
-- [ ] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking
+- [x] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1). OTP texts go through the console SMS provider and Google shows once its OAuth keys are set (business tracks); limits in Postgres ([ADR 0006](adr/0006-postgres-rate-limit-store.md))
+- [x] Account area: profile, addresses, order history, cancel before picking
+- [x] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking (`e2e/checkout.spec.ts`, phone viewport; CI `e2e` job)
 
 **Exit criteria:** a Customer places and tracks a COD order on a phone; two simultaneous buyers of the last item result in exactly one Order; the total on the confirmation page equals the total computed by `priceCart` to the centavo; the E2E journey is green in CI.
 

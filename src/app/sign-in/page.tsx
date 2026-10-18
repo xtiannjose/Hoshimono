@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { safeNext } from "@/modules/identity";
+import { googleEnabled, safeNext } from "@/modules/identity";
 
 import { SignInForm } from "./sign-in-form";
 
@@ -15,7 +15,8 @@ export default function SignInPage({ searchParams }: PageProps<"/sign-in">) {
         <div className="grid gap-2">
           <h1 className="type-h1">Sign in</h1>
           <p className="text-muted-foreground">
-            We will email you a link. No password to remember.
+            We will email you a link or text you a code. No password to
+            remember.
           </p>
         </div>
         <Suspense fallback={<FormSkeleton />}>
@@ -32,7 +33,12 @@ async function Form({
   searchParams: PageProps<"/sign-in">["searchParams"];
 }) {
   const { next } = await searchParams;
-  return <SignInForm next={safeNext(typeof next === "string" ? next : null)} />;
+  return (
+    <SignInForm
+      next={safeNext(typeof next === "string" ? next : null)}
+      google={googleEnabled()}
+    />
+  );
 }
 
 function FormSkeleton() {

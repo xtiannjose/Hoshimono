@@ -115,6 +115,7 @@ Fill `.env.local`. Never commit it.
 | `BETTER_AUTH_SECRET`                       | Session signing secret                 | `openssl rand -base64 32` (Git Bash)                                                          |
 | `BETTER_AUTH_URL`                          | Auth base URL                          | Same as app URL                                                                               |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in                         | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google` |
+| `CRON_SECRET`                              | Lets the host call `/api/cron/tick`    | `openssl rand -base64 32`; Vercel sends it on cron calls (needs a plan with per-minute crons) |
 | `PAYMENT_PROVIDER`                         | `xendit` or `paymongo`                 | Decided in Phase 3                                                                            |
 | `XENDIT_*`, `PAYMONGO_*`                   | Provider keys and webhook secrets      | Provider dashboards, **test mode keys only** until launch                                     |
 | `RESEND_API_KEY`, `EMAIL_FROM`             | Email                                  | Resend                                                                                        |

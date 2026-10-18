@@ -20,7 +20,10 @@ export function safeNext(next: string | null | undefined): string {
 }
 
 async function currentUser() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  // Read headers first: touching auth.api starts Better Auth, which reads
+  // the clock, and that must not happen while Next prerenders the shell.
+  const requestHeaders = await headers();
+  const session = await auth.api.getSession({ headers: requestHeaders });
   return session?.user ?? null;
 }
 
@@ -29,6 +32,12 @@ export async function requireCustomer(next = "/account") {
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   return customerForUser(db, user);
+}
+
+/** The signed-in Customer, or null for guests. Never redirects. */
+export async function currentCustomer() {
+  const user = await currentUser();
+  return user ? customerForUser(db, user) : null;
 }
 
 /** The signed-in Staff member with `role`. Others get a 404, not a hint. */
@@ -46,6 +55,41 @@ export async function sendSignInLink(email: string, next: string) {
     headers: await headers(),
   });
 }
+
+/** Text a 6-digit sign-in code to a +639XXXXXXXXX number. */
+export async function sendSignInCode(phone: string) {
+  await auth.api.sendPhoneNumberOTP({
+    body: { phoneNumber: phone },
+    headers: await headers(),
+  });
+}
+
+/** Check the code; on success the session cookie is set. */
+export async function verifySignInCode(
+  phone: string,
+  code: string
+): Promise<boolean> {
+  try {
+    await auth.api.verifyPhoneNumber({
+      body: { phoneNumber: phone, code },
+      headers: await headers(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Where to send the browser to sign in with Google. */
+export async function googleSignInUrl(next: string): Promise<string | null> {
+  const result = await auth.api.signInSocial({
+    body: { provider: "google", callbackURL: safeNext(next) },
+    headers: await headers(),
+  });
+  return result.url ?? null;
+}
+
+export { googleEnabled } from "./internal/auth";
 
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });

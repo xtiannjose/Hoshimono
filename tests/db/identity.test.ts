@@ -49,6 +49,17 @@ describe("customerForUser", () => {
     expect(await db.customer.count()).toBe(1);
   });
 
+  it("creates one Customer when two parts of a page ask at once", async () => {
+    const user = await authUser("new.shopper@example.com");
+    const [a, b, c] = await Promise.all([
+      customerForUser(db, user),
+      customerForUser(db, user),
+      customerForUser(db, user),
+    ]);
+    expect(new Set([a.id, b.id, c.id]).size).toBe(1);
+    expect(await db.customer.count()).toBe(1);
+  });
+
   it("links an existing Customer with the same verified email", async () => {
     const existing = await db.customer.create({
       data: { name: "Ligaya Dimaculangan", email: "ligaya@example.com" },
@@ -71,6 +82,69 @@ describe("customerForUser", () => {
       where: { id: existing.id },
     });
     expect(untouched.authUserId).toBeNull();
+  });
+});
+
+describe("customerForUser with a mobile number", () => {
+  async function phoneUser(phone: string, verified = true) {
+    return db.authUser.create({
+      data: {
+        id: randomUUID(),
+        name: phone,
+        email: `${phone.slice(1)}@phone.hoshimono.invalid`,
+        emailVerified: false,
+        phoneNumber: phone,
+        phoneNumberVerified: verified,
+      },
+    });
+  }
+
+  it("links an existing Customer with the same verified mobile number", async () => {
+    const existing = await db.customer.create({
+      data: { name: "Paolo Villanueva", phone: "+639171234502" },
+    });
+    const customer = await customerForUser(
+      db,
+      await phoneUser("+639171234502")
+    );
+    expect(customer.id).toBe(existing.id);
+  });
+
+  it("creates a Customer with the number, never the stand-in email", async () => {
+    const customer = await customerForUser(
+      db,
+      await phoneUser("+639171234599")
+    );
+    expect(customer).toMatchObject({ phone: "+639171234599", email: null });
+  });
+
+  it("leaves a number that belongs to another account where it is", async () => {
+    const owner = await customerForUser(
+      db,
+      await authUser("paolo@example.com")
+    );
+    await db.customer.update({
+      where: { id: owner.id },
+      data: { phone: "+639171234502" },
+    });
+    const customer = await customerForUser(
+      db,
+      await phoneUser("+639171234502")
+    );
+    expect(customer.id).not.toBe(owner.id);
+    expect(customer.phone).toBeNull();
+  });
+
+  it("never links or stores an unverified number", async () => {
+    const existing = await db.customer.create({
+      data: { name: "Paolo Villanueva", phone: "+639171234502" },
+    });
+    const customer = await customerForUser(
+      db,
+      await phoneUser("+639171234502", false)
+    );
+    expect(customer.id).not.toBe(existing.id);
+    expect(customer.phone).toBeNull();
   });
 });
 

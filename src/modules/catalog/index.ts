@@ -2,7 +2,10 @@
 // Owns Product, Category, ProductImage and the search index.
 export { getCategory, getCategoryTree } from "./internal/categories";
 export type { CategoryDetail, CategoryNode } from "./internal/categories";
-export { getProduct } from "./internal/products";
+export {
+  getProduct,
+  loadSummaries as getProductSummaries,
+} from "./internal/products";
 export type {
   ProductDetail,
   ProductImageView,

@@ -53,8 +53,9 @@ Allowed dependency direction (arrow means "may call"):
 ```
 app routes / server actions
         |
-  orders --> payments, delivery, inventory, pricing, notifications
+  orders --> payments, delivery, inventory, pricing, notifications, cart, customers
   cart   --> pricing, catalog, inventory (read-only availability)
+  customers --> delivery (resolveZone when saving an Address)
   fulfilment --> orders, inventory
   content --> catalog, cart
   everything --> lib (db, money, dates, logger)
@@ -78,9 +79,11 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 
 ## 5. Cart and pricing
 
-- A **guest Cart** is stored in the database keyed by a signed, HTTP-only cookie id. Signing in merges it into the Customer's Cart (`mergeGuestCart`, quantities summed, capped by availability).
+- A **guest Cart** is stored in the database keyed by a random 256-bit token in an HTTP-only cookie. The database keeps only the token's SHA-256 hash, so the cookie needs no signature and a database leak exposes no live Cart. Signing in merges it into the Customer's Cart (`mergeGuestCart`, quantities summed, capped by availability, never below what the Customer already had). The merge runs on the first request after sign-in and locks the guest Cart row, so it happens once.
+- Cart Lines remember the price they were last set at (`seen_price_cents`), so the Cart flags a price change (CRT-5). Lines that are out of stock stay visible but are left out of the total.
 - `priceCart(lines, context)` is a **pure function**: given lines, current prices, active Promotions, an optional Voucher and the Zone's fee rules, it returns line totals, discounts, delivery fee, VAT breakdown and total in centavos. Everything shown in the Cart, Checkout and on the Order comes from this one function.
 - Because it is pure, it is the first thing built test-first and the most heavily tested unit in the system.
+- VAT (as built in Batch 2.1): prices include 12% VAT, so the VAT inside a vatable amount is 12/112 of it, rounded half up per line and then summed (ADR 0002). The delivery fee is treated as vatable. **Confirm with the accountant** together with the tax class of each Category (docs/04 section 5).
 
 ## 6. Checkout and order placement
 
@@ -95,6 +98,14 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 7. Commit, then enqueue notifications.
 
 If an online payment is not completed in 15 minutes, a cron job cancels the Order, releases stock and frees the Slot.
+
+As built (Batch 2.4, `src/modules/orders/internal/place-order.ts`):
+
+- Checks before the transaction: idempotency replay, the Address belongs to the Customer and a Zone serves it, the Cart has priced lines, the Zone minimum, and the total the Customer saw.
+- One transaction: close the Cart (`checked_out_at`, so two tabs place one Order), `bookSlot`, create the Order, `reserveStock` (Products in a fixed order, so concurrent Orders cannot deadlock), Order Lines with snapshots (name, price, tax class, VAT, the chosen substitute and picker note), the first status event and a `cod_pending` Payment. Any refusal throws and rolls everything back.
+- Out-of-stock Cart Lines are left out of the Order, as the Cart already showed them outside the total.
+- The order number is `SW-YYMMDD-XXXX` (Manila date, four characters without 0, O, 1 or I); a clash retries.
+- Dependencies: `orders` also calls `cart` (load and close the Cart) and `customers` (the Address).
 
 ## 7. Order lifecycle
 
@@ -135,6 +146,7 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 - `stock_levels(product_id, hub_id, on_hand, reserved)`. Available = `on_hand - reserved`. All changes go through `inventory`, which writes an append-only `stock_movements` row (reason: receipt, reserve, release, pick, shrink, adjustment).
 - Reservation, release and Slot booking are single atomic SQL updates with a `WHERE` guard, not read-then-write in application code. This avoids overselling under concurrent checkouts.
 - Slot hold for 10 minutes uses a `slot_holds` row with `expires_at`; a cron job purges expired holds each minute.
+- As built (Batch 2.3): places left in a Slot are `capacity - booked - live holds of other carts`. `holdSlot` and `bookSlot` lock the Slot row (`SELECT ... FOR UPDATE`) before counting, so the last place goes to exactly one cart. A Slot stops taking new holds 90 minutes before it starts (`SLOT_CUTOFF_MINUTES`, an assumption until operations set it); a cart holding a place may still book until the Slot starts. `bookSlot` runs inside the caller's Order transaction.
 - Low stock shows as "Only a few left" below a per-Product threshold; the storefront never reveals exact counts.
 
 ## 10. Search
@@ -154,6 +166,13 @@ The index narrows candidates first (any one word hits the Product or its Categor
 
 No queue service in the MVP. A `jobs` table plus a cron endpoint called every minute by the host handles: expiring Slot holds and unpaid Orders, retrying notifications, releasing stale reservations, sending abandoned-cart nudges (V1). Jobs are idempotent and lock rows with `FOR UPDATE SKIP LOCKED`. Move to a managed queue only when jobs need fan-out or long runtimes.
 
+As built (Batch 2.5):
+
+- `jobs` is an outbox. Work that must follow a commit is written in the same transaction (`placeOrder` enqueues `order.confirmed`), so a placed Order always gets its notice.
+- `runDueJobs` leases due rows with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)`, so overlapping runs never take the same job. Failures retry after 1, 4, 9 and 16 minutes, then stop with the last error kept.
+- `GET /api/cron/tick` needs `Authorization: Bearer <CRON_SECRET>` (Vercel Cron sends it). It purges lapsed Slot holds, cancels online Orders unpaid after 15 minutes, and runs due jobs. Checkout also starts a run with `after()` so notices go out at once.
+- `notifications` logs each sent message (unique per template, channel and Order), so a retried job sends only what is missing. Console providers only, until Resend and the SMS sender exist. Per-minute crons need a paid Vercel plan.
+
 ## 12. Identity and access
 
 - **Customers:** mobile OTP, email magic link, Google. Sessions are HTTP-only cookies.
@@ -161,6 +180,12 @@ No queue service in the MVP. A `jobs` table plus a cron endpoint called every mi
 - Authorisation is checked in three places: route middleware (coarse), server action (per operation) and data access (row ownership). A missing check in one layer must not expose data.
 - Rate-limit OTP sends, login and checkout creation per IP and per phone number.
 - Audit log for every admin write: who, what, before, after.
+
+As built (Batch 2.6):
+
+- Sign-in methods: email magic link, 6-digit code by SMS (Better Auth `phoneNumber` plugin; the first code sign-in creates the account with a stand-in email that is never used), and Google when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
+- A Customer row links to an existing one only by a verified email or a verified mobile number. A number already on another account is left there.
+- Every sending endpoint is closed over HTTP (`disabledPaths`) and runs only from Server Actions with Postgres rate limits ([ADR 0006](adr/0006-postgres-rate-limit-store.md)): 3 links or codes per address or number per 15 minutes, 30 per IP, 10 code checks per number; 10 Order attempts per Customer per hour and 20 per IP; 120 suggestion requests per IP per minute.
 
 ## 13. Media
 

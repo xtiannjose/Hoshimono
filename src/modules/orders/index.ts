@@ -1,0 +1,13 @@
+// Public interface of the orders module (docs/03-ARCHITECTURE.md section 3).
+// Owns Order, OrderLine, status history and Substitutions.
+export { ORDER_CONFIRMED_JOB, placeOrder } from "./internal/place-order";
+export type { PlaceOrderInput, PlaceOrderResult } from "./internal/place-order";
+export {
+  cancelOrder,
+  expireUnpaidOrders,
+  PAYMENT_WINDOW_MINUTES,
+  transitionOrder,
+} from "./internal/status";
+export type { Actor } from "./internal/status";
+export { getOrder, getOrderForNotice, listOrders } from "./internal/read";
+export type { OrderDetail, OrderSummary } from "./internal/read";
