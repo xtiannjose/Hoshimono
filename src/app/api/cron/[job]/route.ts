@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { connection } from "next/server";
 
+import { purgeRateLimits } from "@/lib/rate-limit";
 import { purgeExpiredHolds } from "@/modules/delivery";
 import { runDueJobs } from "@/modules/jobs";
 import { expireUnpaidOrders } from "@/modules/orders";
@@ -21,7 +22,8 @@ function authorised(request: Request): boolean {
 
 /**
  * Called every minute by the host (docs/03-ARCHITECTURE.md section 11):
- * drops lapsed Slot holds, cancels unpaid online Orders, runs due jobs.
+ * drops lapsed Slot holds, cancels unpaid online Orders, runs due jobs
+ * and clears ended rate-limit windows.
  * Everything it does is idempotent, so an extra call is harmless.
  */
 export async function GET(
@@ -37,5 +39,6 @@ export async function GET(
   const holds = await purgeExpiredHolds(now);
   const unpaidOrders = await expireUnpaidOrders(now);
   const jobs = await runDueJobs(jobHandlers, { now });
-  return Response.json({ holds, unpaidOrders, jobs });
+  const rateLimits = await purgeRateLimits(now);
+  return Response.json({ holds, unpaidOrders, jobs, rateLimits });
 }

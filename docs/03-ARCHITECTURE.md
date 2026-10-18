@@ -181,6 +181,12 @@ As built (Batch 2.5):
 - Rate-limit OTP sends, login and checkout creation per IP and per phone number.
 - Audit log for every admin write: who, what, before, after.
 
+As built (Batch 2.6):
+
+- Sign-in methods: email magic link, 6-digit code by SMS (Better Auth `phoneNumber` plugin; the first code sign-in creates the account with a stand-in email that is never used), and Google when `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set.
+- A Customer row links to an existing one only by a verified email or a verified mobile number. A number already on another account is left there.
+- Every sending endpoint is closed over HTTP (`disabledPaths`) and runs only from Server Actions with Postgres rate limits ([ADR 0006](adr/0006-postgres-rate-limit-store.md)): 3 links or codes per address or number per 15 minutes, 30 per IP, 10 code checks per number; 10 Order attempts per Customer per hour and 20 per IP; 120 suggestion requests per IP per minute.
+
 ## 13. Media
 
 Product images are stored in object storage behind a CDN and served through `next/image`. Upload rule: square, at least 1000 by 1000 px, converted to WebP/AVIF, white or neutral background, one primary plus up to five secondary. Alt text defaults to the Product name.

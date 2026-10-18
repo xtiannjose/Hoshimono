@@ -4,39 +4,56 @@ import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getProfile } from "@/modules/customers";
 import { requireCustomer } from "@/modules/identity";
 
 import { signOutAction } from "./actions";
+import { NameForm } from "./name-form";
 
 export const metadata: Metadata = { title: "Your account" };
 
-// Placeholder until Batch 2.6 builds the account area.
+const LINK =
+  "rounded-card border-border bg-card hover:border-border-strong grid gap-1 border p-5";
+
 export default function AccountPage() {
   return (
-    <section className="wrap py-14 md:py-20">
+    <section className="wrap py-10 md:py-14">
       <h1 className="type-h1">Your account</h1>
       <Suspense
-        fallback={<Skeleton className="rounded-card mt-6 h-24 max-w-md" />}
+        fallback={<Skeleton className="rounded-card mt-6 h-48 max-w-xl" />}
       >
-        <AccountSummary />
+        <Account />
       </Suspense>
     </section>
   );
 }
 
-async function AccountSummary() {
+async function Account() {
   const customer = await requireCustomer("/account");
+  const profile = (await getProfile(customer.id))!;
   return (
-    <div className="mt-6 grid max-w-md justify-items-start gap-4">
-      <p>
-        Signed in as <b>{customer.email ?? customer.name}</b>
-      </p>
-      <Link
-        href="/account/addresses"
-        className="font-semibold underline underline-offset-[3px]"
-      >
-        Your addresses
-      </Link>
+    <div className="mt-6 grid max-w-xl gap-6">
+      <div className="grid gap-4">
+        <NameForm name={profile.name} />
+        <p className="text-muted-foreground text-sm">
+          Signed in with{" "}
+          <b className="text-foreground">{profile.email ?? profile.phone}</b>
+        </p>
+      </div>
+      <nav aria-label="Your account" className="grid gap-3 sm:grid-cols-2">
+        <Link href="/account/orders" className={LINK}>
+          <b>Your orders</b>
+          <span className="text-muted-foreground text-sm">
+            Track, cancel before picking, and see past orders
+          </span>
+        </Link>
+        <Link href="/account/addresses" className={LINK}>
+          <b>Your addresses</b>
+          <span className="text-muted-foreground text-sm">
+            Where we deliver, with landmarks for the Rider
+          </span>
+        </Link>
+      </nav>
       <form action={signOutAction}>
         <Button type="submit" variant="secondary">
           Sign out

@@ -56,6 +56,41 @@ export async function sendSignInLink(email: string, next: string) {
   });
 }
 
+/** Text a 6-digit sign-in code to a +639XXXXXXXXX number. */
+export async function sendSignInCode(phone: string) {
+  await auth.api.sendPhoneNumberOTP({
+    body: { phoneNumber: phone },
+    headers: await headers(),
+  });
+}
+
+/** Check the code; on success the session cookie is set. */
+export async function verifySignInCode(
+  phone: string,
+  code: string
+): Promise<boolean> {
+  try {
+    await auth.api.verifyPhoneNumber({
+      body: { phoneNumber: phone, code },
+      headers: await headers(),
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Where to send the browser to sign in with Google. */
+export async function googleSignInUrl(next: string): Promise<string | null> {
+  const result = await auth.api.signInSocial({
+    body: { provider: "google", callbackURL: safeNext(next) },
+    headers: await headers(),
+  });
+  return result.url ?? null;
+}
+
+export { googleEnabled } from "./internal/auth";
+
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
 }

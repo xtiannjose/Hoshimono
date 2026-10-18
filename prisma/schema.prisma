@@ -571,17 +571,20 @@ model AuditLog {
 // src/modules/identity/internal/auth.ts. Ids are strings Better Auth generates.
 
 model AuthUser {
-  id            String        @id
-  name          String
-  email         String        @unique
-  emailVerified Boolean       @default(false) @map("email_verified")
-  image         String?
-  sessions      AuthSession[]
-  accounts      AuthAccount[]
-  customer      Customer?
-  staff         Staff?
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                  String        @id
+  name                String
+  email               String        @unique
+  emailVerified       Boolean       @default(false) @map("email_verified")
+  // Better Auth phone-number plugin (mobile OTP sign-in, Batch 2.6).
+  phoneNumber         String?       @unique @map("phone_number")
+  phoneNumberVerified Boolean?      @map("phone_number_verified")
+  image               String?
+  sessions            AuthSession[]
+  accounts            AuthAccount[]
+  customer            Customer?
+  staff               Staff?
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("auth_users")
 }
@@ -670,4 +673,15 @@ model Notification {
 
   @@unique([template, channel, orderId])
   @@map("notifications")
+}
+
+// Fixed-window counters for sign-in and other abuse-prone requests
+// (src/lib/rate-limit.ts). Expired rows are purged by the cron tick.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime @map("reset_at") @db.Timestamptz(3)
+
+  @@index([resetAt])
+  @@map("rate_limits")
 }

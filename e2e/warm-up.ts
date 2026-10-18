@@ -14,6 +14,7 @@ const ROUTES = [
   "/account",
   "/account/addresses",
   "/account/addresses/new",
+  "/account/orders",
   "/admin",
 ];
 

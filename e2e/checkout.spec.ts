@@ -78,6 +78,12 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
   // Cancel before picking.
   await page.getByRole("button", { name: "Cancel order" }).click();
   await expect(page.getByText("This order was cancelled.")).toBeVisible();
+
+  // Order history lists it.
+  await page.goto("/account/orders");
+  const listed = page.getByRole("link", { name: new RegExp(orderNo) });
+  await expect(listed).toContainText("Cancelled");
+  await expect(listed).toContainText(shown);
 });
 
 test("the cron route answers only the host", async ({ request }) => {

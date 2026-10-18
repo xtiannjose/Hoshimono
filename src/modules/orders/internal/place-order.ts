@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { manilaDate } from "@/lib/dates";
 import { db } from "@/lib/db";
+import { normalizePhone } from "@/lib/phone";
 import { checkOutCart, getCart, getCartId } from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
 import { bookSlot, resolveZone } from "@/modules/delivery";
@@ -56,13 +57,6 @@ const input = z.object({
   expectedTotalCents: z.int().nonnegative(),
   idempotencyKey: z.string().min(16).max(100),
 });
-
-/** "0917 123 4567" or "+63 917-123-4567" to "+639171234567"; null if not a PH mobile. */
-export function normalizePhone(raw: string): string | null {
-  const digits = raw.replace(/[\s()-]/g, "");
-  const match = /^(?:\+63|63|0)(9\d{9})$/.exec(digits);
-  return match ? `+63${match[1]}` : null;
-}
 
 // No 0, O, 1 or I, so the number reads well over the phone.
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";

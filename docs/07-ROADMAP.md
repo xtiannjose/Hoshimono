@@ -73,7 +73,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
 | Maps and geocoding     | Google Maps, Mapbox or similar                                                                | Batch 2.3 |
 | SMS provider           | Semaphore or Twilio                                                                           | Batch 2.5 |
-| Rate-limit store       | Upstash Redis, Vercel KV or Postgres-based                                                    | Batch 2.6 |
+| Rate-limit store       | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6 |
 | Payment provider       | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1 |
 | Weighed-item charging  | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3 |
 | PWA tooling and push   | Service worker library; whether to send web push                                              | Batch 5.5 |
@@ -183,9 +183,9 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.6 Accounts and the full journey** (W7). Stack: Better Auth, rate-limit store, Playwright. Skills: `security-review`, `playwright-cli`.
 
-- [ ] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1)
-- [ ] Account area: profile, addresses, order history, cancel before picking
-- [ ] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking
+- [x] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1). OTP texts go through the console SMS provider and Google shows once its OAuth keys are set (business tracks); limits in Postgres ([ADR 0006](adr/0006-postgres-rate-limit-store.md))
+- [x] Account area: profile, addresses, order history, cancel before picking
+- [x] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking (`e2e/checkout.spec.ts`, phone viewport; CI `e2e` job)
 
 **Exit criteria:** a Customer places and tracks a COD order on a phone; two simultaneous buyers of the last item result in exactly one Order; the total on the confirmation page equals the total computed by `priceCart` to the centavo; the E2E journey is green in CI.
 
