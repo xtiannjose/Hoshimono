@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -57,6 +58,11 @@ async function Results({
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
   });
+  // A page past the end (a stale link) goes to the last page instead.
+  const pages = Math.ceil(found.total / PAGE_SIZE);
+  if (page > pages && pages > 0) {
+    redirect(withParams("/search", params, { page: String(pages) }));
+  }
   if (found.total === 0) {
     return (
       <Guidance title={`No results for "${query}"`}>

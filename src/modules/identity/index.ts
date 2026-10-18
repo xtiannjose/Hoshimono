@@ -7,10 +7,11 @@ import type { StaffRole } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 
 import { auth } from "./internal/auth";
-import { customerForUser, staffForUser } from "./internal/link";
+import { customerForUser } from "@/modules/customers";
 
-export { customerForUser, staffForUser };
-export type { AuthUserInfo } from "./internal/link";
+import { staffForUser } from "./internal/link";
+
+export { staffForUser };
 
 /** Better Auth endpoints for /api/auth/[...all]. */
 export const authHandler = toNextJsHandler(auth);

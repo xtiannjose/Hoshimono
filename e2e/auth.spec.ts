@@ -87,7 +87,8 @@ test("stops a fourth sign-in link to the same email within 15 minutes", async ({
 }) => {
   const limited = freshEmail("limit");
   for (let i = 0; i < 4; i++) {
-    await page.goto("/sign-in", { waitUntil: "networkidle" });
+    // The form posts without JavaScript too, so no need to wait for it.
+    await page.goto("/sign-in");
     await page.getByRole("textbox", { name: "Email" }).fill(limited);
     await page.getByRole("button", { name: "Email me a link" }).click();
     if (i < 3) await expect(page.getByRole("status")).toContainText(limited);

@@ -31,8 +31,9 @@ export function ImageUpload({ productId }: { productId: string }) {
           className="text-sm"
         />
         <p id="image-help" className="text-muted-foreground text-[13px]">
-          Square, at least 1000 x 1000 pixels, neutral background. JPEG, PNG or
-          WebP under 10 MB.
+          At least 1000 x 1000 pixels, neutral background. Square works best;
+          other shapes get white edges, never cropped. JPEG, PNG or WebP under
+          10 MB.
         </p>
       </div>
       <div className="grid gap-1.5">

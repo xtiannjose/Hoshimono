@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { customerForUser, safeNext, staffForUser } from "@/modules/identity";
+import { customerForUser } from "@/modules/customers";
+import { safeNext, staffForUser } from "@/modules/identity";
 
 import { createTestDb, resetDb } from "./helpers";
 

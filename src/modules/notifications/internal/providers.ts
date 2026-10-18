@@ -2,6 +2,8 @@
 // console providers exist until the Resend and SMS accounts are set up
 // (business tracks, docs/07-ROADMAP.md section 11).
 
+import { consoleMessagesAllowed, testMailboxEnabled } from "@/lib/test-mode";
+
 export type Email = { to: string; subject: string; text: string };
 export type Sms = { to: string; text: string };
 export type Sent = { provider: string; ref: string | null };
@@ -14,23 +16,23 @@ export interface SmsProvider {
   send(message: Sms): Promise<Sent>;
 }
 
-// Outside production the last message per recipient is kept in memory for
-// /api/dev/mailbox. On globalThis: Next dev loads modules once per route.
+// For the e2e mailbox the last message per recipient is kept in memory
+// (src/lib/test-mode.ts). On globalThis: Next dev loads modules per route.
 const store = globalThis as unknown as { devOutbox?: Map<string, string> };
 
 function remember(to: string, text: string) {
-  if (process.env.NODE_ENV === "production") return;
+  if (!testMailboxEnabled()) return;
   (store.devOutbox ??= new Map()).set(to.toLowerCase(), text);
 }
 
-/** The last console message to a recipient, outside production only. */
+/** The last console message to a recipient, for the e2e mailbox only. */
 export function lastMessage(to: string): string | null {
-  if (process.env.NODE_ENV === "production") return null;
+  if (!testMailboxEnabled()) return null;
   return store.devOutbox?.get(to.toLowerCase()) ?? null;
 }
 
 function refuseInProduction(kind: string) {
-  if (process.env.NODE_ENV === "production") {
+  if (!consoleMessagesAllowed()) {
     throw new Error(`No ${kind} provider configured for production.`);
   }
 }

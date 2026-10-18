@@ -87,6 +87,9 @@ const STORAGE = {
 async function ProductView({ params }: Pick<Props, "params">) {
   const { slug } = await params;
   const found = await loadProduct(idFrom(slug));
+  // shortcut: inside Suspense, so a missing Product streams a noindex
+  // not-found page with status 200. Next 16 counts params as runtime data
+  // in the page shell for on-demand routes, so the check cannot move up.
   if (!found) notFound();
   // The id resolves the Product; a stale slug redirects to the current one.
   if (slug !== `${found.slug}-${found.id}`)

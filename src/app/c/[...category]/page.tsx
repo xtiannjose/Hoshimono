@@ -1,7 +1,7 @@
 import { FunnelSimpleIcon } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, permanentRedirect, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import {
@@ -83,9 +83,12 @@ async function CategoryListing({ params, searchParams }: Props) {
     })),
     { name: found.name, href },
   ];
-  const filterForm = (
+  const sort = filters.sort ?? "featured";
+  // Two copies (phone and desktop) need their own ids.
+  const filterForm = (id: string) => (
     <Filters
-      id="filters"
+      id={id}
+      sort={sort}
       action={href}
       facets={list.facets}
       selected={{
@@ -100,6 +103,19 @@ async function CategoryListing({ params, searchParams }: Props) {
       }))}
     />
   );
+  // Sorting keeps the filters; a new sort starts again at page 1.
+  const keep = Object.entries(query).flatMap(([name, v]) =>
+    name === "sort" || name === "page"
+      ? []
+      : (Array.isArray(v) ? v : v ? [v] : []).map(
+          (one) => [name, one] as [string, string]
+        )
+  );
+  // A page past the end (a stale link) goes to the last page instead.
+  const pages = Math.ceil(list.total / PAGE_SIZE);
+  if (page > pages && pages > 0) {
+    redirect(withParams(href, query, { page: String(pages) }));
+  }
 
   return (
     <>
@@ -111,7 +127,7 @@ async function CategoryListing({ params, searchParams }: Props) {
             {list.total} {list.total === 1 ? "product" : "products"}
           </p>
         </div>
-        <SortSelect form="filters" value={filters.sort ?? "featured"} />
+        <SortSelect action={href} value={sort} keep={keep} />
       </div>
 
       <div className="grid items-start gap-8 lg:grid-cols-[248px_1fr]">
@@ -121,13 +137,13 @@ async function CategoryListing({ params, searchParams }: Props) {
             <FunnelSimpleIcon size={20} aria-hidden />
             Filters
           </summary>
-          <div className="pt-3 pb-2">{filterForm}</div>
+          <div className="pt-3 pb-2">{filterForm("filters-phone")}</div>
         </details>
         <aside
           aria-label="Filters"
           className="sticky top-[136px] hidden lg:block"
         >
-          {filterForm}
+          {filterForm("filters-wide")}
         </aside>
 
         <section aria-label="Products">

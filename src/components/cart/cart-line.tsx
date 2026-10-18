@@ -86,10 +86,9 @@ export function CartLine({
         <div className="mt-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             {out ? null : (
-              <div className="w-32">
+              <div className="w-36">
                 <QuantityStepper
                   variant="ghost"
-                  compact
                   value={quantity}
                   min={1}
                   onChange={(next) => changeQuantity(product.id, name, next)}
@@ -101,7 +100,7 @@ export function CartLine({
               type="button"
               onClick={() => changeQuantity(product.id, name, 0)}
               aria-label={`Remove ${name}`}
-              className="rounded-pill hover:bg-muted text-muted-foreground hover:text-foreground grid size-10 place-items-center"
+              className="rounded-pill hover:bg-muted text-muted-foreground hover:text-foreground grid size-11 place-items-center"
             >
               <TrashIcon size={20} aria-hidden />
             </button>
@@ -183,7 +182,7 @@ function PickerNote({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground mt-1 block min-h-6 text-left text-[13px] font-semibold underline underline-offset-[3px]"
+        className="text-muted-foreground mt-1 block min-h-11 text-left text-[13px] font-semibold underline underline-offset-[3px]"
       >
         {note ? `Note: ${note}` : "Add a note for your picker"}
       </button>
@@ -201,12 +200,12 @@ function PickerNote({
           defaultValue={note ?? ""}
           maxLength={200}
           autoFocus
-          className="rounded-field border-input bg-card h-10 min-w-0 flex-1 border px-3 text-[15px]"
+          className="rounded-field border-input bg-card h-11 min-w-0 flex-1 border px-3 text-base"
         />
         <button
           type="submit"
           disabled={saving}
-          className="rounded-pill bg-btn text-btn-fg hover:bg-btn-hover h-10 px-4 text-sm font-semibold disabled:opacity-50"
+          className="rounded-pill bg-btn text-btn-fg hover:bg-btn-hover h-11 px-4 text-sm font-semibold disabled:opacity-50"
         >
           Save
         </button>
