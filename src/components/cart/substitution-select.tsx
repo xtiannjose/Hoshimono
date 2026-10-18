@@ -87,7 +87,7 @@ export function SubstitutionSelect({
         onClick={toggle}
         aria-expanded={open}
         aria-controls={`${id}-panel`}
-        className="decoration-border-strong mt-1 inline-flex min-h-6 items-center gap-1 text-[13px] font-semibold underline underline-offset-[3px]"
+        className="decoration-border-strong mt-1 inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold underline underline-offset-[3px]"
       >
         <SwapIcon size={15} aria-hidden />
         {current.label}
@@ -139,7 +139,7 @@ export function SubstitutionSelect({
                 onChange={(e) =>
                   e.target.value && void save("preferred", e.target.value)
                 }
-                className="rounded-field border-input bg-card h-11 border px-3 text-[15px]"
+                className="rounded-field border-input bg-card h-11 border px-3 text-base"
               >
                 <option value="">
                   {alternatives === null ? "Loading items" : "Choose an item"}

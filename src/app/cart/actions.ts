@@ -41,6 +41,12 @@ export async function setQuantity(
     return { cart: await currentCart(), message: "That did not work." };
   }
   const owner = await writeCartOwner();
+  if (!owner) {
+    return {
+      cart: await currentCart(),
+      message: "Too many new carts from your network. Please try again later.",
+    };
+  }
   const context = await cartContext(owner);
   const result = await setLineQuantity(
     owner,
@@ -75,9 +81,11 @@ export async function chooseSubstitution(
   preferredProductId: string | null
 ): Promise<CartResult> {
   const input = choice.safeParse({ id, preference, preferredProductId });
-  const owner = await writeCartOwner();
+  const owner = await readCartOwner();
   const saved =
-    input.success && (await setSubstitution(owner, input.data.id, input.data));
+    owner !== null &&
+    input.success &&
+    (await setSubstitution(owner, input.data.id, input.data));
   const cart = await getCart(owner, await cartContext(owner));
   return saved ? { cart } : { cart, message: "Please pick an item." };
 }
@@ -86,9 +94,11 @@ export async function saveNote(id: string, note: string): Promise<CartResult> {
   const input = z
     .object({ id: productId, note: z.string().max(MAX_NOTE_LENGTH * 2) })
     .safeParse({ id, note });
-  const owner = await writeCartOwner();
+  const owner = await readCartOwner();
   const saved =
-    input.success && (await setLineNote(owner, input.data.id, input.data.note));
+    owner !== null &&
+    input.success &&
+    (await setLineNote(owner, input.data.id, input.data.note));
   const cart = await getCart(owner, await cartContext(owner));
   return saved
     ? { cart }

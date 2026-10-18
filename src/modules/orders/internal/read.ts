@@ -5,6 +5,10 @@ import type {
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 
+// shortcut: these reads join Slot, Customer and Payment rows through Prisma
+// relations in one query, though delivery, customers and payments own those
+// tables. Move to their module calls if a table ever leaves this database.
+
 export type OrderSummary = {
   id: string;
   orderNo: string;
@@ -125,13 +129,18 @@ export async function getOrderForNotice(orderId: string) {
     select: {
       id: true,
       orderNo: true,
+      status: true,
       contactPhone: true,
       totalCents: true,
       customer: { select: { email: true } },
       slot: { select: { startsAt: true, endsAt: true } },
       lines: {
         orderBy: { createdAt: "asc" },
-        select: { nameSnapshot: true, orderedQty: true },
+        select: {
+          nameSnapshot: true,
+          orderedQty: true,
+          orderedWeightGrams: true,
+        },
       },
       payments: {
         take: 1,

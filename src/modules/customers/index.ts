@@ -1,6 +1,6 @@
 // Public interface of the customers module (docs/03-ARCHITECTURE.md section 3).
-// Owns the Address book. Customer rows are still created at sign-in by
-// identity (Batch 0.4); the profile moves here with the account area (2.6).
+// Owns the Customer row (created or linked at sign-in through
+// customerForUser), the profile and the Address book.
 export {
   deleteAddress,
   getAddress,
@@ -17,3 +17,5 @@ export type {
 } from "./internal/addresses";
 export { getProfile, updateName } from "./internal/profile";
 export type { Profile } from "./internal/profile";
+export { customerForUser } from "./internal/link";
+export type { AuthUserInfo } from "./internal/link";

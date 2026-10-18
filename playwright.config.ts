@@ -19,10 +19,14 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     // Migrate, reset and seed hoshimono_e2e, then start: every run is fresh.
-    command: `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next dev -p ${PORT}`,
+    // E2E_PROD=1 (CI) tests a production build, the code users will run;
+    // locally the dev server is quicker to start.
+    command: process.env.E2E_PROD
+      ? `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next build && npx next start -p ${PORT}`
+      : `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    timeout: 240_000,
+    timeout: process.env.E2E_PROD ? 600_000 : 240_000,
     env: {
       DATABASE_URL: E2E_DATABASE_URL,
       DIRECT_URL: E2E_DATABASE_URL,

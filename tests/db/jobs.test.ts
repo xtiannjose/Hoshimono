@@ -1,7 +1,12 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { db as appDb } from "@/lib/db";
-import { enqueueJob, MAX_ATTEMPTS, runDueJobs } from "@/modules/jobs";
+import {
+  enqueueJob,
+  MAX_ATTEMPTS,
+  purgeDoneJobs,
+  runDueJobs,
+} from "@/modules/jobs";
 
 import { createTestDb } from "./helpers";
 
@@ -81,5 +86,14 @@ describe("runDueJobs", () => {
     await enqueueJob(appDb, "mystery", {}, NOW);
     expect(await runDueJobs({}, { now: NOW })).toEqual({ done: 0, failed: 1 });
     expect((await db.job.findFirstOrThrow()).lastError).toContain("No handler");
+  });
+
+  it("deletes finished jobs after 30 days", async () => {
+    await enqueueJob(appDb, "note", {}, NOW);
+    await runDueJobs({ note: async () => {} }, { now: NOW });
+    await enqueueJob(appDb, "note", {}, later(10));
+    expect(await purgeDoneJobs(new Date(Date.now() + 29 * 86_400_000))).toBe(0);
+    expect(await purgeDoneJobs(new Date(Date.now() + 31 * 86_400_000))).toBe(1);
+    expect(await db.job.count()).toBe(1);
   });
 });

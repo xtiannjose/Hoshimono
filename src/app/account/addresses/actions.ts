@@ -36,7 +36,8 @@ export async function saveAddressAction(
   const id = text(fd, "id") || undefined;
   const result = await saveAddress(customer.id, values, id);
   if (!result.ok) return { errors: result.errors, values };
-  redirect(next);
+  // "{id}" in next becomes the saved address, so Checkout can select it.
+  redirect(next.replace("{id}", result.address.id));
 }
 
 export async function deleteAddressAction(fd: FormData): Promise<void> {

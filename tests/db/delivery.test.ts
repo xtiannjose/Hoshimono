@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { db as appDb } from "@/lib/db";
 import {
   bookSlot,
+  SLOT_HOLD_MINUTES,
   getSlotHold,
   holdSlot,
   listServiceAreas,
@@ -113,22 +114,28 @@ describe("listSlots", () => {
     const slot = await firstSlot();
     await db.slot.update({
       where: { id: slot.id },
-      data: { capacity: 4, booked: 1 },
+      data: { capacity: 20, booked: 17 },
     });
     const mine = await newCart();
-    expect(await holdSlot(await newCart(), slot.id, NOW)).toMatchObject({
+    expect(
+      await holdSlot(await newCart(), slot.id, { hubId: HUB, now: NOW })
+    ).toMatchObject({
       ok: true,
     });
     expect((await listSlots(HUB, { now: NOW }))[0].state).toBe("few");
-    expect(await holdSlot(await newCart(), slot.id, NOW)).toMatchObject({
+    expect(
+      await holdSlot(await newCart(), slot.id, { hubId: HUB, now: NOW })
+    ).toMatchObject({
       ok: true,
     });
-    expect(await holdSlot(mine, slot.id, NOW)).toMatchObject({ ok: true });
+    expect(
+      await holdSlot(mine, slot.id, { hubId: HUB, now: NOW })
+    ).toMatchObject({ ok: true });
     expect((await listSlots(HUB, { now: NOW, cartId: mine }))[0]).toMatchObject(
       { state: "few", held: true }
     );
     expect((await listSlots(HUB, { now: NOW }))[0].state).toBe("full");
-    // Holds lapse after 10 minutes: 3 of 4 places free again.
+    // Holds lapse after 10 minutes: 3 of 20 places free again, under 20%.
     expect(
       (await listSlots(HUB, { now: minutes(11), cartId: mine }))[0]
     ).toMatchObject({
@@ -146,11 +153,11 @@ describe("holdSlot", () => {
       orderBy: { startsAt: "asc" },
       take: 2,
     });
-    expect(await holdSlot(cart, a.id, NOW)).toEqual({
+    expect(await holdSlot(cart, a.id, { hubId: HUB, now: NOW })).toEqual({
       ok: true,
       expiresAt: minutes(10),
     });
-    await holdSlot(cart, b.id, NOW);
+    await holdSlot(cart, b.id, { hubId: HUB, now: NOW });
     expect(await getSlotHold(cart, NOW)).toEqual({
       slotId: b.id,
       expiresAt: minutes(10),
@@ -164,7 +171,9 @@ describe("holdSlot", () => {
       where: { id: slot.id },
       data: { capacity: 1, booked: 1 },
     });
-    expect(await holdSlot(await newCart(), slot.id, NOW)).toEqual({
+    expect(
+      await holdSlot(await newCart(), slot.id, { hubId: HUB, now: NOW })
+    ).toEqual({
       ok: false,
       reason: "full",
     });
@@ -173,11 +182,15 @@ describe("holdSlot", () => {
       orderBy: { startsAt: "asc" },
     });
     const closed = new Date(next.startsAt.getTime() - 30 * 60_000);
-    expect(await holdSlot(await newCart(), next.id, closed)).toEqual({
+    expect(
+      await holdSlot(await newCart(), next.id, { hubId: HUB, now: closed })
+    ).toEqual({
       ok: false,
       reason: "closed",
     });
-    expect(await holdSlot(await newCart(), randomUUID(), NOW)).toEqual({
+    expect(
+      await holdSlot(await newCart(), randomUUID(), { hubId: HUB, now: NOW })
+    ).toEqual({
       ok: false,
       reason: "not_found",
     });
@@ -188,10 +201,89 @@ describe("holdSlot", () => {
     await db.slot.update({ where: { id: slot.id }, data: { capacity: 1 } });
     const carts = await Promise.all(Array.from({ length: 6 }, newCart));
     const results = await Promise.all(
-      carts.map((c) => holdSlot(c, slot.id, NOW))
+      carts.map((c) => holdSlot(c, slot.id, { hubId: HUB, now: NOW }))
     );
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(await db.slotHold.count({ where: { slotId: slot.id } })).toBe(1);
+  });
+});
+
+describe("Slots belong to one Hub", () => {
+  it("refuses to hold or book a Slot of another Hub", async () => {
+    const other = await db.hub.create({
+      data: { name: "Makati Hub", address: "Makati", lat: 14.55, lng: 121.02 },
+    });
+    const slot = await db.slot.create({
+      data: {
+        hubId: other.id,
+        date: new Date("2026-10-19"),
+        startsAt: minutes(300),
+        endsAt: minutes(420),
+        capacity: 5,
+      },
+    });
+    const cart = await newCart();
+    expect(await holdSlot(cart, slot.id, { hubId: HUB, now: NOW })).toEqual({
+      ok: false,
+      reason: "not_found",
+    });
+    expect(
+      await appDb.$transaction((tx) =>
+        bookSlot(tx, { slotId: slot.id, hubId: HUB, cartId: cart, now: NOW })
+      )
+    ).toBe(false);
+    await db.slot.delete({ where: { id: slot.id } });
+    await db.hub.delete({ where: { id: other.id } });
+  });
+
+  it("says only a few are left under 20% of capacity", async () => {
+    const slot = await firstSlot();
+    await db.slot.update({
+      where: { id: slot.id },
+      data: { capacity: 20, booked: 16 },
+    });
+    expect((await listSlots(HUB, { now: NOW }))[0].state).toBe("open");
+    await db.slot.update({ where: { id: slot.id }, data: { booked: 17 } });
+    expect((await listSlots(HUB, { now: NOW }))[0].state).toBe("few");
+  });
+});
+
+describe("bookSlot inside the cutoff", () => {
+  // 30 minutes before the first Slot starts: past the 90-minute cutoff.
+  async function late() {
+    const slot = await firstSlot();
+    return { slot, at: new Date(slot.startsAt.getTime() - 30 * 60_000) };
+  }
+  const book = (slotId: string, cartId: string, now: Date) =>
+    appDb.$transaction((tx) =>
+      bookSlot(tx, { slotId, hubId: HUB, cartId, now })
+    );
+
+  it("lets a cart that holds a place book until the Slot starts", async () => {
+    const { slot, at } = await late();
+    const cart = await newCart();
+    await db.slotHold.create({
+      data: {
+        slotId: slot.id,
+        cartId: cart,
+        expiresAt: new Date(at.getTime() + 60_000),
+      },
+    });
+    expect(await book(slot.id, cart, at)).toBe(true);
+  });
+
+  it("refuses a cart with no hold, or whose hold has lapsed", async () => {
+    const { slot, at } = await late();
+    expect(await book(slot.id, await newCart(), at)).toBe(false);
+    const lapsed = await newCart();
+    await db.slotHold.create({
+      data: {
+        slotId: slot.id,
+        cartId: lapsed,
+        expiresAt: new Date(at.getTime() - SLOT_HOLD_MINUTES * 60_000),
+      },
+    });
+    expect(await book(slot.id, lapsed, at)).toBe(false);
   });
 });
 
@@ -200,10 +292,15 @@ describe("bookSlot", () => {
     const slot = await firstSlot();
     await db.slot.update({ where: { id: slot.id }, data: { capacity: 1 } });
     const cart = await newCart();
-    await holdSlot(cart, slot.id, NOW);
+    await holdSlot(cart, slot.id, { hubId: HUB, now: NOW });
     expect(
       await appDb.$transaction((tx) =>
-        bookSlot(tx, { slotId: slot.id, cartId: cart, now: minutes(5) })
+        bookSlot(tx, {
+          slotId: slot.id,
+          hubId: HUB,
+          cartId: cart,
+          now: minutes(5),
+        })
       )
     ).toBe(true);
     expect(
@@ -215,11 +312,11 @@ describe("bookSlot", () => {
   it("will not book a place another cart is holding", async () => {
     const slot = await firstSlot();
     await db.slot.update({ where: { id: slot.id }, data: { capacity: 1 } });
-    await holdSlot(await newCart(), slot.id, NOW);
+    await holdSlot(await newCart(), slot.id, { hubId: HUB, now: NOW });
     const late = await newCart();
     expect(
       await appDb.$transaction((tx) =>
-        bookSlot(tx, { slotId: slot.id, cartId: late, now: NOW })
+        bookSlot(tx, { slotId: slot.id, hubId: HUB, cartId: late, now: NOW })
       )
     ).toBe(false);
   });
@@ -231,7 +328,7 @@ describe("bookSlot", () => {
     const results = await Promise.all(
       carts.map((cartId) =>
         appDb.$transaction((tx) =>
-          bookSlot(tx, { slotId: slot.id, cartId, now: NOW })
+          bookSlot(tx, { slotId: slot.id, hubId: HUB, cartId, now: NOW })
         )
       )
     );
@@ -253,8 +350,8 @@ describe("bookSlot", () => {
 
 it("purgeExpiredHolds removes only lapsed holds", async () => {
   const slot = await firstSlot();
-  await holdSlot(await newCart(), slot.id, NOW);
-  await holdSlot(await newCart(), slot.id, minutes(8));
+  await holdSlot(await newCart(), slot.id, { hubId: HUB, now: NOW });
+  await holdSlot(await newCart(), slot.id, { hubId: HUB, now: minutes(8) });
   expect(await purgeExpiredHolds(minutes(12))).toBe(1);
   expect(await db.slotHold.count()).toBe(1);
 });

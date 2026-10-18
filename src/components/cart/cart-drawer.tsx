@@ -1,9 +1,9 @@
 "use client";
 
-import { XIcon } from "@phosphor-icons/react";
+import { TruckIcon, XIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import { Dialog } from "radix-ui";
-import { useEffect } from "react";
+import { Drawer } from "vaul";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { loadCart } from "@/app/cart/actions";
 import { ICON_BUTTON, PRIMARY_BUTTON } from "@/components/ui/button-classes";
@@ -14,15 +14,28 @@ import { CartLines, EmptyCart } from "./cart-contents";
 import { setCartOpen, setCartView, useCart } from "./cart-store";
 import { CartNotes, CartSummary } from "./cart-summary";
 
+const WIDE = "(min-width: 768px)";
+const subscribe = (change: () => void) => {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", change);
+  return () => query.removeEventListener("change", change);
+};
+
 /**
- * Bottom sheet on phones, side sheet from md up (docs/05 CartDrawer).
- * shortcut: opens and closes with CSS; no drag-to-dismiss yet, add it with
- * vaul (installed) if testing on phones asks for it.
+ * Bottom sheet on phones, side sheet from md up (docs/05 CartDrawer), built
+ * on vaul: it follows the finger 1:1 and closes on a fast or long drag.
+ * shortcut: vaul's own transition, not the Motion spring from docs/05 section
+ * 7; no detents, as the Cart has one height.
  */
 export default function CartDrawer() {
   const open = useCart((s) => s.open);
   const view = useCart((s) => s.view);
   const close = () => setCartOpen(false);
+  const wide = useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(WIDE).matches,
+    () => false
+  );
 
   // The header normally hands over the Cart; fetch it if that has not landed.
   useEffect(() => {
@@ -33,33 +46,41 @@ export default function CartDrawer() {
   const canCheckout = (view?.priced.lines.length ?? 0) > 0;
 
   return (
-    <Dialog.Root open={open} onOpenChange={setCartOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay
+    <Drawer.Root
+      open={open}
+      onOpenChange={setCartOpen}
+      direction={wide ? "right" : "bottom"}
+    >
+      <Drawer.Portal>
+        <Drawer.Overlay
           style={{ zIndex: z.drawer }}
-          className="bg-scrim data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 fixed inset-0 duration-200"
+          className="bg-scrim fixed inset-0"
         />
-        <Dialog.Content
+        <Drawer.Content
           style={{ zIndex: z.drawer }}
           aria-describedby={undefined}
-          className="bg-card shadow-float data-open:animate-in data-closed:animate-out data-open:slide-in-from-bottom data-closed:slide-out-to-bottom md:data-open:slide-in-from-right md:data-closed:slide-out-to-right rounded-t-card fixed inset-x-0 bottom-0 flex max-h-[90dvh] flex-col duration-300 ease-[cubic-bezier(0.2,0.9,0.3,1.1)] motion-reduce:duration-0 md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-[440px] md:rounded-none"
+          className="bg-card shadow-float rounded-t-card fixed inset-x-0 bottom-0 flex max-h-[90dvh] flex-col outline-none md:inset-y-0 md:right-0 md:left-auto md:max-h-none md:w-[440px] md:rounded-none"
         >
           <div className="bg-border-strong mx-auto mt-2 h-[5px] w-10 rounded-full opacity-60 md:hidden" />
           <div className="flex items-center justify-between px-5 pt-3 pb-2 md:pt-5">
             <div className="flex items-baseline gap-2.5">
-              <Dialog.Title className="type-h3">Your cart</Dialog.Title>
+              <Drawer.Title className="type-h3">Your cart</Drawer.Title>
               {view && view.itemCount > 0 && (
                 <span className="text-muted-foreground text-sm">
                   {view.itemCount} {view.itemCount === 1 ? "item" : "items"}
                 </span>
               )}
             </div>
-            <Dialog.Close className={`${ICON_BUTTON} bg-muted`}>
+            <Drawer.Close className={`${ICON_BUTTON} bg-muted`}>
               <XIcon size={22} aria-hidden />
               <span className="sr-only">Close cart</span>
-            </Dialog.Close>
+            </Drawer.Close>
           </div>
 
+          <p className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
+            <TruckIcon size={20} aria-hidden className="shrink-0" />
+            Same-day delivery in 2-hour slots. Choose yours at checkout.
+          </p>
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3">
             {!view ? (
               <div aria-hidden className="grid gap-3 py-3">
@@ -98,8 +119,8 @@ export default function CartDrawer() {
               </Link>
             </div>
           )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }

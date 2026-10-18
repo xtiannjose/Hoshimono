@@ -86,3 +86,25 @@ export async function listServiceAreas(): Promise<
     .map(([city, barangays]) => ({ city, barangays }))
     .sort((a, b) => a.city.localeCompare(b.city));
 }
+
+export type ZoneCoverage = {
+  name: string;
+  cities: string[];
+  /** Empty means every barangay of the cities. */
+  barangays: string[];
+  deliveryFeeCents: number;
+  freeDeliveryOverCents: number | null;
+  minOrderCents: number;
+};
+
+/** Every served Zone with its fees, for the public coverage page. */
+export async function listCoverage(): Promise<ZoneCoverage[]> {
+  return (await activeZones()).map((z) => ({
+    name: z.name,
+    cities: z.cities,
+    barangays: z.barangays,
+    deliveryFeeCents: z.deliveryFeeCents,
+    freeDeliveryOverCents: z.freeDeliveryOverCents,
+    minOrderCents: z.minOrderCents,
+  }));
+}

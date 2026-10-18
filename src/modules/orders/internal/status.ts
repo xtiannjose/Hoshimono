@@ -2,6 +2,7 @@ import type { ActorType, OrderStatus } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { releaseSlot } from "@/modules/delivery";
 import { releaseStock } from "@/modules/inventory";
+import { voidCodPayment } from "@/modules/payments";
 
 /** The Order lifecycle (docs/03-ARCHITECTURE.md section 7). */
 const NEXT: Record<OrderStatus, OrderStatus[]> = {
@@ -57,6 +58,9 @@ export async function transitionOrder(
       },
     });
     if (to === "cancelled") {
+      // Slot first, then stock: the order placeOrder locks them in, so a
+      // cancel and a checkout cannot deadlock.
+      await releaseSlot(tx, order.slot_id);
       const lines = await tx.orderLine.findMany({
         where: { orderId },
         select: { productId: true, orderedQty: true },
@@ -69,13 +73,18 @@ export async function transitionOrder(
           quantity: l.orderedQty,
         })),
       });
-      await releaseSlot(tx, order.slot_id);
+      if (await voidCodPayment(tx, orderId)) {
+        await tx.order.update({
+          where: { id: orderId },
+          data: { paymentStatus: "unpaid" },
+        });
+      }
     }
     return true;
   });
 }
 
-/** The Customer may cancel until picking starts (PRD ACC-3, docs/03 section 7). */
+/** The Customer may cancel until picking starts (PRD ACC-5, docs/03 section 7). */
 export async function cancelOrder(
   customerId: string,
   orderId: string

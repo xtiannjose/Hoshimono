@@ -16,7 +16,7 @@ const STATUS: Record<OrderSummary["status"], string> = {
   pending_payment: "Waiting for payment",
   confirmed: "Confirmed",
   picking: "Picking",
-  picked: "Packed",
+  picked: "Ready for the Rider",
   out_for_delivery: "On the way",
   delivered: "Delivered",
   delivery_failed: "Delivery failed",

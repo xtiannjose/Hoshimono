@@ -1,17 +1,12 @@
 "use client";
 
-import {
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useActionState, useState, type ReactNode } from "react";
 
 import {
   saveAddressAction,
   type AddressFormState,
 } from "@/app/account/addresses/actions";
+import { formKey } from "@/components/form-key";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 
 export type AddressFormValues = {
@@ -85,11 +80,6 @@ export function AddressForm({
   const v = { ...values, ...state.values } as AddressFormValues;
   const [picked, setPicked] = useState<string | null>(null);
   const city = picked ?? v.city;
-  const cityRef = useRef<HTMLSelectElement>(null);
-  // React's reset after an action blanks a <select>; put the city back.
-  useEffect(() => {
-    if (cityRef.current) cityRef.current.value = city;
-  }, [state, city]);
   const barangays = areas.find((a) => a.city === city)?.barangays ?? null;
   const e = state.errors;
   const described = (name: keyof typeof e) =>
@@ -98,7 +88,12 @@ export function AddressForm({
       : {};
 
   return (
-    <form action={action} noValidate className="grid max-w-xl gap-4">
+    <form
+      key={formKey(state)}
+      action={action}
+      noValidate
+      className="grid max-w-xl gap-4"
+    >
       <input type="hidden" name="next" value={next} />
       {v.id && <input type="hidden" name="id" value={v.id} />}
       {e.area && (
@@ -150,7 +145,6 @@ export function AddressForm({
           <select
             id="a-city"
             name="city"
-            ref={cityRef}
             defaultValue={v.city}
             onChange={(event) => setPicked(event.target.value)}
             className={FIELD}

@@ -5,6 +5,7 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 
 import { db } from "@/lib/db";
+import { consoleMessagesAllowed } from "@/lib/test-mode";
 import { sendSignInCode } from "@/modules/notifications";
 
 import { rememberLink } from "./dev-mailbox";
@@ -17,7 +18,13 @@ export function googleEnabled(): boolean {
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
   user: { modelName: "authUser" },
-  session: { modelName: "authSession" },
+  session: {
+    modelName: "authSession",
+    // A signed copy of the session in a cookie: the header, the page and
+    // its actions read it without a database lookup. A sign-out elsewhere
+    // takes effect within 5 minutes.
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
   account: { modelName: "authAccount" },
   verification: { modelName: "authVerification" },
   // Sign-in links, codes and Google start only from our Server Actions,
@@ -43,10 +50,15 @@ export const auth = betterAuth({
     : {},
   plugins: [
     magicLink({
+      // Better Auth allows 5 link checks a minute per IP by default. Many
+      // Filipino mobile users share one carrier IP, and a link is a
+      // single-use 32-character token, so a looser limit is safe. Sending
+      // links is limited by our own Server Action (ADR 0006).
+      rateLimit: { window: 60, max: 60 },
       async sendMagicLink({ email, url }) {
         // shortcut: no email provider yet, links go to the dev server log
         // until Resend is set up. Never log a live link in production.
-        if (process.env.NODE_ENV === "production") {
+        if (!consoleMessagesAllowed()) {
           throw new Error("Email delivery is not configured");
         }
         console.info(`[dev] Sign-in link for ${email}: ${url}`);

@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { devices, expect, test } from "@playwright/test";
 
+import { freshEmail } from "./run-tag";
 import { signIn } from "./sign-in";
 
 // Phase 2 exit: a Customer places and tracks a COD order on a phone.
@@ -23,10 +24,25 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
 
   // Checkout asks a guest to sign in, then keeps the Cart.
   await expect(page).toHaveURL(/\/sign-in\?next=%2Fcheckout/);
-  await signIn(page, "ligaya@example.com", "/checkout");
+  await signIn(page, freshEmail("checkout"), "/checkout");
   await expect(
     page.getByRole("heading", { level: 1, name: "Checkout" })
   ).toBeVisible();
+  await page.waitForLoadState("networkidle");
+
+  // A new Customer gives the address right here (PRD CHK-1).
+  await expect(
+    page.getByRole("heading", { name: "Where should we deliver?" })
+  ).toBeVisible();
+  await page
+    .getByLabel("House or unit number and street")
+    .fill("12 Sampaguita Street");
+  await page.getByLabel("City").selectOption("Pasig");
+  await page.getByLabel("Barangay").fill("Kapitolyo");
+  await page
+    .getByRole("textbox", { name: "Landmark" })
+    .fill("Across the green sari-sari store");
+  await page.getByRole("button", { name: "Deliver here" }).click();
   await page.waitForLoadState("networkidle");
   const summary = page.getByRole("complementary", { name: "Order summary" });
   await expect(summary.getByText("Magnolia Fresh Milk")).toBeVisible();
@@ -35,7 +51,7 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
   // Hold a delivery window.
   const window = page.locator('input[name="slot"]:not([disabled])').first();
   await window.locator("xpath=..").click();
-  await expect(page.getByText("Held for you for 10 minutes")).toBeVisible();
+  await expect(page.getByText(/Held for you until \d/)).toBeVisible();
   await page.getByLabel("Mobile number").fill("0917 555 0142");
   // Nothing scrolls sideways on a phone.
   expect(
@@ -95,4 +111,54 @@ test("the cron route answers only the host", async ({ request }) => {
   });
   expect(res.status()).toBe(200);
   expect(await res.json()).toMatchObject({ jobs: { failed: 0 } });
+});
+
+test("choosing an address in another Zone re-prices the Order", async ({
+  page,
+}) => {
+  // Makati's minimum is PHP 700: 7 x Fresh Milk clears it.
+  await page.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
+  const stepper = page.getByRole("group", { name: "Quantity of Fresh Milk" });
+  for (let i = 1; i < 7; i++) {
+    await stepper.getByRole("button", { name: "Add one" }).click();
+  }
+  // Wait for the server's count, not the instant one, before leaving.
+  await expect(
+    page.getByRole("button", { name: /7\s*View cart/ })
+  ).toBeVisible();
+  await page.goto("/checkout");
+  await signIn(page, freshEmail("zones"), "/checkout");
+
+  const address = async (line1: string, city: string, barangay: string) => {
+    await page.getByLabel("House or unit number and street").fill(line1);
+    await page.getByLabel("City").selectOption(city);
+    await page.getByLabel("Barangay").fill(barangay);
+    await page
+      .getByRole("textbox", { name: "Landmark" })
+      .fill("Beside the guardhouse");
+    await page.getByRole("button", { name: "Deliver here" }).click();
+    await page.waitForLoadState("networkidle");
+  };
+  await address("12 Sampaguita Street", "Pasig", "Kapitolyo");
+  const place = page.getByRole("button", { name: /^Place order, / });
+  await expect(place).toHaveText("Place order, ₱854.00"); // 805 + 49
+
+  // Add a second address in Makati: Checkout selects it and re-prices.
+  await page.getByText("Deliver somewhere else? Add an address").click();
+  await page.getByLabel("Name this address").fill("Office");
+  await address("Unit 1804, 28th Street", "Makati", "Poblacion");
+  await expect(page.getByRole("radio", { name: /Office/ })).toBeChecked();
+  await expect(page.getByText("Delivery to Makati and Taguig")).toBeVisible();
+  await expect(place).toHaveText("Place order, ₱874.00"); // 805 + 69
+
+  await page
+    .locator('input[name="slot"]:not([disabled])')
+    .first()
+    .locator("xpath=..")
+    .click();
+  await expect(page.getByText(/Held for you until \d/)).toBeVisible();
+  await page.getByLabel("Mobile number").fill("0917 555 0199");
+  await place.click();
+  await expect(page.getByTestId("order-total")).toHaveText("₱874.00");
 });

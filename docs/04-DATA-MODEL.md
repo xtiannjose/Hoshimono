@@ -127,7 +127,7 @@ Prefer database constraints over application checks wherever possible.
 4. `orders.idempotency_key` is unique, so a double-click cannot place two Orders.
 5. `orders.total_cents = subtotal_cents - discount_cents + delivery_fee_cents`; VAT is included in prices and reported separately, never added again.
 6. `order_lines.line_total_cents` is derived from the snapshot price, never from the live Product row.
-7. Order status changes only through `orders.transition()`; every change has a status-event row.
+7. Order status changes only through `transitionOrder()` in the orders module; every change has a status-event row.
 8. A primary image is unique per Product.
 9. A Customer has at most one active Cart.
 

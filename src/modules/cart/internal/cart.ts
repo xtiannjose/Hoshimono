@@ -43,6 +43,17 @@ export type CartView = {
   /** Totals from priceCart, leaving out lines that are out of stock. */
   priced: PricedCart;
   itemCount: number;
+  /**
+   * Every saved line as "product:quantity", sorted. Checkout compares it
+   * inside the Order transaction to catch a change made in another tab.
+   */
+  version: string;
+  /**
+   * Server time the Cart was read (ms). Views reach the browser out of
+   * order (an action's answer, then a page refresh rendered earlier), so the
+   * client keeps the newest.
+   */
+  readAt: number;
 };
 
 export type SetQuantityResult =
@@ -115,9 +126,7 @@ export async function setLineQuantity(
   if (!Number.isInteger(quantity) || quantity < 0) {
     throw new RangeError(`Not a Cart quantity: ${quantity}`);
   }
-  const [product] = await getProductSummaries([productId]);
-  if (!product) return { ok: false, reason: "not_found" };
-
+  // Removing comes first, so a line whose Product left the shop can go too.
   if (quantity === 0) {
     const where = ownerWhere(owner);
     if (where) {
@@ -126,6 +135,9 @@ export async function setLineQuantity(
     return { ok: true, quantity: 0, capped: false };
   }
 
+  const [product] = await getProductSummaries([productId]);
+  if (!product) return { ok: false, reason: "not_found" };
+
   const free = hubId
     ? (await getAvailability([productId], hubId))[productId].available
     : 0;
@@ -133,16 +145,65 @@ export async function setLineQuantity(
   if (allowed === 0) return { ok: false, reason: "out_of_stock" };
   const set = Math.min(quantity, allowed);
 
-  const cartId = await ensureCartId(owner);
-  await db.$executeRaw`
-    INSERT INTO cart_lines (id, cart_id, product_id, quantity, seen_price_cents, updated_at)
-    VALUES (${randomUUID()}::uuid, ${cartId}::uuid, ${productId}::uuid, ${set}, ${product.priceCents}, now())
-    ON CONFLICT (cart_id, product_id) DO UPDATE
-      SET quantity = EXCLUDED.quantity,
-          seen_price_cents = EXCLUDED.seen_price_cents,
-          updated_at = now()`;
-  await db.$executeRaw`UPDATE carts SET updated_at = now() WHERE id = ${cartId}::uuid`;
-  return { ok: true, quantity: set, capped: set < quantity };
+  // Checkout closes the Cart under a row lock. Writing under a share lock
+  // on the open Cart means a line either lands before checkout reads the
+  // Cart again or goes into a new Cart, never into the closed one.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const cartId = await ensureCartId(owner);
+    const written = await db.$transaction(async (tx) => {
+      const [open] = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM carts
+        WHERE id = ${cartId}::uuid AND checked_out_at IS NULL
+        FOR SHARE`;
+      if (!open) return false;
+      await tx.$executeRaw`
+        INSERT INTO cart_lines (id, cart_id, product_id, quantity, seen_price_cents, updated_at)
+        VALUES (${randomUUID()}::uuid, ${cartId}::uuid, ${productId}::uuid, ${set}, ${product.priceCents}, now())
+        ON CONFLICT (cart_id, product_id) DO UPDATE
+          SET quantity = EXCLUDED.quantity,
+              seen_price_cents = EXCLUDED.seen_price_cents,
+              updated_at = now()`;
+      return true;
+    });
+    if (written) {
+      // Outside the share lock: two writers upgrading it would deadlock.
+      await db.$executeRaw`UPDATE carts SET updated_at = now() WHERE id = ${cartId}::uuid`;
+      return { ok: true, quantity: set, capped: set < quantity };
+    }
+  }
+  throw new Error("The Cart was checked out twice while saving a line");
+}
+
+/** Cheap check before a merge: does this guest token still have a Cart? */
+export async function hasGuestCart(token: string): Promise<boolean> {
+  if (!isGuestToken(token)) return false;
+  const cart = await db.cart.findUnique({
+    where: { guestTokenHash: hashToken(token) },
+    select: { checkedOutAt: true },
+  });
+  return cart !== null && cart.checkedOutAt === null;
+}
+
+/** "product:quantity" of every line, sorted (see CartView.version). */
+export function cartVersion(
+  rows: { productId: string; quantity: number }[]
+): string {
+  return rows
+    .map((r) => `${r.productId}:${r.quantity}`)
+    .sort()
+    .join(",");
+}
+
+/** The Cart's version as it is now, read inside a transaction. */
+export async function readCartVersion(
+  tx: Prisma.TransactionClient,
+  cartId: string
+): Promise<string> {
+  const rows = await tx.cartLine.findMany({
+    where: { cartId },
+    select: { productId: true, quantity: true },
+  });
+  return cartVersion(rows);
 }
 
 /** The open Cart, priced. An unknown owner gets an empty Cart. */
@@ -150,6 +211,8 @@ export async function getCart(
   owner: CartOwner | null,
   context: CartContext
 ): Promise<CartView> {
+  // Wall-clock ms without Date.now(), which Next refuses while prerendering.
+  const readAt = Math.round(performance.timeOrigin + performance.now());
   const where = ownerWhere(owner);
   const cart = where
     ? await db.cart.findFirst({
@@ -171,10 +234,14 @@ export async function getCart(
     : null;
   const rows = cart?.lines ?? [];
   const ids = rows.map((r) => r.productId);
-  const [products, availability] = await Promise.all([
-    getProductSummaries(ids),
-    context.hubId ? getAvailability(ids, context.hubId) : NO_STOCK,
-  ]);
+  // An empty Cart (most visitors) needs no catalogue or stock queries.
+  const [products, availability] =
+    rows.length === 0
+      ? [[], NO_STOCK]
+      : await Promise.all([
+          getProductSummaries(ids),
+          context.hubId ? getAvailability(ids, context.hubId) : NO_STOCK,
+        ]);
   const byId = new Map(products.map((p) => [p.id, p]));
 
   const lines = rows.flatMap((row): CartLineView[] => {
@@ -216,6 +283,8 @@ export async function getCart(
     unavailableCount: rows.length - lines.length,
     priced,
     itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
+    version: cartVersion(rows),
+    readAt,
   };
 }
 
@@ -322,7 +391,12 @@ export async function mergeGuestCart(
       const had = existing.get(line.productId)?.quantity ?? 0;
       const wanted = Math.min(MAX_LINE_QUANTITY, had + line.quantity);
       const free = availability[line.productId]?.available ?? 0;
-      const quantity = Math.max(had, Math.min(wanted, free));
+      // Nothing free and nothing there yet: keep the guest's line so it
+      // shows as out of stock (docs/03 section 5) instead of vanishing.
+      const quantity =
+        had === 0 && free === 0
+          ? Math.min(MAX_LINE_QUANTITY, line.quantity)
+          : Math.max(had, Math.min(wanted, free));
       if (quantity === had) continue;
       if (had > 0) {
         await tx.cartLine.update({
@@ -372,4 +446,24 @@ export async function checkOutCart(
     UPDATE carts SET checked_out_at = ${now}, updated_at = now()
     WHERE id = ${cartId}::uuid AND checked_out_at IS NULL`;
   return closed === 1;
+}
+
+const RETENTION_DAYS = 30;
+
+/**
+ * Housekeeping for the cron tick: guest Carts idle for 30 days (the guest
+ * cookie has expired) and Carts checked out 30 days ago (the Order keeps
+ * its own lines). A Customer's open Cart is never deleted.
+ */
+export async function purgeIdleCarts(now = new Date()): Promise<number> {
+  const before = new Date(now.getTime() - RETENTION_DAYS * 86_400_000);
+  const { count } = await db.cart.deleteMany({
+    where: {
+      OR: [
+        { customerId: null, checkedOutAt: null, updatedAt: { lt: before } },
+        { checkedOutAt: { lt: before } },
+      ],
+    },
+  });
+  return count;
 }

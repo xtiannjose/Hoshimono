@@ -37,10 +37,15 @@ export type {
   WriteResult,
 } from "./internal/admin/products";
 export { exportProductsCsv, importProductsCsv } from "./internal/admin/import";
-export type { ImportError, ImportResult } from "./internal/admin/import";
+export type {
+  ImportChange,
+  ImportError,
+  ImportResult,
+} from "./internal/admin/import";
 export {
   createCategory,
   deleteCategory,
+  getCategoryForAdmin,
   listCategoriesForAdmin,
   updateCategory,
 } from "./internal/admin/categories";

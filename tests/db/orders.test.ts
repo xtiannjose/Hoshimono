@@ -5,11 +5,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getCart, setLineQuantity, type CartOwner } from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
+import { jobHandlers } from "@/app/api/cron/handlers";
 import {
   cancelOrder,
   expireUnpaidOrders,
   getOrder,
   listOrders,
+  MAX_COD_TOTAL_CENTS,
+  MAX_OPEN_COD_ORDERS,
   ORDER_CONFIRMED_JOB,
   placeOrder,
   transitionOrder,
@@ -84,7 +87,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.$executeRawUnsafe(
-    "TRUNCATE jobs, notifications, order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
+    "TRUNCATE rate_limits, jobs, notifications, order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
   );
   await db.slot.updateMany({ data: { booked: 0, capacity: 20 } });
   await db.stockLevel.updateMany({
@@ -263,12 +266,140 @@ describe("placeOrder", () => {
 
   it("places one Order when two tabs check out the same Cart", async () => {
     await setLineQuantity(owner(ligaya), MILK, 1, HUB);
-    const results = await Promise.all([
-      placeOrder(await checkout(ligaya)),
-      placeOrder(await checkout(ligaya)),
-    ]);
+    const a = await checkout(ligaya);
+    const b = await checkout(ligaya);
+    const results = await Promise.all([placeOrder(a), placeOrder(b)]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.find((r) => !r.ok)).toEqual({
+      ok: false,
+      reason: "already_placed",
+    });
     expect(await db.order.count()).toBe(1);
+  });
+});
+
+describe("placeOrder refusals", () => {
+  it("never answers with another Customer's Order for a reused key", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    const placed = await placeOrder(await checkout(ligaya));
+    await setLineQuantity(owner(paolo), MILK, 1, HUB);
+    const key = (await db.order.findFirstOrThrow()).idempotencyKey;
+    expect(
+      await placeOrder(await checkout(paolo, { idempotencyKey: key }))
+    ).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+    expect(placed.ok).toBe(true);
+    expect(await db.order.count()).toBe(1);
+  });
+
+  it("asks for a real mobile number and an address we deliver to", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(
+      await placeOrder(await checkout(ligaya, { contactPhone: "02 8123 4567" }))
+    ).toEqual({
+      ok: false,
+      reason: "invalid_phone",
+    });
+    const address = (await getDefaultAddress(ligaya))!;
+    const input = await checkout(ligaya);
+    await db.address.update({
+      where: { id: address.id },
+      data: { city: "Cebu City" },
+    });
+    expect(await placeOrder(input)).toEqual({
+      ok: false,
+      reason: "out_of_zone",
+    });
+    await db.address.update({
+      where: { id: address.id },
+      data: { city: "Pasig" },
+    });
+  });
+
+  it("leaves a sold-out line out of the Order, as the Cart showed", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    await db.stockLevel.updateMany({
+      where: { productId: LIEMPO },
+      data: { onHand: 0 },
+    });
+    const result = await placeOrder(await checkout(ligaya));
+    const lines = await db.orderLine.findMany({
+      where: { orderId: result.ok ? result.orderId : "" },
+    });
+    expect(lines.map((l) => l.productId)).toEqual([MILK]);
+  });
+
+  it("says nothing is in stock rather than that the Cart is empty", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    await db.stockLevel.updateMany({
+      where: { productId: MILK },
+      data: { onHand: 0 },
+    });
+    expect(await placeOrder(await checkout(ligaya))).toEqual({
+      ok: false,
+      reason: "nothing_in_stock",
+    });
+  });
+
+  it("refuses a Slot from another Hub", async () => {
+    const other = await db.hub.create({
+      data: { name: "Makati Hub", address: "Makati", lat: 14.55, lng: 121.02 },
+    });
+    const foreign = await db.slot.create({
+      data: {
+        hubId: other.id,
+        date: new Date("2026-10-02"),
+        startsAt: new Date(NOW.getTime() + 5 * 3_600_000),
+        endsAt: new Date(NOW.getTime() + 7 * 3_600_000),
+        capacity: 5,
+      },
+    });
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(
+      await placeOrder(await checkout(ligaya, { slotId: foreign.id }))
+    ).toEqual({
+      ok: false,
+      reason: "slot_unavailable",
+    });
+    await db.slot.delete({ where: { id: foreign.id } });
+    await db.hub.delete({ where: { id: other.id } });
+  });
+});
+
+describe("cash on delivery limits", () => {
+  it(`refuses more than ${MAX_OPEN_COD_ORDERS} open COD Orders per Customer`, async () => {
+    for (let i = 0; i < MAX_OPEN_COD_ORDERS; i++) {
+      await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+      expect((await placeOrder(await checkout(ligaya))).ok).toBe(true);
+    }
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(await placeOrder(await checkout(ligaya))).toEqual({
+      ok: false,
+      reason: "too_many_open_orders",
+    });
+    // A delivered or cancelled Order frees a place.
+    const first = await db.order.findFirstOrThrow({
+      orderBy: { placedAt: "asc" },
+    });
+    await cancelOrder(ligaya, first.id);
+    expect((await placeOrder(await checkout(ligaya))).ok).toBe(true);
+  });
+
+  it("refuses a COD Order above the cash limit", async () => {
+    await db.stockLevel.updateMany({
+      where: { productId: { in: [MILK, LIEMPO] } },
+      data: { onHand: 200 },
+    });
+    await setLineQuantity(owner(ligaya), MILK, 99, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 99, HUB);
+    expect(await placeOrder(await checkout(ligaya))).toEqual({
+      ok: false,
+      reason: "over_cod_limit",
+      limitCents: MAX_COD_TOTAL_CENTS,
+    });
   });
 });
 
@@ -280,10 +411,9 @@ describe("two buyers at once", () => {
     });
     await setLineQuantity(owner(ligaya), MILK, 1, HUB);
     await setLineQuantity(owner(paolo), MILK, 1, HUB);
-    const results = await Promise.all([
-      placeOrder(await checkout(ligaya, { slotId: slots[0] })),
-      placeOrder(await checkout(paolo, { slotId: slots[1] })),
-    ]);
+    const a = await checkout(ligaya, { slotId: slots[0] });
+    const b = await checkout(paolo, { slotId: slots[1] });
+    const results = await Promise.all([placeOrder(a), placeOrder(b)]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(results.find((r) => !r.ok)).toEqual({
       ok: false,
@@ -306,10 +436,9 @@ describe("two buyers at once", () => {
     await db.slot.update({ where: { id: slots[0] }, data: { capacity: 1 } });
     await setLineQuantity(owner(ligaya), MILK, 1, HUB);
     await setLineQuantity(owner(paolo), MILK, 1, HUB);
-    const results = await Promise.all([
-      placeOrder(await checkout(ligaya)),
-      placeOrder(await checkout(paolo)),
-    ]);
+    const a = await checkout(ligaya);
+    const b = await checkout(paolo);
+    const results = await Promise.all([placeOrder(a), placeOrder(b)]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(results.find((r) => !r.ok)).toEqual({
       ok: false,
@@ -330,7 +459,7 @@ describe("two buyers at once", () => {
     const paolosCart = await db.cart.findFirstOrThrow({
       where: { customerId: paolo },
     });
-    await holdSlot(paolosCart.id, slots[0], NOW);
+    await holdSlot(paolosCart.id, slots[0], { hubId: HUB, now: NOW });
     await setLineQuantity(owner(ligaya), MILK, 1, HUB);
     expect(await placeOrder(await checkout(ligaya))).toEqual({
       ok: false,
@@ -409,6 +538,76 @@ describe("order status", () => {
     expect(await cancelOrder(ligaya, second)).toBe(false);
   });
 
+  it("voids the COD payment when an Order is cancelled", async () => {
+    const id = await placed();
+    await cancelOrder(ligaya, id);
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { payments: true },
+    });
+    expect(order.paymentStatus).toBe("unpaid");
+    expect(order.payments.map((p) => p.status)).toEqual(["unpaid"]);
+  });
+
+  it("gives back exactly this Order's stock and Slot place when staff cancel during picking", async () => {
+    const id = await placed();
+    // Another Order's reservation and booking must stay.
+    await db.stockLevel.updateMany({
+      where: { productId: MILK, hubId: HUB },
+      data: { reserved: { increment: 5 } },
+    });
+    await db.slot.update({
+      where: { id: slots[0] },
+      data: { booked: { increment: 3 } },
+    });
+    const staff = { type: "staff" as const, id: seedId("staff:picker") };
+    await transitionOrder(id, "picking", staff);
+    expect(await transitionOrder(id, "cancelled", staff, "Damaged stock")).toBe(
+      true
+    );
+    expect(
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).reserved
+    ).toBe(5);
+    expect(
+      (await db.slot.findUniqueOrThrow({ where: { id: slots[0] } })).booked
+    ).toBe(3);
+    // Cancelling again releases nothing more.
+    expect(await transitionOrder(id, "cancelled", staff)).toBe(false);
+    expect(
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).reserved
+    ).toBe(5);
+  });
+
+  it("follows the other lifecycle edges: paid, failed delivery and retry", async () => {
+    const id = await placed();
+    await db.order.update({
+      where: { id },
+      data: { status: "pending_payment" },
+    });
+    const system = { type: "system" as const };
+    const staff = { type: "staff" as const, id: seedId("staff:dispatcher") };
+    expect(await transitionOrder(id, "confirmed", system, "Paid")).toBe(true);
+    for (const to of [
+      "picking",
+      "picked",
+      "out_for_delivery",
+      "delivery_failed",
+      "out_for_delivery",
+      "delivered",
+    ] as const) {
+      expect(await transitionOrder(id, to, staff), to).toBe(true);
+    }
+    expect(await transitionOrder(id, "cancelled", staff)).toBe(false);
+  });
+
   it("cancels online Orders left unpaid past the payment window", async () => {
     const id = await placed();
     await db.order.update({
@@ -439,6 +638,13 @@ describe("order status", () => {
         })
       ).reserved
     ).toBe(0);
+  });
+
+  it("sends no confirmed notice for an Order cancelled before the job ran", async () => {
+    const id = await placed();
+    await cancelOrder(ligaya, id);
+    await jobHandlers[ORDER_CONFIRMED_JOB]({ orderId: id });
+    expect(await db.notification.count({ where: { orderId: id } })).toBe(0);
   });
 
   it("lists the Customer's Orders, newest first, and finds one by number", async () => {

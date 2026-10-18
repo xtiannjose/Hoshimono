@@ -1,15 +1,17 @@
 "use server";
 
-import { refresh } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
+import { STOCK_TAG } from "@/app/_data/storefront";
 import { jobHandlers } from "@/app/api/cron/handlers";
 import { formatMoney } from "@/lib/money";
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import { getCartId } from "@/modules/cart";
-import { holdSlot } from "@/modules/delivery";
+import { getAddress } from "@/modules/customers";
+import { holdSlot, resolveZone } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
 import { placeOrder, type PlaceOrderResult } from "@/modules/orders";
@@ -17,22 +19,33 @@ import { placeOrder, type PlaceOrderResult } from "@/modules/orders";
 const ORDERS_PER_HOUR = 10;
 const ORDERS_PER_HOUR_PER_IP = 20;
 
-export type HoldState = { ok: true } | { ok: false; message: string };
+export type HoldState =
+  { ok: true; expiresAt: string } | { ok: false; message: string };
 
-/** Hold the chosen Slot for 10 minutes (PRD CHK-2). */
-export async function holdSlotAction(slotId: string): Promise<HoldState> {
+/** Hold the chosen Slot for 10 minutes (PRD CHK-2) at the address's Hub. */
+export async function holdSlotAction(
+  slotId: string,
+  addressId: string
+): Promise<HoldState> {
   const customer = await requireCustomer("/checkout");
-  const cartId = await getCartId({ customerId: customer.id });
+  const [cartId, address] = await Promise.all([
+    getCartId({ customerId: customer.id }),
+    getAddress(customer.id, addressId),
+  ]);
   if (!cartId) return { ok: false, message: "Your cart is empty." };
-  const result = await holdSlot(cartId, slotId);
-  if (result.ok) return { ok: true };
+  const zone = address ? await resolveZone(address) : null;
+  if (!zone) {
+    return { ok: false, message: "Please choose an address we deliver to." };
+  }
+  const result = await holdSlot(cartId, slotId, { hubId: zone.hubId });
+  if (result.ok) return { ok: true, expiresAt: result.expiresAt.toISOString() };
   refresh();
   return {
     ok: false,
     message:
       result.reason === "full"
-        ? "That window just filled up. Please choose another."
-        : "That window is no longer open. Please choose another.",
+        ? "That slot just filled up. Please choose another."
+        : "That slot is no longer open. Please choose another.",
   };
 }
 
@@ -51,7 +64,7 @@ function explain(result: Exclude<PlaceOrderResult, { ok: true }>): string {
     case "out_of_stock":
       return "Sorry, some items just sold out. Please check your cart.";
     case "slot_unavailable":
-      return "That delivery window just filled up. Please choose another.";
+      return "That delivery slot just filled up. Please choose another.";
     case "invalid_phone":
       return "Please enter a mobile number like 0917 123 4567.";
     case "out_of_zone":
@@ -60,10 +73,18 @@ function explain(result: Exclude<PlaceOrderResult, { ok: true }>): string {
       return "Please choose a delivery address.";
     case "empty_cart":
       return "Your cart is empty.";
+    case "nothing_in_stock":
+      return "Sorry, everything in your cart just sold out. Please choose other items.";
+    case "cart_changed":
+      return "Your cart changed in another tab. Please check it and place your order again.";
+    case "too_many_open_orders":
+      return "You already have several orders on the way. Please wait for one to arrive, or cancel one first.";
+    case "over_cod_limit":
+      return `Cash on delivery orders can be up to ${formatMoney(result.limitCents)}. Please remove some items or split your order.`;
     case "already_placed":
       return "This cart was already ordered. You can find it under your orders.";
     case "invalid":
-      return "Please choose a delivery window.";
+      return "Please choose a delivery slot.";
   }
 }
 
@@ -103,6 +124,8 @@ export async function placeOrderAction(
     idempotencyKey: text("idempotencyKey"),
   });
   if (result.ok) {
+    // Stock just changed: shelves must not keep offering what is reserved.
+    updateTag(STOCK_TAG);
     // Send the confirmation now; the cron run is the safety net.
     after(() => runDueJobs(jobHandlers).then(() => undefined));
     redirect(`/checkout/confirmed/${result.orderNo}`);

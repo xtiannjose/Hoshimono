@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { freshEmail } from "./run-tag";
+
 test("signed-out visitors are sent to sign-in from guarded pages", async ({
   page,
 }) => {
@@ -23,9 +25,10 @@ test("sign-in asks for a valid email, then confirms the link was sent", async ({
   await expect(email).toHaveAttribute("aria-invalid", "true");
   await expect(email).toHaveValue("not-an-email");
 
-  await email.fill("ligaya@example.com");
+  const address = freshEmail("link");
+  await email.fill(address);
   await submit.click();
-  await expect(page.getByRole("status")).toContainText("ligaya@example.com");
+  await expect(page.getByRole("status")).toContainText(address);
 });
 
 for (const scheme of ["light", "dark"] as const) {
@@ -82,14 +85,13 @@ test("signs in with a code texted to a mobile number", async ({ page }) => {
 test("stops a fourth sign-in link to the same email within 15 minutes", async ({
   page,
 }) => {
+  const limited = freshEmail("limit");
   for (let i = 0; i < 4; i++) {
-    await page.goto("/sign-in", { waitUntil: "networkidle" });
-    await page
-      .getByRole("textbox", { name: "Email" })
-      .fill("limit@example.com");
+    // The form posts without JavaScript too, so no need to wait for it.
+    await page.goto("/sign-in");
+    await page.getByRole("textbox", { name: "Email" }).fill(limited);
     await page.getByRole("button", { name: "Email me a link" }).click();
-    if (i < 3)
-      await expect(page.getByRole("status")).toContainText("limit@example.com");
+    if (i < 3) await expect(page.getByRole("status")).toContainText(limited);
   }
   await expect(
     page.getByText(/Too many tries. Please wait \d+ minutes?/)

@@ -30,6 +30,14 @@ export function SearchBox({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const box = useRef<HTMLFormElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+
+  // Uncontrolled, so words typed before the page finished loading stay in
+  // the box; pick them up once React runs.
+  useEffect(() => {
+    const typed = input.current?.value ?? "";
+    if (typed) setQuery(typed);
+  }, []);
 
   // Debounced fetch; a newer keystroke cancels the older request.
   useEffect(() => {
@@ -99,7 +107,8 @@ export function SearchBox({
         }
         placeholder="Search groceries and brands"
         autoComplete="off"
-        value={query}
+        ref={input}
+        defaultValue=""
         onChange={(e) => {
           setQuery(e.target.value);
           setOpen(true);

@@ -78,9 +78,11 @@ const summarySelect = {
   taxClass: true,
   storage: true,
   category: { select: { id: true, slug: true, name: true } },
+  // Cards and Carts show one image; getProduct asks for the whole gallery.
   images: {
     select: { url: true, alt: true },
     orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+    take: 1,
   },
 } satisfies Prisma.ProductSelect;
 
@@ -130,6 +132,10 @@ export async function getProduct(id: string): Promise<ProductDetail | null> {
     where: { id, status: "active" },
     select: {
       ...summarySelect,
+      images: {
+        select: { url: true, alt: true },
+        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
+      },
       description: true,
       allergens: true,
       dietaryTags: true,

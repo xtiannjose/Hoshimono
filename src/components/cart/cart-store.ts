@@ -60,7 +60,9 @@ export function quantityIn(s: State, productId: string): number {
   );
 }
 
+/** Keep the newest view: an older one can arrive after a newer answer. */
 export function setCartView(view: CartView) {
+  if (state.view && view.readAt < state.view.readAt) return;
   update({ view });
 }
 
@@ -102,8 +104,9 @@ export async function changeQuantity(
     const result = await setQuantity(productId, next);
     // A newer tap on the same Product keeps its own optimistic value.
     const settled = latest[productId] === mine;
+    const newer = !state.view || result.cart.readAt >= state.view.readAt;
     update({
-      view: result.cart,
+      view: newer ? result.cart : state.view,
       pending: settled ? withoutPending(productId) : state.pending,
     });
     if (settled && result.message) showNotice(productId, result.message);

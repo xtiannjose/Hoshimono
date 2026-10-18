@@ -45,6 +45,13 @@ export type PricedCart = {
   deliveryFeeCents: number | null;
   /** VAT already inside the prices and the fee, for receipts; never added on top. */
   vatCents: number;
+  /**
+   * Sales by tax class for a Philippine receipt (VATable, VAT-exempt and
+   * zero-rated). The delivery fee counts as VATable. They sum to the total.
+   */
+  vatableSalesCents: number;
+  vatExemptSalesCents: number;
+  zeroRatedSalesCents: number;
   totalCents: number;
   /** Estimate of the Weighed Products, for the card hold and the weight note. */
   weighedSubtotalCents: number;
@@ -108,11 +115,19 @@ export function priceCart(
   const zone = context.zone;
   const freeOver = zone?.freeDeliveryOverCents ?? null;
   const freeDelivery = freeOver !== null && goodsCents >= freeOver;
+  // Nothing to deliver (every line sold out) means nothing to charge.
   const deliveryFeeCents = zone
-    ? freeDelivery
+    ? freeDelivery || priced.length === 0
       ? 0
       : zone.deliveryFeeCents
     : null;
+  const salesOf = (taxClass: TaxClass) =>
+    addMoney(
+      0,
+      ...priced
+        .filter((_, i) => lines[i].taxClass === taxClass)
+        .map((l) => l.lineTotalCents)
+    );
   // Delivery is a service sold by a VAT-registered seller, so the fee is vatable.
   const deliveryVat = deliveryFeeCents ? vatIn(deliveryFeeCents, "vatable") : 0;
 
@@ -122,6 +137,9 @@ export function priceCart(
     discountCents,
     deliveryFeeCents,
     vatCents: addMoney(deliveryVat, ...priced.map((l) => l.vatCents)),
+    vatableSalesCents: addMoney(salesOf("vatable"), deliveryFeeCents ?? 0),
+    vatExemptSalesCents: salesOf("vat_exempt"),
+    zeroRatedSalesCents: salesOf("zero_rated"),
     totalCents: addMoney(goodsCents, deliveryFeeCents ?? 0),
     weighedSubtotalCents,
     belowMinimumByCents: zone

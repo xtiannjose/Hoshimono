@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
+import { freshEmail } from "./run-tag";
 import { signIn } from "./sign-in";
 
 // Slow first compiles of each route on the dev server.
@@ -37,7 +38,7 @@ test("a guest Cart survives a reload and shows in the drawer and Cart page", asy
     drawer.getByRole("link", { name: "Magnolia Fresh Milk" })
   ).toBeVisible();
   await expect(drawer.getByText("₱230.00").first()).toBeVisible();
-  await expect(drawer.getByText("At checkout")).toBeVisible();
+  await expect(drawer.getByText("At checkout", { exact: true })).toBeVisible();
   expect(
     (await new AxeBuilder({ page }).include('[role="dialog"]').analyze())
       .violations
@@ -69,7 +70,7 @@ test("a guest Cart survives a reload and shows in the drawer and Cart page", asy
 
 test("signing in moves the guest Cart into the account", async ({ page }) => {
   await addMilk(page, 3);
-  await signIn(page, "paolo@example.com", "/cart");
+  await signIn(page, freshEmail("cart-merge"), "/cart");
   await expect(page).toHaveURL(/\/cart$/);
   await expect(
     page.getByRole("link", { name: "Magnolia Fresh Milk" })

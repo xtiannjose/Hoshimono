@@ -9,26 +9,34 @@ const OPTIONS: { value: ProductSort; label: string }[] = [
   { value: "unit_price_asc", label: "Unit price, low to high" },
 ];
 
-/** Part of the filter form (`form` attribute); applies on change when JS runs. */
+/**
+ * Its own small GET form carrying the current filters, so sorting keeps
+ * them; it applies on change when JS runs, with a button otherwise.
+ */
 export function SortSelect({
-  form,
+  action,
   value,
+  keep,
 }: {
-  form: string;
+  action: string;
   value: ProductSort;
+  /** Current filter parameters to carry over (not sort or page). */
+  keep: [string, string][];
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <form action={action} className="flex items-center gap-2">
+      {keep.map(([name, v], i) => (
+        <input key={`${name}-${i}`} type="hidden" name={name} value={v} />
+      ))}
       <label htmlFor="sort" className="text-sm font-semibold">
         Sort
       </label>
       <select
         id="sort"
         name="sort"
-        form={form}
         defaultValue={value}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="rounded-pill border-input bg-card h-10 border px-4 pr-8 text-[15px]"
+        className="rounded-pill border-input bg-card h-11 border px-4 pr-8 text-base"
       >
         {OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>
@@ -36,6 +44,14 @@ export function SortSelect({
           </option>
         ))}
       </select>
-    </div>
+      <noscript>
+        <button
+          type="submit"
+          className="rounded-pill border-input h-11 border px-4 font-semibold"
+        >
+          Sort
+        </button>
+      </noscript>
+    </form>
   );
 }
