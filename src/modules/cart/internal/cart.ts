@@ -447,3 +447,23 @@ export async function checkOutCart(
     WHERE id = ${cartId}::uuid AND checked_out_at IS NULL`;
   return closed === 1;
 }
+
+const RETENTION_DAYS = 30;
+
+/**
+ * Housekeeping for the cron tick: guest Carts idle for 30 days (the guest
+ * cookie has expired) and Carts checked out 30 days ago (the Order keeps
+ * its own lines). A Customer's open Cart is never deleted.
+ */
+export async function purgeIdleCarts(now = new Date()): Promise<number> {
+  const before = new Date(now.getTime() - RETENTION_DAYS * 86_400_000);
+  const { count } = await db.cart.deleteMany({
+    where: {
+      OR: [
+        { customerId: null, checkedOutAt: null, updatedAt: { lt: before } },
+        { checkedOutAt: { lt: before } },
+      ],
+    },
+  });
+  return count;
+}

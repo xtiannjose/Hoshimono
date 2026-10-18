@@ -62,6 +62,12 @@ export async function runDueJobs(
       });
       report.done++;
     } catch (error) {
+      // Logged, so a notice that never went out shows in the host's logs.
+      const final = job.attempts >= MAX_ATTEMPTS;
+      console.error(
+        `[jobs] ${job.kind} ${job.id} failed (try ${job.attempts} of ${MAX_ATTEMPTS})${final ? ", giving up" : ""}:`,
+        error
+      );
       // 1, 4, 9, 16 minutes between tries.
       const retryAt = new Date(now.getTime() + job.attempts ** 2 * 60_000);
       await db.job.update({
@@ -72,4 +78,12 @@ export async function runDueJobs(
     }
   }
   return report;
+}
+
+/** Delete jobs that finished over 30 days ago (cron tick). */
+export async function purgeDoneJobs(now = new Date()): Promise<number> {
+  const { count } = await db.job.deleteMany({
+    where: { doneAt: { lt: new Date(now.getTime() - 30 * 86_400_000) } },
+  });
+  return count;
 }

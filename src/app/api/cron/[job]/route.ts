@@ -7,7 +7,8 @@ import { STOCK_TAG } from "@/app/_data/storefront";
 
 import { purgeRateLimits } from "@/lib/rate-limit";
 import { purgeExpiredHolds } from "@/modules/delivery";
-import { runDueJobs } from "@/modules/jobs";
+import { purgeIdleCarts } from "@/modules/cart";
+import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
 import { expireUnpaidOrders } from "@/modules/orders";
 
 import { jobHandlers } from "../handlers";
@@ -38,10 +39,36 @@ export async function GET(
     return new Response("Not found", { status: 404 });
   }
   const now = new Date();
-  const holds = await purgeExpiredHolds(now);
-  const unpaidOrders = await expireUnpaidOrders(now);
-  if (unpaidOrders > 0) revalidateTag(STOCK_TAG, "max");
-  const jobs = await runDueJobs(jobHandlers, { now });
-  const rateLimits = await purgeRateLimits(now);
-  return Response.json({ holds, unpaidOrders, jobs, rateLimits });
+  const results: Record<string, unknown> = {};
+  const errors: Record<string, string> = {};
+  // Each step on its own: one failing never stops the others (notices
+  // keep going out even if, say, one stuck Order cannot be expired).
+  const steps: [string, () => Promise<unknown>][] = [
+    ["holds", () => purgeExpiredHolds(now)],
+    [
+      "unpaidOrders",
+      async () => {
+        const cancelled = await expireUnpaidOrders(now);
+        if (cancelled > 0) revalidateTag(STOCK_TAG, "max");
+        return cancelled;
+      },
+    ],
+    ["jobs", () => runDueJobs(jobHandlers, { now })],
+    ["rateLimits", () => purgeRateLimits(now)],
+    ["carts", () => purgeIdleCarts(now)],
+    ["doneJobs", () => purgeDoneJobs(now)],
+  ];
+  for (const [name, step] of steps) {
+    try {
+      results[name] = await step();
+    } catch (error) {
+      console.error(`[cron] ${name} failed:`, error);
+      errors[name] = String(error).slice(0, 300);
+    }
+  }
+  const failed = Object.keys(errors).length > 0;
+  return Response.json(
+    { ...results, ...(failed ? { errors } : {}) },
+    { status: failed ? 500 : 200 }
+  );
 }

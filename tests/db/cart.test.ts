@@ -6,6 +6,7 @@ import {
   getCart,
   getCartQuantities,
   hasGuestCart,
+  purgeIdleCarts,
   mergeGuestCart,
   newGuestToken,
   setLineNote,
@@ -244,6 +245,39 @@ describe("Cart housekeeping", () => {
     expect((await getCart(owner, ctx)).version).toBe(before);
     await setLineQuantity(owner, MILK, 2, HUB);
     expect((await getCart(owner, ctx)).version).not.toBe(before);
+  });
+});
+
+describe("purgeIdleCarts", () => {
+  it("drops guest Carts idle for 30 days and Carts checked out 30 days ago", async () => {
+    const day = 86_400_000;
+    const now = new Date();
+    const idle = guest();
+    const fresh = guest();
+    await setLineQuantity(idle, MILK, 1, HUB);
+    await setLineQuantity(fresh, MILK, 1, HUB);
+    const signedIn = await customer("ligaya@example.com");
+    await setLineQuantity(signedIn, MILK, 1, HUB);
+    const [idleCart, , mine] = await db.cart.findMany({
+      orderBy: { createdAt: "asc" },
+    });
+    await db.cart.update({
+      where: { id: idleCart.id },
+      data: { updatedAt: new Date(now.getTime() - 31 * day) },
+    });
+    // A Customer's open Cart stays however old it is.
+    await db.cart.update({
+      where: { id: mine.id },
+      data: { updatedAt: new Date(now.getTime() - 90 * day) },
+    });
+    expect(await purgeIdleCarts(now)).toBe(1);
+    expect(await db.cart.count()).toBe(2);
+    await db.cart.update({
+      where: { id: mine.id },
+      data: { checkedOutAt: new Date(now.getTime() - 31 * day) },
+    });
+    expect(await purgeIdleCarts(now)).toBe(1);
+    expect((await getCart(fresh, ctx)).lines).toHaveLength(1);
   });
 });
 

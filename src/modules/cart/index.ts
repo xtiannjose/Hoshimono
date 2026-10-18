@@ -10,6 +10,7 @@ export {
   MAX_NOTE_LENGTH,
   mergeGuestCart,
   newGuestToken,
+  purgeIdleCarts,
   readCartVersion,
   setLineNote,
   setLineQuantity,
