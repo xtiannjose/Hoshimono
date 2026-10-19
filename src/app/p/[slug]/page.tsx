@@ -24,12 +24,17 @@ import { StockBadge } from "@/components/product/stock-badge";
 import type { ProductDetail } from "@/modules/catalog";
 import type { StockState } from "@/modules/inventory";
 import { formatMoney } from "@/lib/money";
+import { productName } from "@/lib/product-name";
 import { categoryHref, productHref } from "@/lib/routes";
+import { isUuid } from "@/lib/uuid";
 
 type Props = PageProps<"/p/[slug]">;
 
-const ID = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-const idFrom = (slug: string) => ID.exec(slug)?.[1] ?? "";
+// Product URLs end in the id: /p/<slug>-<36-character id>.
+const idFrom = (slug: string) => {
+  const id = slug.slice(-36);
+  return isUuid(id) ? id : "";
+};
 
 // The shell reads params, so the generic [slug] fallback shell is empty:
 // a Product not prerendered renders on its first visit (blocking). Without
@@ -49,7 +54,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = await loadProduct(idFrom((await params).slug));
   if (!found) return { title: "Product not found" };
-  const name = found.brand ? `${found.brand} ${found.name}` : found.name;
+  const name = productName(found);
   return {
     title: name,
     description:

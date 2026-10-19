@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { addDays, addMinutes } from "@/lib/dates";
 import { db } from "@/lib/db";
+import { isUuid } from "@/lib/uuid";
 
 /** A chosen Slot is kept for the cart this long (PRD CHK-2). */
 export const SLOT_HOLD_MINUTES = 10;
@@ -120,8 +121,7 @@ export async function holdSlot(
   slotId: string,
   { hubId, now = new Date() }: { hubId: string; now?: Date }
 ): Promise<HoldResult> {
-  const UUID = /^[0-9a-f-]{36}$/i;
-  if (!UUID.test(slotId)) return { ok: false, reason: "not_found" };
+  if (!isUuid(slotId)) return { ok: false, reason: "not_found" };
   return db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, { slotId, cartId, hubId, now });
     if (!slot) return { ok: false, reason: "not_found" } as const;

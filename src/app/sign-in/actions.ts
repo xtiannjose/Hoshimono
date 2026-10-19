@@ -6,11 +6,11 @@ import { redirect } from "next/navigation";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import {
+  emailSignInLink,
   googleEnabled,
   googleSignInUrl,
   safeNext,
-  sendSignInCode,
-  sendSignInLink,
+  textSignInCode,
   verifySignInCode,
 } from "@/modules/identity";
 
@@ -68,7 +68,7 @@ export async function requestSignInLink(
   );
   if (tooMany) return { status: "error", message: tooMany, email };
   try {
-    await sendSignInLink(email, next);
+    await emailSignInLink(email, next);
     return { status: "sent", email };
   } catch {
     return {
@@ -109,7 +109,7 @@ export async function requestSignInCode(
   );
   if (tooMany) return { step: "number", typed, message: tooMany };
   try {
-    await sendSignInCode(phone);
+    await textSignInCode(phone);
     return { step: "code", typed, phone };
   } catch {
     return {

@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { productName } from "@/lib/product-name";
 import {
   getCart,
   MAX_NOTE_LENGTH,
@@ -114,7 +115,7 @@ export async function listAlternatives(
   const related = await listRelatedProducts(id, 6);
   return related.map((p) => ({
     id: p.id,
-    name: p.brand ? `${p.brand} ${p.name}` : p.name,
+    name: productName(p),
     priceCents: p.priceCents,
   }));
 }

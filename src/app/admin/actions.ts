@@ -12,6 +12,7 @@ import {
   deleteCategory,
   getCategoryForAdmin,
   getProductForAdmin,
+  CSV_IMPORT_TIMEOUT_MS,
   importProductsCsv,
   removeProductImage,
   setPrimaryImage,
@@ -20,11 +21,50 @@ import {
   type FieldError,
   type ImportError,
 } from "@/modules/catalog";
-import { recordAudit, recordAudits, requireStaff } from "@/modules/identity";
+import {
+  recordAudits,
+  requireStaff,
+  type AuditEntry,
+} from "@/modules/identity";
+import { db, type Client } from "@/lib/db";
 import { parseMoney } from "@/lib/money";
 
 // Every action re-checks the role (docs/03 section 12: per operation),
 // records an audit row, and refreshes the storefront cache at once.
+
+type Change = Omit<AuditEntry, "staffId">;
+
+// Thrown so a refused write's transaction rolls back cleanly (a failed
+// statement leaves it unusable), then handed back as a normal result.
+class Refused<T> extends Error {
+  constructor(readonly result: T) {
+    super("Refused");
+  }
+}
+
+/** One admin write and its audit rows, committed together. */
+async function adminWrite<T extends { ok: boolean }>(
+  staffId: string,
+  write: (tx: Client) => Promise<T>,
+  changes: (done: Extract<T, { ok: true }>) => Change[],
+  options?: { timeout?: number }
+): Promise<T> {
+  try {
+    return await db.$transaction(async (tx) => {
+      const result = await write(tx);
+      if (!result.ok) throw new Refused(result);
+      const done = result as Extract<T, { ok: true }>;
+      await recordAudits(
+        changes(done).map((c) => ({ ...c, staffId })),
+        tx
+      );
+      return result;
+    }, options);
+  } catch (error) {
+    if (error instanceof Refused) return error.result as T;
+    throw error;
+  }
+}
 
 async function merchandiser(next: string) {
   return requireStaff("merchandiser", next);
@@ -102,29 +142,32 @@ export async function saveProduct(
   };
 
   if (id) {
-    const result = await updateProduct(id, fields);
+    const result = await adminWrite(
+      staff.id,
+      (tx) => updateProduct(id, fields, tx),
+      () => [
+        {
+          action: "update",
+          entity: "product",
+          entityId: id,
+          before,
+          after: fields,
+        },
+      ]
+    );
     if (!result.ok)
       return { errors: toErrors(result.errors), values: submitted };
-    await recordAudit({
-      staffId: staff.id,
-      action: "update",
-      entity: "product",
-      entityId: id,
-      before,
-      after: fields,
-    });
     updateTag(CATALOG_TAG);
     return { errors: {}, saved: true };
   }
-  const result = await createProduct(fields);
+  const result = await adminWrite(
+    staff.id,
+    (tx) => createProduct(fields, tx),
+    (done) => [
+      { action: "create", entity: "product", entityId: done.id, after: fields },
+    ]
+  );
   if (!result.ok) return { errors: toErrors(result.errors), values: submitted };
-  await recordAudit({
-    staffId: staff.id,
-    action: "create",
-    entity: "product",
-    entityId: result.id,
-    after: fields,
-  });
   updateTag(CATALOG_TAG);
   redirect(`/admin/products/${result.id}?created=1`);
 }
@@ -143,43 +186,52 @@ export async function uploadImage(
     alt: text(fd, "alt"),
   });
   if (!result.ok) return { errors: toErrors(result.errors) };
-  await recordAudit({
-    staffId: staff.id,
-    action: "add-image",
-    entity: "product",
-    entityId: productId,
-    after: { imageId: result.id },
-  });
+  // ponytail: audited after the write, not with it; resizing and storing the
+  // photo can outlast a transaction. Split prepare and save if it matters.
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "add-image",
+      entity: "product",
+      entityId: productId,
+      after: { imageId: result.id },
+    },
+  ]);
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
 
 export async function makePrimaryImage(productId: string, imageId: string) {
   const staff = await merchandiser(`/admin/products/${productId}`);
-  const result = await setPrimaryImage(imageId);
-  if (result.ok) {
-    await recordAudit({
-      staffId: staff.id,
-      action: "primary-image",
-      entity: "product",
-      entityId: productId,
-      after: { imageId },
-    });
-    updateTag(CATALOG_TAG);
-  }
+  const result = await adminWrite(
+    staff.id,
+    (tx) => setPrimaryImage(imageId, tx),
+    () => [
+      {
+        action: "primary-image",
+        entity: "product",
+        entityId: productId,
+        after: { imageId },
+      },
+    ]
+  );
+  if (result.ok) updateTag(CATALOG_TAG);
 }
 
 export async function deleteImage(productId: string, imageId: string) {
   const staff = await merchandiser(`/admin/products/${productId}`);
   const result = await removeProductImage(imageId);
   if (result.ok) {
-    await recordAudit({
-      staffId: staff.id,
-      action: "remove-image",
-      entity: "product",
-      entityId: productId,
-      before: { imageId, ...result.removed },
-    });
+    // Audited after the write, like uploadImage: it also deletes the file.
+    await recordAudits([
+      {
+        staffId: staff.id,
+        action: "remove-image",
+        entity: "product",
+        entityId: productId,
+        before: { imageId, ...result.removed },
+      },
+    ]);
     updateTag(CATALOG_TAG);
   }
 }
@@ -205,29 +257,32 @@ export async function importCsv(
     return fail("Choose a CSV file");
   if (file.size > MAX_CSV_BYTES)
     return fail("Use a file under 5 MB, or split it");
-  const result = await importProductsCsv(await file.text());
-  if (!result.ok) return { status: "failed", errors: result.errors };
-  await recordAudit({
-    staffId: staff.id,
-    action: "import",
-    entity: "product",
-    entityId: "csv",
-    after: {
-      file: file.name,
-      created: result.created,
-      updated: result.updated,
-    },
-  });
-  await recordAudits(
-    result.changes.map((change) => ({
-      staffId: staff.id,
-      action: change.before ? "import-update" : "import-create",
-      entity: "product",
-      entityId: change.id,
-      before: change.before,
-      after: change.after,
-    }))
+  const csv = await file.text();
+  const result = await adminWrite(
+    staff.id,
+    (tx) => importProductsCsv(csv, tx),
+    (done) => [
+      {
+        action: "import",
+        entity: "product",
+        entityId: "csv",
+        after: {
+          file: file.name,
+          created: done.created,
+          updated: done.updated,
+        },
+      },
+      ...done.changes.map((change) => ({
+        action: change.before ? "import-update" : "import-create",
+        entity: "product",
+        entityId: change.id,
+        before: change.before,
+        after: change.after,
+      })),
+    ],
+    { timeout: CSV_IMPORT_TIMEOUT_MS }
   );
+  if (!result.ok) return { status: "failed", errors: result.errors };
   updateTag(CATALOG_TAG);
   return { status: "done", created: result.created, updated: result.updated };
 }
@@ -237,18 +292,21 @@ export async function addCategory(
   fd: FormData
 ): Promise<FormState> {
   const staff = await merchandiser("/admin/categories");
-  const result = await createCategory({
-    name: text(fd, "name"),
-    parentSlug: text(fd, "parent") || null,
-  });
+  const name = text(fd, "name");
+  const result = await adminWrite(
+    staff.id,
+    (tx) =>
+      createCategory({ name, parentSlug: text(fd, "parent") || null }, tx),
+    (done) => [
+      {
+        action: "create",
+        entity: "category",
+        entityId: done.id,
+        after: { name },
+      },
+    ]
+  );
   if (!result.ok) return { errors: toErrors(result.errors) };
-  await recordAudit({
-    staffId: staff.id,
-    action: "create",
-    entity: "category",
-    entityId: result.id,
-    after: { name: text(fd, "name") },
-  });
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
@@ -266,16 +324,20 @@ export async function editCategory(
     sortOrder: Number(text(fd, "sortOrder") || 0),
   };
   const before = await getCategoryForAdmin(id);
-  const result = await updateCategory(id, patch);
+  const result = await adminWrite(
+    staff.id,
+    (tx) => updateCategory(id, patch, tx),
+    () => [
+      {
+        action: "update",
+        entity: "category",
+        entityId: id,
+        before,
+        after: patch,
+      },
+    ]
+  );
   if (!result.ok) return { errors: toErrors(result.errors) };
-  await recordAudit({
-    staffId: staff.id,
-    action: "update",
-    entity: "category",
-    entityId: id,
-    before,
-    after: patch,
-  });
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
@@ -286,15 +348,12 @@ export async function removeCategory(
 ): Promise<FormState> {
   const staff = await merchandiser("/admin/categories");
   const before = await getCategoryForAdmin(id);
-  const result = await deleteCategory(id);
+  const result = await adminWrite(
+    staff.id,
+    (tx) => deleteCategory(id, tx),
+    () => [{ action: "delete", entity: "category", entityId: id, before }]
+  );
   if (!result.ok) return { errors: toErrors(result.errors) };
-  await recordAudit({
-    staffId: staff.id,
-    action: "delete",
-    entity: "category",
-    entityId: id,
-    before,
-  });
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }

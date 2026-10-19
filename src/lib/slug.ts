@@ -1,3 +1,5 @@
+import { productName } from "./product-name";
+
 /** URL slug: "Jack 'n Jill Potato Chips!" becomes "jack-n-jill-potato-chips". */
 export function slugify(text: string): string {
   return text
@@ -11,5 +13,5 @@ export function slugify(text: string): string {
 
 /** A Product's slug is its brand and name together. */
 export function productSlug(brand: string | null, name: string): string {
-  return slugify(brand ? `${brand} ${name}` : name);
+  return slugify(productName({ brand, name }));
 }

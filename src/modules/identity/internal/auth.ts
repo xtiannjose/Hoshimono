@@ -5,10 +5,7 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 
 import { db } from "@/lib/db";
-import { consoleMessagesAllowed } from "@/lib/test-mode";
-import { sendSignInCode } from "@/modules/notifications";
-
-import { rememberLink } from "./dev-mailbox";
+import { sendSignInCode, sendSignInLink } from "@/modules/notifications";
 
 /** Google sign-in shows only once its OAuth keys are set (owner track). */
 export function googleEnabled(): boolean {
@@ -59,13 +56,7 @@ export const auth = betterAuth({
       // links is limited by our own Server Action (ADR 0006).
       rateLimit: { window: 60, max: 60 },
       async sendMagicLink({ email, url }) {
-        // shortcut: no email provider yet, links go to the dev server log
-        // until Resend is set up. Never log a live link in production.
-        if (!consoleMessagesAllowed()) {
-          throw new Error("Email delivery is not configured");
-        }
-        console.info(`[dev] Sign-in link for ${email}: ${url}`);
-        rememberLink(email, url);
+        await sendSignInLink(email, url);
       },
     }),
     phoneNumber({

@@ -1,6 +1,6 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { addDays, addMinutes } from "@/lib/dates";
-import { db } from "@/lib/db";
+import { db, type Client } from "@/lib/db";
 
 /** Give up after this many tries; the row stays with its last error. */
 export const MAX_ATTEMPTS = 5;
@@ -8,8 +8,6 @@ export const MAX_ATTEMPTS = 5;
 const LEASE_MINUTES = 5;
 // Finished jobs are kept this long for support questions, then deleted.
 const DONE_JOB_RETENTION_DAYS = 30;
-
-type Client = Prisma.TransactionClient | typeof db;
 
 /**
  * Queue work to run after the current transaction commits. Pass the

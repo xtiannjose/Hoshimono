@@ -1,14 +1,13 @@
 import type { Prisma } from "@/generated/prisma/client";
-import { db } from "@/lib/db";
+import { db, type Client } from "@/lib/db";
 import { productSlug } from "@/lib/slug";
+import { isUuid } from "@/lib/uuid";
 
 import { productFields, type ProductFields } from "./schema";
 
 export type FieldError = { field: string; message: string };
 export type WriteResult<T = object> =
   ({ ok: true } & T) | { ok: false; errors: FieldError[] };
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function validate(input: unknown): WriteResult<{ fields: ProductFields }> {
   const parsed = productFields.safeParse(input);
@@ -27,7 +26,8 @@ const archivedAtFor = (status: string, current: Date | null) =>
 
 /** A new Product; its slug comes from brand and name and never changes. */
 export async function createProduct(
-  input: unknown
+  input: unknown,
+  client: Client = db
 ): Promise<WriteResult<{ id: string }>> {
   const checked = validate(input);
   if (!checked.ok) return checked;
@@ -40,9 +40,11 @@ export async function createProduct(
       ],
     };
   }
-  const taken = await barcodeTaken(checked.fields.barcode, null);
+  const taken = await barcodeTaken(checked.fields.barcode, null, client);
   if (taken) return taken;
-  if (await db.product.findUnique({ where: { slug }, select: { id: true } })) {
+  if (
+    await client.product.findUnique({ where: { slug }, select: { id: true } })
+  ) {
     return {
       ok: false,
       errors: [
@@ -53,19 +55,16 @@ export async function createProduct(
       ],
     };
   }
-  try {
-    const created = await db.product.create({
-      data: {
-        ...checked.fields,
-        slug,
-        archivedAt: archivedAtFor(checked.fields.status, null),
-      },
-      select: { id: true },
-    });
-    return { ok: true, id: created.id };
-  } catch (error) {
-    return uniqueClash(error);
-  }
+  // The unique indexes on slug and barcode still guard two saves at once.
+  const created = await client.product.create({
+    data: {
+      ...checked.fields,
+      slug,
+      archivedAt: archivedAtFor(checked.fields.status, null),
+    },
+    select: { id: true },
+  });
+  return { ok: true, id: created.id };
 }
 
 const BARCODE_TAKEN = {
@@ -75,58 +74,42 @@ const BARCODE_TAKEN = {
   ],
 };
 
-async function barcodeTaken(barcode: string | null, self: string | null) {
+async function barcodeTaken(
+  barcode: string | null,
+  self: string | null,
+  client: Client
+) {
   if (!barcode) return null;
-  const owner = await db.product.findUnique({
+  const owner = await client.product.findUnique({
     where: { barcode },
     select: { id: true },
   });
   return owner && owner.id !== self ? BARCODE_TAKEN : null;
 }
 
-// Two saves at once can still meet the unique indexes: explain, not crash.
-function uniqueClash(error: unknown): { ok: false; errors: FieldError[] } {
-  if ((error as { code?: string }).code !== "P2002") throw error;
-  const where = JSON.stringify((error as { meta?: unknown }).meta ?? "");
-  return where.includes("barcode")
-    ? BARCODE_TAKEN
-    : {
-        ok: false,
-        errors: [
-          {
-            field: "name",
-            message: "A Product with this brand and name already exists",
-          },
-        ],
-      };
-}
-
 /** Changes some fields of a Product; the whole Product is checked again. */
 export async function updateProduct(
   id: string,
   // Unchecked input: the merged Product is validated before saving.
-  patch: { [K in keyof ProductFields]?: unknown }
+  patch: { [K in keyof ProductFields]?: unknown },
+  client: Client = db
 ): Promise<WriteResult> {
-  if (!UUID.test(id))
+  if (!isUuid(id))
     return { ok: false, errors: [{ field: "", message: "No such Product" }] };
-  const current = await db.product.findUnique({ where: { id } });
+  const current = await client.product.findUnique({ where: { id } });
   if (!current)
     return { ok: false, errors: [{ field: "", message: "No such Product" }] };
   const checked = validate({ ...pick(current), ...patch });
   if (!checked.ok) return checked;
-  const taken = await barcodeTaken(checked.fields.barcode, id);
+  const taken = await barcodeTaken(checked.fields.barcode, id, client);
   if (taken) return taken;
-  try {
-    await db.product.update({
-      where: { id },
-      data: {
-        ...checked.fields,
-        archivedAt: archivedAtFor(checked.fields.status, current.archivedAt),
-      },
-    });
-  } catch (error) {
-    return uniqueClash(error);
-  }
+  await client.product.update({
+    where: { id },
+    data: {
+      ...checked.fields,
+      archivedAt: archivedAtFor(checked.fields.status, current.archivedAt),
+    },
+  });
   return { ok: true };
 }
 
@@ -223,7 +206,7 @@ export async function listProductsForAdmin(input: {
 
 /** A Product with everything the edit form shows, any status. */
 export async function getProductForAdmin(id: string) {
-  if (!UUID.test(id)) return null;
+  if (!isUuid(id)) return null;
   const p = await db.product.findUnique({
     where: { id },
     include: {

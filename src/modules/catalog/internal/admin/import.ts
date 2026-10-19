@@ -1,5 +1,5 @@
 import { parseCsv, toCsv } from "@/lib/csv";
-import { db } from "@/lib/db";
+import { db, inTransaction, type Client } from "@/lib/db";
 import { productSlug, slugify } from "@/lib/slug";
 
 import {
@@ -37,7 +37,13 @@ const MAX_REPORTED = 200;
  * any error means nothing is saved, and the report says which row and
  * column to fix. Rows match existing Products by slug (brand and name).
  */
-export async function importProductsCsv(text: string): Promise<ImportResult> {
+/** A 500-row import can take a while; callers wrapping it use this too. */
+export const CSV_IMPORT_TIMEOUT_MS = 120_000;
+
+export async function importProductsCsv(
+  text: string,
+  client: Client = db
+): Promise<ImportResult> {
   const rows = parseCsv(text);
   const fail = (message: string): ImportResult => ({
     ok: false,
@@ -60,8 +66,10 @@ export async function importProductsCsv(text: string): Promise<ImportResult> {
   const index = new Map(header.map((h, i) => [h, i]));
 
   const [categories, existing] = await Promise.all([
-    db.category.findMany({ select: { id: true, slug: true } }),
-    db.product.findMany({ include: { category: { select: { slug: true } } } }),
+    client.category.findMany({ select: { id: true, slug: true } }),
+    client.product.findMany({
+      include: { category: { select: { slug: true } } },
+    }),
   ]);
   const categoryId = new Map(categories.map((c) => [c.slug, c.id]));
   const existingBySlug = new Map(existing.map((p) => [p.slug, p]));
@@ -197,7 +205,8 @@ export async function importProductsCsv(text: string): Promise<ImportResult> {
   let updated = 0;
   const changes: ImportChange[] = [];
   const now = new Date();
-  await db.$transaction(
+  await inTransaction(
+    client,
     async (tx) => {
       for (const { slug, fields } of valid) {
         const before = existingBySlug.get(slug);
@@ -224,7 +233,7 @@ export async function importProductsCsv(text: string): Promise<ImportResult> {
         }
       }
     },
-    { timeout: 120_000 }
+    { timeout: CSV_IMPORT_TIMEOUT_MS }
   );
   return { ok: true, created, updated, changes };
 }

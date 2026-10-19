@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { db } from "@/lib/db";
+import { isUuid } from "@/lib/uuid";
 import { resolveZone } from "@/modules/delivery";
 
 /** Enough for home, work and family; stops a script filling the table. */
@@ -74,7 +75,7 @@ export async function getAddress(
   customerId: string,
   id: string
 ): Promise<AddressView | null> {
-  if (!z.guid().safeParse(id).success) return null;
+  if (!isUuid(id)) return null;
   return db.address.findFirst({ where: { id, customerId }, select });
 }
 

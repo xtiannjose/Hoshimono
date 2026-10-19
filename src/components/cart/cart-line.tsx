@@ -10,6 +10,7 @@ import { CategoryIcon } from "@/components/product/category-icon";
 import { formatPackSize } from "@/components/product/format";
 import { QuantityStepper } from "@/components/product/quantity-stepper";
 import { formatMoney } from "@/lib/money";
+import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
 import type { CartLineView } from "@/modules/cart";
 
@@ -34,9 +35,7 @@ export function CartLine({
   );
   const quantity = pending ?? line.quantity;
   const out = line.stock === "out";
-  const name = product.brand
-    ? `${product.brand} ${product.name}`
-    : product.name;
+  const name = productName(product);
 
   return (
     <li className="border-border grid grid-cols-[56px_1fr] gap-3 border-b py-3.5">

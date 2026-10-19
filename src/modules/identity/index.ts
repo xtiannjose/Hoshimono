@@ -67,7 +67,8 @@ export async function requireStaff(role: StaffRole, next = "/admin") {
   return staff;
 }
 
-export async function sendSignInLink(email: string, next: string) {
+/** Email a sign-in link that returns to `next`. */
+export async function emailSignInLink(email: string, next: string) {
   await auth.api.signInMagicLink({
     body: { email, callbackURL: safeNext(next) },
     headers: await headers(),
@@ -75,7 +76,7 @@ export async function sendSignInLink(email: string, next: string) {
 }
 
 /** Text a 6-digit sign-in code to a +639XXXXXXXXX number. */
-export async function sendSignInCode(phone: string) {
+export async function textSignInCode(phone: string) {
   await auth.api.sendPhoneNumberOTP({
     body: { phoneNumber: phone },
     headers: await headers(),
@@ -112,7 +113,7 @@ export { googleEnabled } from "./internal/auth";
 export async function signOut() {
   await auth.api.signOut({ headers: await headers() });
 }
-export { recordAudit, recordAudits } from "./internal/audit";
+export { recordAudits, type AuditEntry } from "./internal/audit";
 
 /** The signed-in Staff member with `role`, or null. For route handlers. */
 export async function getStaff(role: StaffRole) {
@@ -121,4 +122,3 @@ export async function getStaff(role: StaffRole) {
 }
 
 // Development and end-to-end tests only; off in production.
-export { devMailboxEnabled, lastLink } from "./internal/dev-mailbox";

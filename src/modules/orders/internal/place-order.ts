@@ -6,6 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { manilaDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
+import { productName } from "@/lib/product-name";
 import {
   checkOutCart,
   getCart,
@@ -261,9 +262,7 @@ export async function placeOrder(
       data: lines.map(({ line, ...p }) => ({
         orderId: created.id,
         productId: p.productId,
-        nameSnapshot: line.product.brand
-          ? `${line.product.brand} ${line.product.name}`
-          : line.product.name,
+        nameSnapshot: productName(line.product),
         unitPriceCents: p.unitPriceCents,
         taxClass: line.product.taxClass,
         vatCents: p.vatCents,

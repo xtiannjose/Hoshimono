@@ -270,12 +270,12 @@ Engineering:
 - [ ] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
 - [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
 - [ ] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
-- [ ] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
+- [x] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
 - [x] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
 - [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code")
 - [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
 - [ ] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
-- [ ] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
+- [x] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
 - [x] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
 - [ ] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`
 
