@@ -77,3 +77,31 @@ test("signing in moves the guest Cart into the account", async ({ page }) => {
   ).toBeVisible();
   await expect(cartButton(page, 3)).toBeVisible();
 });
+
+test("holding Add one counts on screen and saves once, on release", async ({
+  page,
+}) => {
+  await addMilk(page, 2);
+  const stepper = page.getByRole("group", { name: "Quantity of Fresh Milk" });
+  const count = stepper.locator("output");
+  const saves: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.headers()["next-action"])
+      saves.push(r.url());
+  });
+  const plus = stepper.getByRole("button", { name: "Add one" });
+  const box = (await plus.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  const shown = async () => Number(await count.textContent());
+  await expect.poll(shown).toBeGreaterThan(2);
+  await page.mouse.up();
+  expect(saves).toHaveLength(0);
+  await expect.poll(() => saves.length).toBe(1);
+  // The Cart shows what the server kept (stock may cap a long hold).
+  await expect
+    .poll(async () => cartButton(page, await shown()).isVisible())
+    .toBe(true);
+  await page.waitForTimeout(500);
+  expect(saves).toHaveLength(1);
+});

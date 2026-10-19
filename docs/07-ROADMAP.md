@@ -284,11 +284,11 @@ Frontend:
 - [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
 - [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
 - [x] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
-- [ ] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
-- [ ] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop
+- [x] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
+- [x] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop. Done 19 Oct for SearchBox (it hydrated twice) and CategoryNav (one nav, sticky from md up). The Filters form stays twice on purpose: it is server-only, so the copy costs bytes, not hydration, and one form would need `::details-content`, which iOS before 18.4 lacks
 - [ ] Return structured parts instead of parsing formatted text (`size.replace("approx. ", "")`, the Slot label split at ", ", `splitMoney`); needed before the Filipino pass
 - [ ] Replace workarounds: the `CartSync` effect, the hidden `data-no-cart-bar` div (use a route-group layout), the WeakMap `formKey`
-- [ ] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category
+- [ ] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category. 19 Oct: the stepper `<output>` no longer speaks over the Cart announcement
 - [ ] Category page: one Suspense boundary instead of three with filler fallbacks; no skeleton on the redirect and not-found branches (both added in the Lighthouse fix)
 - [ ] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff
 
