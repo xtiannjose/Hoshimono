@@ -82,3 +82,46 @@ jobs:
           name: playwright-results
           path: test-results/
           retention-days: 7
+
+  # Lighthouse mobile on Home, Category and Product (docs/05 section 11), on a
+  # clean runner instead of a busy laptop. A freshly seeded database keeps
+  # runs comparable; seed ids are deterministic, so the Product URL in
+  # lighthouserc.json stays valid. Performance warns until it reaches 90.
+  lighthouse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: hoshimono_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:dev@localhost:5432/hoshimono_e2e
+      DIRECT_URL: postgresql://postgres:dev@localhost:5432/hoshimono_e2e
+      BETTER_AUTH_SECRET: ci-placeholder-not-used-for-real-sessions
+      BETTER_AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx prisma migrate deploy
+      - run: npx tsx e2e/reset-db.mts
+      - run: npm run build
+      - run: npx -y @lhci/cli@0.15.1 autorun
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse
+          path: .lighthouseci/
+          retention-days: 7
