@@ -16,7 +16,6 @@ export default function CartPage() {
   return (
     <section className="wrap py-10 md:py-14">
       <h1 className="type-h1">Your cart</h1>
-      <div data-no-cart-bar hidden />
       <Suspense fallback={<CartPageSkeleton />}>
         <CurrentCart />
       </Suspense>

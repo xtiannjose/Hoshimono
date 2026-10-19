@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { Motion } from "@/components/motion";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import type { CartView } from "@/modules/cart";
 
@@ -27,16 +28,19 @@ export function CartLines({
             : `${view.unavailableCount} items in your cart are no longer sold, so we left them out.`}
         </p>
       )}
-      <ul aria-label="Items in your cart">
-        {view.lines.map((line) => (
-          <CartLine
-            key={line.product.id}
-            line={line}
-            lineTotalCents={totals.get(line.product.id) ?? null}
-            onNavigate={onNavigate}
-          />
-        ))}
-      </ul>
+      {/* Cart Lines carry steppers, which animate. */}
+      <Motion>
+        <ul aria-label="Items in your cart">
+          {view.lines.map((line) => (
+            <CartLine
+              key={line.product.id}
+              line={line}
+              lineTotalCents={totals.get(line.product.id) ?? null}
+              onNavigate={onNavigate}
+            />
+          ))}
+        </ul>
+      </Motion>
     </>
   );
 }

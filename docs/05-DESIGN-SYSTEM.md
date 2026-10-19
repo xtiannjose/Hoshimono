@@ -164,6 +164,8 @@ Dense and functional, same tokens and fonts, no Motion beyond focus and state tr
 
 The hero image uses `next/image` with `priority`; below-the-fold images lazy-load; every image reserves its aspect ratio. If fonts hurt LCP on real devices, self-host files subset to Latin plus U+20B1 with `next/font/local`.
 
+Motion is never in a page's first load: only islands that animate import `components/motion.tsx` (the live Add button and stepper, the Cart count, Cart Lines), and they load lazily. The Add button itself is plain markup until the first tap or until the Cart holds that Product. Measured on 19 Oct (production build, compressed): Home 157 KB, Category 164 KB, Product 157 KB of JavaScript.
+
 ## 12. Tailwind v4 mapping (Phase 0)
 
 ```css

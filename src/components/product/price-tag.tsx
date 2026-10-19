@@ -1,7 +1,7 @@
 import type { UnitPrice } from "@/modules/catalog";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, moneyParts } from "@/lib/money";
 
-import { splitMoney, unitPriceLabel } from "./format";
+import { unitPriceLabel } from "./format";
 
 type Props = {
   priceCents: number;
@@ -23,7 +23,7 @@ export function PriceTag({
   size = "card",
 }: Props) {
   const onSale = compareAtCents !== null && compareAtCents > priceCents;
-  const { whole, fraction } = splitMoney(priceCents);
+  const { whole, fraction } = moneyParts(priceCents);
   const colour = muted ? "text-muted-foreground" : onSale ? "text-sale" : "";
   return (
     <div>

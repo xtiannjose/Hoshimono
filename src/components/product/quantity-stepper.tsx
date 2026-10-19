@@ -3,7 +3,7 @@
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
 import { useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
-import { useEffect, useRef, type Ref } from "react";
+import { useEffect, useRef, useState, type Ref } from "react";
 
 import { MAX_LINE_QUANTITY } from "@/modules/pricing";
 
@@ -42,45 +42,61 @@ export function QuantityStepper({
   increaseLabel = "Add one",
 }: Props) {
   const reduce = useReducedMotion();
-  // The repeat runs between renders, so it reads the latest value here.
+  // A hold counts here and tells the parent once, on release: one server
+  // update and one announcement instead of one every REPEAT_EVERY ms.
+  const [draft, setDraft] = useState<number | null>(null);
+  const shown = draft ?? value;
+  // Timers run between renders, so they read the latest props and draft here.
   const latest = useRef({ value, onChange, min, max });
   useEffect(() => {
     latest.current = { value, onChange, min, max };
   });
+  const drafting = useRef<number | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   // Set once a hold has repeated, so the click that ends it adds nothing.
-  const held = useRef(false);
+  const repeated = useRef(false);
 
-  function step(by: 1 | -1) {
-    const { value: now, onChange: change, min: lo, max: hi } = latest.current;
-    const next = now + by;
-    if (next < lo || next > hi) return stop();
-    latest.current.value = next;
-    change(next);
-  }
-  function stop() {
+  function clear() {
     clearTimeout(timer.current);
     clearInterval(timer.current);
     timer.current = undefined;
   }
+  function release() {
+    clear();
+    const next = drafting.current;
+    if (next === null) return;
+    drafting.current = null;
+    setDraft(null);
+    if (next !== latest.current.value) latest.current.onChange(next);
+  }
   function start(by: 1 | -1) {
-    stop();
-    held.current = false;
+    clear();
+    repeated.current = false;
     timer.current = setTimeout(() => {
-      held.current = true;
-      step(by);
-      timer.current = setInterval(() => step(by), REPEAT_EVERY);
+      repeated.current = true;
+      const tick = () => {
+        const { value: now, min: lo, max: hi } = latest.current;
+        const next = (drafting.current ?? now) + by;
+        // At a limit the button disables and may never see pointerup.
+        if (next < lo || next > hi) return release();
+        drafting.current = next;
+        setDraft(next);
+      };
+      tick();
+      timer.current = setInterval(tick, REPEAT_EVERY);
     }, REPEAT_DELAY);
   }
-  useEffect(() => stop, []);
+  useEffect(() => clear, []);
 
-  function tap(by: 1 | -1) {
-    // The click that ends a long press must not add one more.
-    if (held.current) {
-      held.current = false;
-      return;
-    }
-    step(by);
+  function tap(by: 1 | -1, detail: number) {
+    // The click that ends a long press must not add one more. Keyboard
+    // clicks (detail 0) never end a press.
+    const endsHold = repeated.current && detail > 0;
+    repeated.current = false;
+    if (endsHold) return;
+    const { value: now, onChange: change, min: lo, max: hi } = latest.current;
+    const next = now + by;
+    if (next >= lo && next <= hi) change(next);
   }
 
   const tone =
@@ -96,41 +112,43 @@ export function QuantityStepper({
       <button
         type="button"
         aria-label={decreaseLabel}
-        disabled={value <= min}
+        disabled={shown <= min}
         onPointerDown={(e) => {
           if (e.button === 0) start(-1);
         }}
-        onPointerUp={() => stop()}
-        onPointerLeave={() => stop()}
-        onPointerCancel={() => stop()}
-        onClick={() => tap(-1)}
+        onPointerUp={release}
+        onPointerLeave={release}
+        onPointerCancel={release}
+        onClick={(e) => tap(-1, e.detail)}
         className="rounded-pill grid size-11 touch-manipulation place-items-center transition-colors select-none disabled:opacity-40"
       >
         <MinusIcon size={20} aria-hidden />
       </button>
       {/* Count bump confirms the change (motion table, docs/05 section 7). */}
+      {/* Not a live region: the Cart announces "Name, 2 in cart" itself. */}
       <m.output
-        key={value}
+        key={shown}
+        aria-live="off"
         // Springs take two keyframes: mount enlarged, settle to normal size.
         initial={reduce ? false : { scale: 1.18 }}
         animate={{ scale: 1 }}
         transition={SNAP}
         className="font-display text-center text-lg font-semibold tabular-nums"
       >
-        {value}
+        {shown}
       </m.output>
       <button
         ref={plusRef}
         type="button"
         aria-label={increaseLabel}
-        disabled={value >= max}
+        disabled={shown >= max}
         onPointerDown={(e) => {
           if (e.button === 0) start(1);
         }}
-        onPointerUp={() => stop()}
-        onPointerLeave={() => stop()}
-        onPointerCancel={() => stop()}
-        onClick={() => tap(1)}
+        onPointerUp={release}
+        onPointerLeave={release}
+        onPointerCancel={release}
+        onClick={(e) => tap(1, e.detail)}
         className="rounded-pill grid size-11 touch-manipulation place-items-center transition-colors select-none disabled:opacity-40"
       >
         <PlusIcon size={20} aria-hidden />

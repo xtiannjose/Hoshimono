@@ -33,13 +33,6 @@ export function unitPriceLabel(unitPrice: UnitPrice): string {
   return `${formatMoney(unitPrice.cents)} ${BASIS[unitPrice.basis]}`;
 }
 
-/** "₱160" and ".00", so cards can show centavos smaller, never dropped. */
-export function splitMoney(cents: number): { whole: string; fraction: string } {
-  const text = formatMoney(cents);
-  const dot = text.lastIndexOf(".");
-  return { whole: text.slice(0, dot), fraction: text.slice(dot) };
-}
-
 /** Whole percent saved, rounded down; null when there is no compare-at price. */
 export function salePercent(
   priceCents: number,

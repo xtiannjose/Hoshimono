@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDateTime, formatSlot, manilaDate } from "./dates";
+import { formatDateTime, formatSlot, manilaDate, slotParts } from "./dates";
 
 // 04:00 on 19 Oct in Manila.
 const NOW = new Date("2026-10-18T20:00:00Z");
@@ -22,6 +22,10 @@ describe("dates", () => {
     expect(
       formatSlot(at("2026-10-20T02:00:00Z"), at("2026-10-20T04:00:00Z"), NOW)
     ).toBe("Tomorrow, 10:00 AM to 12:00 PM");
+    // The same Slot as parts, for the Checkout day and time columns.
+    expect(
+      slotParts(at("2026-10-20T02:00:00Z"), at("2026-10-20T04:00:00Z"), NOW)
+    ).toEqual({ day: "Tomorrow", time: "10:00 AM to 12:00 PM" });
     expect(
       formatSlot(at("2026-10-22T00:00:00Z"), at("2026-10-22T02:00:00Z"), NOW)
     ).toBe("Thu, 22 Oct, 8:00 to 10:00 AM");

@@ -27,8 +27,10 @@ import type { AddressView } from "@/modules/customers";
 type SlotChoice = {
   id: string;
   date: string;
-  /** Such as "Today, 2:00 to 4:00 PM". */
-  label: string;
+  /** Such as "Today" or "Thu, 22 Oct". */
+  day: string;
+  /** Such as "2:00 to 4:00 PM". */
+  time: string;
   state: "open" | "few" | "full";
 };
 
@@ -57,11 +59,6 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
     </section>
   );
 }
-
-const splitLabel = (label: string) => {
-  const cut = label.lastIndexOf(", ");
-  return { day: label.slice(0, cut), time: label.slice(cut + 2) };
-};
 
 /** One-page Checkout (PRD CHK-1): address, contact, Slot, payment, summary. */
 export function CheckoutForm({
@@ -106,9 +103,7 @@ export function CheckoutForm({
     return () => clearTimeout(timer);
   }, [heldUntil]);
   const holdLive = heldUntil !== null && heldUntil.getTime() > now;
-  const days = [
-    ...new Map(slots.map((s) => [s.date, splitLabel(s.label).day])),
-  ];
+  const days = [...new Map(slots.map((s) => [s.date, s.day]))];
   const [day, setDay] = useState(
     slots.find((s) => s.id === slotId)?.date ?? days[0]?.[0] ?? ""
   );
@@ -271,7 +266,6 @@ export function CheckoutForm({
                   {slots
                     .filter((s) => s.date === day)
                     .map((s) => {
-                      const { time } = splitLabel(s.label);
                       const full = s.state === "full" && s.id !== slotId;
                       return (
                         <label
@@ -290,7 +284,7 @@ export function CheckoutForm({
                           <b
                             className={`text-[15px] tabular-nums ${full ? "text-muted-foreground line-through" : ""}`}
                           >
-                            {time}
+                            {s.time}
                           </b>
                           <small
                             className={`inline-flex items-center gap-1 text-[13px] ${slotId === s.id ? "text-foreground" : s.state === "few" ? "text-warn font-semibold" : "text-muted-foreground"}`}

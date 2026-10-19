@@ -6,15 +6,24 @@ function assertCentavos(value: number): void {
   }
 }
 
-/** 124900 -> "₱1,249.00". Centavos are always shown. */
-export function formatMoney(cents: number): string {
+/** 124950 -> { whole: "₱1,249", fraction: ".50" }, so cards can show centavos smaller. */
+export function moneyParts(cents: number): { whole: string; fraction: string } {
   assertCentavos(cents);
   const abs = Math.abs(cents);
   const pesos = Math.trunc(abs / 100)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   const centavos = (abs % 100).toString().padStart(2, "0");
-  return `${cents < 0 ? "-" : ""}₱${pesos}.${centavos}`;
+  return {
+    whole: `${cents < 0 ? "-" : ""}₱${pesos}`,
+    fraction: `.${centavos}`,
+  };
+}
+
+/** 124900 -> "₱1,249.00". Centavos are always shown. */
+export function formatMoney(cents: number): string {
+  const { whole, fraction } = moneyParts(cents);
+  return whole + fraction;
 }
 
 const AMOUNT = /^(?:₱|php)?\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?$/i;

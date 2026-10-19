@@ -65,16 +65,29 @@ export function formatTime(date: Date): string {
   return clock(date);
 }
 
+/** { day: "Today", time: "2:00 to 4:00 PM" }, for layouts that show them apart. */
+export function slotParts(
+  startsAt: Date,
+  endsAt: Date,
+  now = new Date()
+): { day: string; time: string } {
+  const start = clock(startsAt);
+  const end = clock(endsAt);
+  const sameHalf = start.slice(-2) === end.slice(-2);
+  return {
+    day: dayName(startsAt, now),
+    time: `${sameHalf ? start.slice(0, -3) : start} to ${end}`,
+  };
+}
+
 /** "Today, 2:00 to 4:00 PM" or "Thu, 22 Oct, 8:00 to 10:00 AM". */
 export function formatSlot(
   startsAt: Date,
   endsAt: Date,
   now = new Date()
 ): string {
-  const start = clock(startsAt);
-  const end = clock(endsAt);
-  const sameHalf = start.slice(-2) === end.slice(-2);
-  return `${dayName(startsAt, now)}, ${sameHalf ? start.slice(0, -3) : start} to ${end}`;
+  const { day, time } = slotParts(startsAt, endsAt, now);
+  return `${day}, ${time}`;
 }
 
 /** "19 Oct 2026, 4:05 PM" in Manila. */
