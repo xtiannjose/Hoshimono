@@ -172,14 +172,19 @@ export async function bookSlot(
   return true;
 }
 
-/** Give a booked place back, such as when an Order is cancelled. */
+/**
+ * Give a booked place back, such as when an Order is cancelled. A release
+ * with nothing booked breaks the slots check and throws, so an accounting
+ * bug surfaces instead of hiding.
+ */
 export async function releaseSlot(
   tx: Prisma.TransactionClient,
   slotId: string
 ): Promise<void> {
-  await tx.$executeRaw`
+  const updated = await tx.$executeRaw`
     UPDATE slots SET booked = booked - 1, updated_at = now()
-    WHERE id = ${slotId}::uuid AND booked > 0`;
+    WHERE id = ${slotId}::uuid`;
+  if (updated !== 1) throw new Error(`No Slot ${slotId}`);
 }
 
 /** Delete lapsed holds (cron, Batch 2.5). Returns how many went. */

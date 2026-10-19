@@ -7,6 +7,7 @@ import { db as appDb } from "@/lib/db";
 import {
   getStockStates,
   OutOfStockError,
+  releaseStock,
   reserveStock,
 } from "@/modules/inventory";
 
@@ -96,5 +97,29 @@ describe("reserveStock", () => {
         where: { productId: { in: [ube, mangoes, bread] } },
       })
     ).toEqual(before);
+  });
+});
+
+describe("releaseStock", () => {
+  it("fails loudly when it would release more than is reserved", async () => {
+    const hubId = (await getDefaultHubId())!;
+    const bread = product("pandesal-10-pieces");
+    await db.stockLevel.updateMany({
+      where: { productId: bread },
+      data: { reserved: 1 },
+    });
+    await expect(
+      appDb.$transaction((tx) =>
+        releaseStock(tx, {
+          hubId,
+          orderId: randomUUID(),
+          lines: [{ productId: bread, quantity: 2 }],
+        })
+      )
+    ).rejects.toThrow(/stock_levels_quantities_check/);
+    const level = await db.stockLevel.findFirstOrThrow({
+      where: { productId: bread, hubId },
+    });
+    expect(level.reserved).toBe(1);
   });
 });
