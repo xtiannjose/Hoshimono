@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
+import { takeOrderAttempt } from "@/app/checkout/order-limits";
 import { purgeRateLimits, takeToken } from "@/lib/rate-limit";
 
 import { createTestDb } from "./helpers";
@@ -53,5 +54,29 @@ describe("takeToken", () => {
     await takeToken("new", 1, 600, NOW);
     expect(await purgeRateLimits(later(61))).toBe(1);
     expect((await db.rateLimit.findMany()).map((r) => r.key)).toEqual(["new"]);
+  });
+});
+
+describe("takeOrderAttempt", () => {
+  const IP = "203.0.113.7";
+  const attempts = async (customerId: string, times: number, now = NOW) => {
+    const results: boolean[] = [];
+    for (let i = 0; i < times; i++) {
+      results.push(await takeOrderAttempt(customerId, IP, now));
+    }
+    return results;
+  };
+
+  it("allows 10 Orders an hour per account", async () => {
+    expect(await attempts("ana", 10)).not.toContain(false);
+    expect(await takeOrderAttempt("ana", "198.51.100.1", NOW)).toBe(false);
+    expect(await takeOrderAttempt("ana", IP, later(60 * 60))).toBe(true);
+  });
+
+  it("allows 20 Orders an hour from one IP across accounts", async () => {
+    expect(await attempts("ana", 10)).not.toContain(false);
+    expect(await attempts("ben", 10)).not.toContain(false);
+    expect(await takeOrderAttempt("cora", IP, NOW)).toBe(false);
+    expect(await takeOrderAttempt("cora", "198.51.100.1", NOW)).toBe(true);
   });
 });

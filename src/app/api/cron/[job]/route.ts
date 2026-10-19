@@ -7,7 +7,7 @@ import { purgeExpiredHolds } from "@/modules/delivery";
 import { purgeIdleCarts } from "@/modules/cart";
 import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
 
-import { jobHandlers } from "../handlers";
+import { jobHandlers } from "@/server/job-handlers";
 
 const digest = (text: string) => createHash("sha256").update(text).digest();
 

@@ -6,9 +6,9 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 
 import { STOCK_TAG } from "@/app/_data/storefront";
-import { jobHandlers } from "@/app/api/cron/handlers";
+import { jobHandlers } from "@/server/job-handlers";
 import { formatMoney } from "@/lib/money";
-import { clientIp, takeToken } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
 import { getCartId } from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
@@ -16,8 +16,7 @@ import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
 import { placeOrder, type PlaceOrderResult } from "@/modules/orders";
 
-const ORDERS_PER_HOUR = 10;
-const ORDERS_PER_HOUR_PER_IP = 20;
+import { takeOrderAttempt } from "./order-limits";
 
 export type HoldState =
   { ok: true; expiresAt: string } | { ok: false; message: string };
@@ -99,19 +98,12 @@ export async function placeOrderAction(
     riderNotes: text("riderNotes"),
     slotId: text("slotId"),
   };
-  // COD Orders reserve stock unpaid, so cap how many one account or IP
-  // can place in an hour (docs/03 section 12).
-  for (const [key, limit] of [
-    [`order:customer:${customer.id}`, ORDERS_PER_HOUR],
-    [`order:ip:${clientIp(await headers())}`, ORDERS_PER_HOUR_PER_IP],
-  ] as const) {
-    if (!(await takeToken(key, limit, 60 * 60)).ok) {
-      return {
-        message:
-          "You have placed several orders just now. Please wait a while, or contact us for help.",
-        values,
-      };
-    }
+  if (!(await takeOrderAttempt(customer.id, clientIp(await headers())))) {
+    return {
+      message:
+        "You have placed several orders just now. Please wait a while, or contact us for help.",
+      values,
+    };
   }
   const result = await placeOrder({
     customerId: customer.id,

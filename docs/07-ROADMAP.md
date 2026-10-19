@@ -249,7 +249,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
 - [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
 - [ ] Cart drawer delivery row shows the held Slot, not a generic line
-- [ ] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
+- [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
 - [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
 
@@ -271,12 +271,12 @@ Engineering:
 - [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
 - [ ] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
 - [ ] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
-- [ ] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
+- [x] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
 - [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code")
 - [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
 - [ ] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
 - [ ] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
-- [ ] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
+- [x] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
 - [ ] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`
 
 Frontend:

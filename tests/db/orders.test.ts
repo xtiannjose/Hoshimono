@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { getCart, setLineQuantity, type CartOwner } from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
-import { jobHandlers } from "@/app/api/cron/handlers";
+import { jobHandlers } from "@/server/job-handlers";
 import {
   cancelOrder,
   getOrder,

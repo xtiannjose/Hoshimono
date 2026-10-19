@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { addDays, addMinutes } from "@/lib/dates";
 import { db } from "@/lib/db";
 
 /** A chosen Slot is kept for the cart this long (PRD CHK-2). */
@@ -36,9 +37,6 @@ type SlotRequest = {
   now: Date;
 };
 
-const addMinutes = (date: Date, minutes: number) =>
-  new Date(date.getTime() + minutes * 60_000);
-
 type SlotRow = {
   id: string;
   date: Date;
@@ -72,7 +70,7 @@ export async function listSlots(
     FROM slots s
     WHERE s.hub_id = ${hubId}::uuid
       AND s.starts_at > ${addMinutes(now, SLOT_CUTOFF_MINUTES)}
-      AND s.starts_at < ${addMinutes(now, (options.days ?? 7) * 24 * 60)}
+      AND s.starts_at < ${addDays(now, options.days ?? BOOKING_DAYS)}
     ORDER BY s.starts_at`;
   return rows.map((row) => {
     const left = row.capacity - row.booked - row.held_by_others;
@@ -100,7 +98,7 @@ async function lockSlot(
   >`
     SELECT capacity, booked, starts_at FROM slots
     WHERE id = ${slotId}::uuid AND hub_id = ${hubId}::uuid
-      AND starts_at < ${addMinutes(now, BOOKING_DAYS * 24 * 60)}
+      AND starts_at < ${addDays(now, BOOKING_DAYS)}
     FOR UPDATE`;
   if (!slot) return null;
   const [{ others, mine }] = await tx.$queryRaw<

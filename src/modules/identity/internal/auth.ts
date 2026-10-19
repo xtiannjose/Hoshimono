@@ -15,6 +15,9 @@ export function googleEnabled(): boolean {
   return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
+/** A text-message sign-in code works for this long. */
+const SIGN_IN_CODE_MINUTES = 5;
+
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
   user: { modelName: "authUser" },
@@ -67,12 +70,12 @@ export const auth = betterAuth({
     }),
     phoneNumber({
       otpLength: 6,
-      expiresIn: 300,
+      expiresIn: SIGN_IN_CODE_MINUTES * 60,
       allowedAttempts: 3,
       // Callers pass +639XXXXXXXXX (normalizePhone).
       phoneNumberValidator: (phone) => /^\+639\d{9}$/.test(phone),
       async sendOTP({ phoneNumber: phone, code }) {
-        await sendSignInCode(phone, code);
+        await sendSignInCode(phone, code, SIGN_IN_CODE_MINUTES);
       },
       // First sign-in by mobile creates the account; the email is a
       // stand-in that is never shown or used for mail.

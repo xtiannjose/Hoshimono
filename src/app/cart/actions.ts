@@ -11,6 +11,7 @@ import {
   type CartView,
 } from "@/modules/cart";
 import { listRelatedProducts } from "@/modules/catalog";
+import { MAX_LINE_QUANTITY } from "@/modules/pricing";
 
 import { cartContext, readCartOwner, writeCartOwner } from "./owner";
 
@@ -35,7 +36,7 @@ export async function setQuantity(
   quantity: number
 ): Promise<CartResult> {
   const input = z
-    .object({ id: productId, quantity: z.int().min(0).max(999) })
+    .object({ id: productId, quantity: z.int().min(0).max(MAX_LINE_QUANTITY) })
     .safeParse({ id, quantity });
   if (!input.success) {
     return { cart: await currentCart(), message: "That did not work." };

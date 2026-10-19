@@ -18,6 +18,8 @@ import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import { createCodPayment } from "@/modules/payments";
 
+import { OPEN_STATUSES } from "./status";
+
 /**
  * Cash-on-delivery Orders hold stock and Slot places without payment, so
  * one Customer may have only a few open at once, each under a cash limit.
@@ -25,16 +27,6 @@ import { createCodPayment } from "@/modules/payments";
  */
 export const MAX_OPEN_COD_ORDERS = 3;
 export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
-
-// Statuses where an Order still holds stock or a Slot place.
-const OPEN_STATUSES = [
-  "pending_payment",
-  "confirmed",
-  "picking",
-  "picked",
-  "out_for_delivery",
-  "delivery_failed",
-] as const;
 
 /** Job that sends the order confirmed email and SMS (Batch 2.5). */
 export const ORDER_CONFIRMED_JOB = "order.confirmed";
@@ -212,7 +204,7 @@ export async function placeOrder(
     const open = await tx.order.count({
       where: {
         customerId: order.customerId,
-        status: { in: [...OPEN_STATUSES] },
+        status: { in: OPEN_STATUSES },
       },
     });
     if (open >= MAX_OPEN_COD_ORDERS) {
