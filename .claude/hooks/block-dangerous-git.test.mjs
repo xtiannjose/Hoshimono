@@ -1,16 +1,14 @@
-import { spawnSync } from "node:child_process";
-
-import { describe, expect, it } from "vitest";
-
 // Runs the agent git guardrail the way Claude Code does: hook JSON on stdin,
-// exit 0 allows, exit 2 blocks.
+// exit 0 allows, exit 2 blocks. Agent tooling, so not in the app suite:
+// npm run test:hooks
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { describe, it } from "node:test";
+
 const HOOK = ".claude/hooks/block-dangerous-git.sh";
 
-function exitCode(input: string) {
-  return spawnSync("bash", [HOOK], { input }).status;
-}
-const run = (command: string) =>
-  exitCode(JSON.stringify({ tool_input: { command } }));
+const exitCode = (input) => spawnSync("bash", [HOOK], { input }).status;
+const run = (command) => exitCode(JSON.stringify({ tool_input: { command } }));
 
 describe("agent git guardrail", () => {
   it("allows pushing a named feature branch to origin", () => {
@@ -20,7 +18,7 @@ describe("agent git guardrail", () => {
       "git status",
       'git commit -m "docs: push notes"',
     ]) {
-      expect(run(command), command).toBe(0);
+      assert.equal(run(command), 0, command);
     }
   });
 
@@ -42,7 +40,7 @@ describe("agent git guardrail", () => {
       "git -C . push origin main",
       "git push origin x && git push origin main",
     ]) {
-      expect(run(command), command).toBe(2);
+      assert.equal(run(command), 2, command);
     }
   });
 
@@ -55,11 +53,11 @@ describe("agent git guardrail", () => {
       "git checkout .",
       "gh pr merge 1 --squash",
     ]) {
-      expect(run(command), command).toBe(2);
+      assert.equal(run(command), 2, command);
     }
   });
 
   it("fails closed on input it cannot read", () => {
-    expect(exitCode("garbage")).toBe(2);
+    assert.equal(exitCode("garbage"), 2);
   });
 });

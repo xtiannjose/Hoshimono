@@ -277,7 +277,7 @@ Engineering:
 - [x] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
 - [x] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
 - [x] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
-- [ ] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`
+- [x] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`. Done 19 Oct, except the `networkidle` waits: they hold clicks until React has hydrated, which auto-waiting does not cover; the warm-up now runs only against `next dev`
 
 Frontend:
 

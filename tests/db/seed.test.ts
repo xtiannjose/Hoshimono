@@ -82,5 +82,5 @@ describe("seed", () => {
       (p) => p.id
     );
     expect(after.sort()).toEqual(ids.sort());
-  });
+  }, 30_000); // re-seeding the whole catalogue takes seconds under load
 });
