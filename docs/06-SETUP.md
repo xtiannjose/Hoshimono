@@ -106,23 +106,23 @@ Copy-Item .env.example .env.local
 
 Fill `.env.local`. Never commit it.
 
-| Variable                                   | Meaning                                | Where it comes from                                                                           |
-| ------------------------------------------ | -------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_APP_URL`                      | Public base URL                        | `http://localhost:3000` locally                                                               |
-| `NEXT_PUBLIC_BRAND_NAME`                   | Display name                           | Defaults to Hoshimono                                                                         |
-| `DATABASE_URL`                             | Pooled Postgres URL used by the app    | Neon dashboard, pooled connection                                                             |
-| `DIRECT_URL`                               | Direct Postgres URL used by migrations | Neon dashboard, direct connection                                                             |
-| `BETTER_AUTH_SECRET`                       | Session signing secret                 | `openssl rand -base64 32` (Git Bash)                                                          |
-| `BETTER_AUTH_URL`                          | Auth base URL                          | Same as app URL                                                                               |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google sign-in                         | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google` |
-| `CRON_SECRET`                              | Lets the host call `/api/cron/tick`    | `openssl rand -base64 32`; Vercel sends it on cron calls (needs a plan with per-minute crons) |
-| `PAYMENT_PROVIDER`                         | `xendit` or `paymongo`                 | Decided in Phase 3                                                                            |
-| `XENDIT_*`, `PAYMONGO_*`                   | Provider keys and webhook secrets      | Provider dashboards, **test mode keys only** until launch                                     |
-| `RESEND_API_KEY`, `EMAIL_FROM`             | Email                                  | Resend                                                                                        |
-| `SMS_PROVIDER`, `SEMAPHORE_API_KEY`        | SMS                                    | Semaphore                                                                                     |
-| `MEDIA_BUCKET`, `MEDIA_PUBLIC_URL`         | Image storage                          | R2 or Cloudinary                                                                              |
-| `GOOGLE_MAPS_API_KEY`                      | Address pin and autocomplete           | Google Cloud                                                                                  |
-| `SENTRY_DSN`, `NEXT_PUBLIC_GA_ID`          | Observability and analytics            | Sentry, Google Analytics                                                                      |
+| Variable                                         | Meaning                                | Where it comes from                                                                               |
+| ------------------------------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_URL`                            | Public base URL                        | `http://localhost:3000` locally                                                                   |
+| `NEXT_PUBLIC_BRAND_NAME`                         | Display name                           | Defaults to Hoshimono                                                                             |
+| `DATABASE_URL`                                   | Pooled Postgres URL used by the app    | Neon dashboard, pooled connection                                                                 |
+| `DIRECT_URL`                                     | Direct Postgres URL used by migrations | Neon dashboard, direct connection                                                                 |
+| `BETTER_AUTH_SECRET`                             | Session signing secret                 | `openssl rand -base64 32` (Git Bash)                                                              |
+| `BETTER_AUTH_URL`                                | Auth base URL                          | Same as app URL                                                                                   |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`       | Google sign-in                         | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google`     |
+| `CRON_SECRET`                                    | Lets the host call `/api/cron/tick`    | `openssl rand -base64 32`; Vercel sends it on cron calls (needs a plan with per-minute crons)     |
+| `PAYMENT_PROVIDER`                               | `paymongo`                             | Decided 2026-10-19, ADR 0003                                                                      |
+| `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET` | API key; secret for verifying webhooks | PayMongo dashboard (key) and the webhook endpoint's `secret_key`; **test mode only** until launch |
+| `RESEND_API_KEY`, `EMAIL_FROM`                   | Email                                  | Resend                                                                                            |
+| `SMS_PROVIDER`, `SEMAPHORE_API_KEY`              | SMS                                    | Semaphore                                                                                         |
+| `MEDIA_BUCKET`, `MEDIA_PUBLIC_URL`               | Image storage                          | R2 or Cloudinary                                                                                  |
+| `GOOGLE_MAPS_API_KEY`                            | Address pin and autocomplete           | Google Cloud                                                                                      |
+| `SENTRY_DSN`, `NEXT_PUBLIC_GA_ID`                | Observability and analytics            | Sentry, Google Analytics                                                                          |
 
 Add the same variables to Vercel (Project Settings, Environment Variables), using separate values for Preview and Production.
 

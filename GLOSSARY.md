@@ -76,6 +76,14 @@ _Avoid_: Line item, order item
 The human-facing reference of an Order, `SW-YYMMDD-XXXX` (Manila date and four characters without 0, O, 1 or I), used in messages and tracking links.
 _Avoid_: Order ID (the internal UUID), reference code
 
+**Payment**:
+One way an Order is paid: cash on delivery, or GCash or card through the payment provider. It records the amount asked for, captured and refunded.
+_Avoid_: Transaction, charge (as a noun for the record)
+
+**Payment Event**:
+A message from the payment provider about a Payment, kept exactly once however many times it arrives.
+_Avoid_: Callback, notification (for provider webhooks)
+
 **Reorder**:
 Creating a new Cart from a past Order's lines.
 _Avoid_: Buy again (UI label only), repeat order
