@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   // Photo uploads (10 MB) and CSV imports (5 MB) go through Server Actions,
   // which refuse bodies over 1 MB by default.

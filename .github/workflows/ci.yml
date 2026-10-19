@@ -62,10 +62,10 @@ jobs:
           --health-retries 10
     env:
       # playwright.config.ts migrates, resets and seeds this database, then
-      # starts its own dev server against it.
+      # starts its own server against it.
       E2E_DATABASE_URL: postgresql://postgres:dev@localhost:5432/hoshimono_e2e
       BETTER_AUTH_SECRET: ci-placeholder-not-used-for-real-sessions
-      # Test the production build, not the dev server (review finding).
+      # Test the production build users will run, not the dev server.
       E2E_PROD: "1"
     steps:
       - uses: actions/checkout@v5
@@ -76,7 +76,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-results
@@ -119,9 +119,10 @@ jobs:
       - run: npx tsx e2e/reset-db.mts
       - run: npm run build
       - run: npx -y @lhci/cli@0.15.1 autorun
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: lighthouse
           path: .lighthouseci/
+          include-hidden-files: true
           retention-days: 7

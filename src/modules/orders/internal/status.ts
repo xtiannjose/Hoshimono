@@ -16,6 +16,11 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+/** Statuses an Order can still leave, so it still holds stock or a Slot place. */
+export const OPEN_STATUSES = (Object.keys(NEXT) as OrderStatus[]).filter(
+  (status) => NEXT[status].length > 0
+);
+
 export type Actor = { type: ActorType; id?: string | null };
 
 /**
@@ -101,37 +106,4 @@ export async function cancelOrder(
     "Cancelled by the Customer",
     { from: ["pending_payment", "confirmed"] }
   );
-}
-
-/** Online payments not finished in this long are cancelled (docs/03 section 6). */
-export const PAYMENT_WINDOW_MINUTES = 15;
-
-/**
- * Cancel Orders still waiting for payment after PAYMENT_WINDOW_MINUTES,
- * giving back stock and Slot places. Run by the cron route. Returns how
- * many were cancelled.
- */
-export async function expireUnpaidOrders(now = new Date()): Promise<number> {
-  const stale = await db.order.findMany({
-    where: {
-      status: "pending_payment",
-      placedAt: {
-        lte: new Date(now.getTime() - PAYMENT_WINDOW_MINUTES * 60_000),
-      },
-    },
-    select: { id: true },
-    take: 100,
-  });
-  let cancelled = 0;
-  for (const { id } of stale) {
-    const done = await transitionOrder(
-      id,
-      "cancelled",
-      { type: "system" },
-      "Payment not completed in time",
-      { from: ["pending_payment"] }
-    );
-    if (done) cancelled++;
-  }
-  return cancelled;
 }

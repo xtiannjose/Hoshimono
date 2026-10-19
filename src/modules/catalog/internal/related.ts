@@ -1,8 +1,7 @@
 import { db } from "@/lib/db";
+import { isUuid } from "@/lib/uuid";
 
 import { loadSummaries, type ProductSummary } from "./products";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Products to show under a Product page: the same Category first, then the
@@ -14,7 +13,7 @@ export async function listRelatedProducts(
   productId: string,
   limit: number
 ): Promise<ProductSummary[]> {
-  if (!UUID.test(productId)) return [];
+  if (!isUuid(productId)) return [];
   const product = await db.product.findFirst({
     where: { id: productId, status: "active" },
     select: {

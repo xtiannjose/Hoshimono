@@ -346,6 +346,19 @@ describe("bookSlot", () => {
       (await db.slot.findUniqueOrThrow({ where: { id: slot.id } })).booked
     ).toBe(1);
   });
+
+  it("fails loudly when there is no booked place to give back", async () => {
+    const slot = await firstSlot(); // booked is 0
+    await expect(
+      appDb.$transaction((tx) => releaseSlot(tx, slot.id))
+    ).rejects.toThrow();
+    await expect(
+      appDb.$transaction((tx) => releaseSlot(tx, randomUUID()))
+    ).rejects.toThrow(/No Slot/);
+    expect(
+      (await db.slot.findUniqueOrThrow({ where: { id: slot.id } })).booked
+    ).toBe(0);
+  });
 });
 
 it("purgeExpiredHolds removes only lapsed holds", async () => {

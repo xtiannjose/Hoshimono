@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import sharp, { type Metadata } from "sharp";
 
-import { db } from "@/lib/db";
+import { db, inTransaction, type Client } from "@/lib/db";
 import { mediaStore } from "@/lib/media";
 
 import type { WriteResult } from "./products";
@@ -75,20 +75,23 @@ export async function addProductImage(
   return { ok: true, id: image.id };
 }
 
-export async function setPrimaryImage(imageId: string): Promise<WriteResult> {
-  const image = await db.productImage.findUnique({ where: { id: imageId } });
-  if (!image) return error("No such image");
-  await db.$transaction([
-    db.productImage.updateMany({
+export async function setPrimaryImage(
+  imageId: string,
+  client: Client = db
+): Promise<WriteResult> {
+  return inTransaction(client, async (tx) => {
+    const image = await tx.productImage.findUnique({ where: { id: imageId } });
+    if (!image) return error("No such image");
+    await tx.productImage.updateMany({
       where: { productId: image.productId },
       data: { isPrimary: false },
-    }),
-    db.productImage.update({
+    });
+    await tx.productImage.update({
       where: { id: imageId },
       data: { isPrimary: true },
-    }),
-  ]);
-  return { ok: true };
+    });
+    return { ok: true };
+  });
 }
 
 /** Removes an image; if it was primary, the next one becomes primary. */

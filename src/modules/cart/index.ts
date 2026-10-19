@@ -1,6 +1,7 @@
 // Public interface of the cart module (docs/03-ARCHITECTURE.md section 3).
 // Owns Cart and CartLine. Totals come from pricing.priceCart.
 export {
+  CART_RETENTION_DAYS,
   checkOutCart,
   getCart,
   getCartId,

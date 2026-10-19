@@ -13,7 +13,7 @@ import {
 import { productSlug, seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
 
-// Catalogue reads (Batch 1.1) against the deterministic seed.
+// Catalogue reads against the deterministic seed.
 const db = createTestDb();
 
 beforeAll(async () => {
@@ -156,7 +156,9 @@ describe("listProducts", () => {
     expect(
       (await listProducts({ categorySlug: "dairy-and-eggs" }))?.total
     ).toBe(16);
-    expect((await listProducts({}))?.total).toBe(155);
+    expect((await listProducts({}))?.total).toBe(
+      await db.product.count({ where: { status: "active" } })
+    );
   });
 
   it("returns null for an unknown Category", async () => {
@@ -320,6 +322,7 @@ describe("searchProducts", () => {
   });
 
   it("returns an empty result, not an error, when nothing matches", async () => {
+    const products = await db.product.count();
     for (const q of [
       "xylophone",
       "",
@@ -330,7 +333,7 @@ describe("searchProducts", () => {
       const result = await search(q);
       expect(result, q).toEqual({ items: [], total: 0, correctedQuery: null });
     }
-    expect(await db.product.count()).toBe(157);
+    expect(await db.product.count()).toBe(products);
   });
 
   it("pages through results", async () => {
@@ -343,9 +346,7 @@ describe("searchProducts", () => {
   });
 });
 
-// Cases found by the Batch 1.1 review workflow (correctness, spec and
-// search-quality reviewers, each confirmed by a skeptic).
-describe("searchProducts: review cases", () => {
+describe("searchProducts: topics, phrases and typos", () => {
   const names = async (q: string) =>
     (await searchProducts(q, { limit: 96 })).items.map((p) => p.name);
   const MEAT = /Pork|Beef|Chicken|Liempo|Kasim/;
@@ -385,7 +386,7 @@ describe("searchProducts: review cases", () => {
     expect(dairy).not.toContain("Large Eggs, 12 pack");
   });
 
-  // Round two of the review: an extra word must not bring the other topic back.
+  // An extra word must not bring the other topic back.
   it("keeps a two-topic parent out of two-word queries", async () => {
     expect(await names("fresh fish")).toEqual([]);
     expect(await names("fish fillet")).toEqual([]);
@@ -495,13 +496,16 @@ describe("suggestSearch", () => {
   });
 });
 
-describe("listProducts: review cases", () => {
-  it("ignores price bounds that are not real numbers and never throws", async () => {
+describe("listProducts with bad price bounds", () => {
+  it("ignores bounds that are not real numbers and never throws", async () => {
+    const active = await db.product.count({ where: { status: "active" } });
     expect((await listProducts({ maxPriceCents: Number.NaN }))?.total).toBe(
-      155
+      active
     );
-    expect((await listProducts({ minPriceCents: Infinity }))?.total).toBe(155);
-    expect((await listProducts({ maxPriceCents: 1e15 }))?.total).toBe(155);
+    expect((await listProducts({ minPriceCents: Infinity }))?.total).toBe(
+      active
+    );
+    expect((await listProducts({ maxPriceCents: 1e15 }))?.total).toBe(active);
   });
 });
 

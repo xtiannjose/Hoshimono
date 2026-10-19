@@ -6,11 +6,11 @@ import { redirect } from "next/navigation";
 import { normalizePhone } from "@/lib/phone";
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import {
+  emailSignInLink,
   googleEnabled,
   googleSignInUrl,
   safeNext,
-  sendSignInCode,
-  sendSignInLink,
+  textSignInCode,
   verifySignInCode,
 } from "@/modules/identity";
 
@@ -68,9 +68,10 @@ export async function requestSignInLink(
   );
   if (tooMany) return { status: "error", message: tooMany, email };
   try {
-    await sendSignInLink(email, next);
+    await emailSignInLink(email, next);
     return { status: "sent", email };
-  } catch {
+  } catch (error) {
+    console.error("[sign-in] link not sent:", error);
     return {
       status: "error",
       message:
@@ -109,9 +110,10 @@ export async function requestSignInCode(
   );
   if (tooMany) return { step: "number", typed, message: tooMany };
   try {
-    await sendSignInCode(phone);
+    await textSignInCode(phone);
     return { step: "code", typed, phone };
-  } catch {
+  } catch (error) {
+    console.error("[sign-in] code not sent:", error);
     return {
       step: "number",
       typed,
@@ -136,7 +138,20 @@ export async function verifySignInCodeAction(
     CODE_CHECKS,
   ]);
   if (tooMany) return { ...prev, step: "code", phone, message: tooMany };
-  if (!(await verifySignInCode(phone, code))) {
+  let accepted: boolean;
+  try {
+    accepted = await verifySignInCode(phone, code);
+  } catch (error) {
+    console.error("[sign-in] code not checked:", error);
+    return {
+      ...prev,
+      step: "code",
+      phone,
+      message:
+        "We could not check your code just now. Please try again in a minute.",
+    };
+  }
+  if (!accepted) {
     return {
       ...prev,
       step: "code",

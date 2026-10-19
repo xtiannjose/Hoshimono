@@ -1,17 +1,13 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
-import { revalidateTag } from "next/cache";
 import { connection } from "next/server";
-
-import { STOCK_TAG } from "@/app/_data/storefront";
 
 import { purgeRateLimits } from "@/lib/rate-limit";
 import { purgeExpiredHolds } from "@/modules/delivery";
 import { purgeIdleCarts } from "@/modules/cart";
 import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
-import { expireUnpaidOrders } from "@/modules/orders";
 
-import { jobHandlers } from "../handlers";
+import { jobHandlers } from "@/server/job-handlers";
 
 const digest = (text: string) => createHash("sha256").update(text).digest();
 
@@ -25,8 +21,8 @@ function authorised(request: Request): boolean {
 
 /**
  * Called every minute by the host (docs/03-ARCHITECTURE.md section 11):
- * drops lapsed Slot holds, cancels unpaid online Orders, runs due jobs
- * and clears ended rate-limit windows.
+ * drops lapsed Slot holds, runs due jobs, clears ended rate-limit windows
+ * and purges idle Carts and finished jobs.
  * Everything it does is idempotent, so an extra call is harmless.
  */
 export async function GET(
@@ -42,17 +38,9 @@ export async function GET(
   const results: Record<string, unknown> = {};
   const errors: Record<string, string> = {};
   // Each step on its own: one failing never stops the others (notices
-  // keep going out even if, say, one stuck Order cannot be expired).
+  // keep going out even if, say, the Slot hold purge fails).
   const steps: [string, () => Promise<unknown>][] = [
     ["holds", () => purgeExpiredHolds(now)],
-    [
-      "unpaidOrders",
-      async () => {
-        const cancelled = await expireUnpaidOrders(now);
-        if (cancelled > 0) revalidateTag(STOCK_TAG, "max");
-        return cancelled;
-      },
-    ],
     ["jobs", () => runDueJobs(jobHandlers, { now })],
     ["rateLimits", () => purgeRateLimits(now)],
     ["carts", () => purgeIdleCarts(now)],

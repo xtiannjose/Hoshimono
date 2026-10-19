@@ -2,8 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Dark mode: next-themes always sets data-theme on <html>. The media query
-   below only covers a first paint before that runs, or no JavaScript. */
+/* Dark mode: next-themes sets data-theme on <html> from the system setting
+   before first paint. Without JavaScript the page stays light. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* ---------- Tokens: docs/05-DESIGN-SYSTEM.md section 3 ---------- */
@@ -52,36 +52,6 @@
   --destructive: var(--err);
   --input: var(--border-strong);
   --radius: 0.875rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #0b1610;
-    --surface: #122019;
-    --surface-2: #1a2c22;
-    --border: #253a2e;
-    --border-strong: #6f8a78;
-    --ink: #edf3e3;
-    --muted: #a6b8a5;
-    --accent: #d3ee62;
-    --accent-hover: #e0f57f;
-    --accent-soft: #2c3a10;
-    --on-accent: #0b1610;
-    --btn-bg: #d3ee62;
-    --btn-bg-hover: #e0f57f;
-    --btn-fg: #0b1610;
-    --hl: #3f5414;
-    --sale: #ff8a70;
-    --sale-soft: #3b1d16;
-    --warn: #f2c063;
-    --warn-soft: #3a2e10;
-    --err: #ff8f85;
-    --ring: #d3ee62;
-    --scrim: rgb(0 0 0 / 0.6);
-    --hatch: rgb(237 243 227 / 0.05);
-    --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
-  }
 }
 
 :root[data-theme="dark"] {

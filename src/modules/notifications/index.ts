@@ -3,5 +3,5 @@
 export { sendOrderConfirmed } from "./internal/order-confirmed";
 export type { OrderConfirmedNotice } from "./internal/order-confirmed";
 export { lastMessage } from "./internal/providers";
-export { sendSignInCode } from "./internal/sign-in-code";
+export { sendSignInCode, sendSignInLink } from "./internal/sign-in";
 export type { EmailProvider, Sent, SmsProvider } from "./internal/providers";

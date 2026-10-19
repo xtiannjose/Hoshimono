@@ -31,7 +31,7 @@ async function activeZones() {
  * The Zone that delivers to a city and barangay, or null when none does.
  * A Zone with listed barangays serves only those; one without serves the
  * whole city. A barangay match wins over a whole-city match.
- * shortcut: names, not map polygons, until maps arrive (Batch 2.3 deferral).
+ * shortcut: names, not map polygons, until a maps provider is chosen.
  */
 export async function resolveZone(place: {
   city: string;
@@ -45,13 +45,6 @@ export async function resolveZone(place: {
   const zone =
     zones.find((z) => z.barangays.some((b) => placeKey(b) === barangay)) ??
     zones.find((z) => z.barangays.length === 0);
-  return zone ? toMatch(zone) : null;
-}
-
-export async function getZone(zoneId: string): Promise<ZoneMatch | null> {
-  const zone = await db.zone.findFirst({
-    where: { id: zoneId, hub: { isActive: true } },
-  });
   return zone ? toMatch(zone) : null;
 }
 

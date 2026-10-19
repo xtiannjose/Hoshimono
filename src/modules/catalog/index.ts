@@ -36,7 +36,11 @@ export type {
   FieldError,
   WriteResult,
 } from "./internal/admin/products";
-export { exportProductsCsv, importProductsCsv } from "./internal/admin/import";
+export {
+  CSV_IMPORT_TIMEOUT_MS,
+  exportProductsCsv,
+  importProductsCsv,
+} from "./internal/admin/import";
 export type {
   ImportChange,
   ImportError,

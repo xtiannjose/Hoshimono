@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import {
+  CART_RETENTION_DAYS,
   hasGuestCart,
   isGuestToken,
   mergeGuestCart,
@@ -16,7 +17,6 @@ import { currentCustomer } from "@/modules/identity";
 // The guest Cart cookie holds a random token; the database keeps only its
 // hash (docs/03-ARCHITECTURE.md section 5).
 const GUEST_COOKIE = "hm_cart";
-const THIRTY_DAYS = 60 * 60 * 24 * 30;
 // New guest Carts per IP per hour; generous for shared carrier IPs.
 const NEW_CARTS_PER_HOUR = 60;
 
@@ -63,14 +63,14 @@ export async function writeCartOwner(): Promise<CartOwner | null> {
   );
   if (!limit.ok) return null;
   // Set only when new: setting a cookie in an action re-renders the page.
-  // Idle guest Carts are purged after 30 days (cron tick), like the cookie.
+  // The cookie lives as long as an idle guest Cart is kept (cron tick).
   const guestToken = newGuestToken();
   jar.set(GUEST_COOKIE, guestToken, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: THIRTY_DAYS,
+    maxAge: CART_RETENTION_DAYS * 24 * 60 * 60,
   });
   return { guestToken };
 }

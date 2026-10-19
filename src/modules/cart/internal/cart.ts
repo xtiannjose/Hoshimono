@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { SubstitutionPreference } from "@/generated/prisma/enums";
+import { addDays } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { getProductSummaries, type ProductSummary } from "@/modules/catalog";
 import {
@@ -448,7 +449,8 @@ export async function checkOutCart(
   return closed === 1;
 }
 
-const RETENTION_DAYS = 30;
+/** Idle guest Carts and checked-out Carts are kept this long; also the guest cookie's life. */
+export const CART_RETENTION_DAYS = 30;
 
 /**
  * Housekeeping for the cron tick: guest Carts idle for 30 days (the guest
@@ -456,7 +458,7 @@ const RETENTION_DAYS = 30;
  * its own lines). A Customer's open Cart is never deleted.
  */
 export async function purgeIdleCarts(now = new Date()): Promise<number> {
-  const before = new Date(now.getTime() - RETENTION_DAYS * 86_400_000);
+  const before = addDays(now, -CART_RETENTION_DAYS);
   const { count } = await db.cart.deleteMany({
     where: {
       OR: [

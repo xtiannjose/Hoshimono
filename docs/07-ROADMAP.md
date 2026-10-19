@@ -244,12 +244,12 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 
 **Carried over from the Phase 1 and 2 review** (18 Oct):
 
-- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5). No longer blocked: the CI `lighthouse` job measures a production build on a clean runner (`lighthouserc.json`; performance warns until it passes). Local medians on 19 Oct: 79 Home, 81 Category, 85 Product; accessibility, best practices and SEO 100. Cause, measured on Phase 1: about 190 KB of JavaScript runs before the first paint and the simulated phone charges it to LCP; with JavaScript blocked the pages score 96 to 99, with fonts blocked only a few points better, so subset fonts alone cannot reach 90. Fix: the Add button arrives as server HTML and loads the stepper and Motion on first tap; header search loads on first use. Then switch the CI assertion from warn to error
+- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5). No longer blocked: the CI `lighthouse` job measures a production build on a clean runner (`lighthouserc.json`; performance warns until it passes). First clean-runner run (19 Oct, PR #8): Category 93, 98, 98 and Product 94, 94, 98 meet the budget; Home 72, 74, 98 does not, with about 1.1 s of total blocking time. Local laptop medians were 79, 81 and 85; accessibility, best practices and SEO 100. Cause, measured on Phase 1: about 190 KB of JavaScript runs before the first paint and the simulated phone charges it to LCP; with JavaScript blocked the pages score 96 to 99, with fonts blocked only a few points better, so subset fonts alone cannot reach 90. Fix, Home first: the Add button arrives as server HTML and loads the stepper and Motion on first tap; header search loads on first use. Then switch the CI assertion from warn to error
 - [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
 - [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
 - [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
 - [ ] Cart drawer delivery row shows the held Slot, not a generic line
-- [ ] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
+- [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
 - [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
 
@@ -267,23 +267,23 @@ UI and UX:
 
 Engineering:
 
-- [ ] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
+- [x] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
 - [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
-- [ ] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
-- [ ] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
-- [ ] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
-- [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code")
-- [ ] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
-- [ ] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
-- [ ] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
-- [ ] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
-- [ ] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`
+- [x] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
+- [x] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
+- [x] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
+- [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code"). Logging done 19 Oct: sign-in tells an outage from a wrong code, and the health check and sign-in actions log what they catch. The result convention is still open
+- [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
+- [x] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
+- [x] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
+- [x] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
+- [x] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`. Done 19 Oct, except the `networkidle` waits: they hold clicks until React has hydrated, which auto-waiting does not cover; the warm-up now runs only against `next dev`
 
 Frontend:
 
 - [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
 - [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
-- [ ] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
+- [x] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
 - [ ] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
 - [ ] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop
 - [ ] Return structured parts instead of parsing formatted text (`size.replace("approx. ", "")`, the Slot label split at ", ", `splitMoney`); needed before the Filipino pass

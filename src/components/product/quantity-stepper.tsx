@@ -5,6 +5,8 @@ import { useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
 import { useEffect, useRef, type Ref } from "react";
 
+import { MAX_LINE_QUANTITY } from "@/modules/pricing";
+
 const SNAP = { type: "spring", visualDuration: 0.2, bounce: 0.1 } as const;
 // Long-press repeat (docs/05 section 6): wait, then step steadily.
 const REPEAT_DELAY = 400;
@@ -33,7 +35,7 @@ export function QuantityStepper({
   onChange,
   label,
   min = 0,
-  max = 99,
+  max = MAX_LINE_QUANTITY,
   variant = "filled",
   plusRef,
   decreaseLabel = "Remove one",

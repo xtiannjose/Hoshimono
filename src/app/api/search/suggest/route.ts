@@ -4,6 +4,7 @@ import {
   searchSuggestions,
 } from "@/app/_data/storefront";
 import { formatMoney } from "@/lib/money";
+import { productName } from "@/lib/product-name";
 import { clientIp, takeToken } from "@/lib/rate-limit";
 import { categoryHref, productHref, searchHref } from "@/lib/routes";
 
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
   const suggestions: Suggestion[] = [
     ...found.products.map((p) => ({
       kind: "product" as const,
-      label: p.brand ? `${p.brand} ${p.name}` : p.name,
+      label: productName(p),
       detail: formatMoney(p.priceCents),
       href: productHref(p),
     })),

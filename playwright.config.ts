@@ -9,7 +9,8 @@ const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "e2e",
-  globalSetup: "./e2e/warm-up.ts",
+  // Only `next dev` compiles routes on first visit; a production build needs no warm-up.
+  globalSetup: process.env.E2E_PROD ? undefined : "./e2e/warm-up.ts",
   fullyParallel: true,
   // The dev server compiles each route on first visit; give it time.
   expect: { timeout: 15_000 },

@@ -7,6 +7,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { prorate } from "@/lib/money";
+import { isUuid } from "@/lib/uuid";
 
 import { getCategory } from "./categories";
 
@@ -111,11 +112,9 @@ function toSummary(row: SummaryRow): ProductSummary {
   };
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 /** Active Products by id, in the order given. Unknown or hidden ids are skipped. */
 export async function loadSummaries(ids: string[]): Promise<ProductSummary[]> {
-  const valid = ids.filter((id) => UUID.test(id));
+  const valid = ids.filter((id) => isUuid(id));
   if (valid.length === 0) return [];
   const rows = await db.product.findMany({
     where: { id: { in: valid }, status: "active" },
@@ -127,7 +126,7 @@ export async function loadSummaries(ids: string[]): Promise<ProductSummary[]> {
 
 /** An active Product, or null. The id resolves it; the URL slug is cosmetic. */
 export async function getProduct(id: string): Promise<ProductDetail | null> {
-  if (!UUID.test(id)) return null;
+  if (!isUuid(id)) return null;
   const row = await db.product.findFirst({
     where: { id, status: "active" },
     select: {

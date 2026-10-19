@@ -20,6 +20,7 @@ import { CartSummary } from "@/components/cart/cart-summary";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { productName } from "@/lib/product-name";
 import type { CartView } from "@/modules/cart";
 import type { AddressView } from "@/modules/customers";
 
@@ -380,9 +381,7 @@ export function CheckoutForm({
             const total = priced.lines.find(
               (p) => p.productId === line.product.id
             );
-            const name = line.product.brand
-              ? `${line.product.brand} ${line.product.name}`
-              : line.product.name;
+            const name = productName(line.product);
             return (
               <li
                 key={line.product.id}

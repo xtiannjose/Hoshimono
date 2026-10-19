@@ -2,7 +2,6 @@
 // Owns Hub, Zone, Slot and Slot holds, and resolves an Address to a Zone.
 export { getDefaultHubId } from "./internal/hubs";
 export {
-  getZone,
   listCoverage,
   listServiceAreas,
   resolveZone,

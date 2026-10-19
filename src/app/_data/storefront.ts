@@ -1,6 +1,6 @@
 // Cached storefront reads. Pages call these, not the modules directly, so
-// caching lives in one place. Tags let admin edits refresh the shop
-// (Batch 1.5); the "minutes" profile refreshes within a minute regardless.
+// caching lives in one place. Tags let admin edits refresh the shop at
+// once; the "minutes" profile refreshes within a minute regardless.
 import { cacheLife, cacheTag } from "next/cache";
 
 import {

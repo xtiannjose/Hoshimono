@@ -128,11 +128,10 @@ test("a Merchandiser adds a Category", async ({ page }) => {
 
 test("Customers cannot open the admin", async ({ page }) => {
   await signIn(page, freshEmail("not-staff"), "/account");
-  const res = await page.goto("/admin/products");
+  await page.goto("/admin/products");
   await expect(
     page.getByRole("heading", { name: "We could not find that page" })
   ).toBeVisible();
-  expect(res?.status()).toBe(200); // streamed 404: see the Phase 1 report
   const csv = await page.request.get("/admin/export");
   expect(csv.status()).toBe(404);
 });

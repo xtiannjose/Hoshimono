@@ -62,7 +62,7 @@ function Field({
 /**
  * Add or edit a delivery address (PRD ACC-2, CHK-1). Cities come from the
  * Zones we serve; the server checks the Zone again before saving.
- * shortcut: no map pin until a maps provider is chosen (Batch 2.3 deferral).
+ * shortcut: no map pin until a maps provider is chosen.
  */
 export function AddressForm({
   values,

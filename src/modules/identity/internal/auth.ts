@@ -5,15 +5,15 @@ import { magicLink } from "better-auth/plugins/magic-link";
 import { phoneNumber } from "better-auth/plugins/phone-number";
 
 import { db } from "@/lib/db";
-import { consoleMessagesAllowed } from "@/lib/test-mode";
-import { sendSignInCode } from "@/modules/notifications";
-
-import { rememberLink } from "./dev-mailbox";
+import { sendSignInCode, sendSignInLink } from "@/modules/notifications";
 
 /** Google sign-in shows only once its OAuth keys are set (owner track). */
 export function googleEnabled(): boolean {
   return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
+
+/** A text-message sign-in code works for this long. */
+const SIGN_IN_CODE_MINUTES = 5;
 
 export const auth = betterAuth({
   database: prismaAdapter(db, { provider: "postgresql" }),
@@ -56,23 +56,17 @@ export const auth = betterAuth({
       // links is limited by our own Server Action (ADR 0006).
       rateLimit: { window: 60, max: 60 },
       async sendMagicLink({ email, url }) {
-        // shortcut: no email provider yet, links go to the dev server log
-        // until Resend is set up. Never log a live link in production.
-        if (!consoleMessagesAllowed()) {
-          throw new Error("Email delivery is not configured");
-        }
-        console.info(`[dev] Sign-in link for ${email}: ${url}`);
-        rememberLink(email, url);
+        await sendSignInLink(email, url);
       },
     }),
     phoneNumber({
       otpLength: 6,
-      expiresIn: 300,
+      expiresIn: SIGN_IN_CODE_MINUTES * 60,
       allowedAttempts: 3,
       // Callers pass +639XXXXXXXXX (normalizePhone).
       phoneNumberValidator: (phone) => /^\+639\d{9}$/.test(phone),
       async sendOTP({ phoneNumber: phone, code }) {
-        await sendSignInCode(phone, code);
+        await sendSignInCode(phone, code, SIGN_IN_CODE_MINUTES);
       },
       // First sign-in by mobile creates the account; the email is a
       // stand-in that is never shown or used for mail.

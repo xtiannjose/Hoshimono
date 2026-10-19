@@ -1,51 +1,32 @@
 import type { Prisma } from "@/generated/prisma/client";
-import { db } from "@/lib/db";
+import { db, type Client } from "@/lib/db";
 
-/**
- * Append-only record of an admin write: who, what, before, after
- * (docs/03-ARCHITECTURE.md section 12).
- */
-export async function recordAudit(entry: {
+export type AuditEntry = {
   staffId: string;
   action: string;
   entity: string;
   entityId: string;
   before?: unknown;
   after?: unknown;
-}): Promise<void> {
-  const json = (v: unknown) =>
-    v === undefined
-      ? undefined
-      : (JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue);
-  await db.auditLog.create({
-    data: {
-      staffId: entry.staffId,
-      action: entry.action,
-      entity: entry.entity,
-      entityId: entry.entityId,
-      before: json(entry.before),
-      after: json(entry.after),
-    },
-  });
-}
+};
 
-/** Several audit entries in one write, such as one per imported Product. */
+// null and undefined both store nothing: a nullable JSON column takes no bare null.
+const json = (value: unknown) =>
+  value == null
+    ? undefined
+    : (JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue);
+
+/**
+ * Append-only record of admin writes: who, what, before, after
+ * (docs/03-ARCHITECTURE.md section 12). Pass the write's transaction so
+ * the change and its record commit together.
+ */
 export async function recordAudits(
-  entries: {
-    staffId: string;
-    action: string;
-    entity: string;
-    entityId: string;
-    before?: unknown;
-    after?: unknown;
-  }[]
+  entries: AuditEntry[],
+  client: Client = db
 ): Promise<void> {
-  const json = (v: unknown) =>
-    v === undefined || v === null
-      ? undefined
-      : (JSON.parse(JSON.stringify(v)) as Prisma.InputJsonValue);
   if (entries.length === 0) return;
-  await db.auditLog.createMany({
+  await client.auditLog.createMany({
     data: entries.map((e) => ({
       staffId: e.staffId,
       action: e.action,

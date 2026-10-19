@@ -59,11 +59,16 @@ export async function releaseStock(
     lines,
   }: { hubId: string; orderId: string; lines: StockLine[] }
 ): Promise<void> {
+  // No clamp at 0: releasing more than was reserved breaks the stock_levels
+  // check and throws, so an accounting bug surfaces instead of hiding.
   for (const { productId, quantity } of sorted(lines)) {
-    await tx.$executeRaw`
+    const updated = await tx.$executeRaw`
       UPDATE stock_levels
-      SET reserved = GREATEST(reserved - ${quantity}, 0), updated_at = now()
+      SET reserved = reserved - ${quantity}, updated_at = now()
       WHERE product_id = ${productId}::uuid AND hub_id = ${hubId}::uuid`;
+    if (updated !== 1) {
+      throw new Error(`No stock level for ${productId} at hub ${hubId}`);
+    }
   }
   await tx.stockMovement.createMany({
     data: lines.map((l) => ({

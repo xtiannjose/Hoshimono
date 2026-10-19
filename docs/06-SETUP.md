@@ -180,7 +180,7 @@ git status          # review before committing; confirm .env.local is not listed
 Commit only when you are ready (Conventional Commits, for example `chore: scaffold next.js app`). Then:
 
 1. Run the `setup-pre-commit` skill in Claude Code to install Husky, lint-staged (Prettier), type checking and tests on commit.
-2. Agent sessions are guarded by `.claude/hooks/block-dangerous-git.mjs` (installed with the `git-guardrails-claude-code` skill, then narrowed on 2026-10-17 at the owner's request). Agents may push only as `git push [-u] origin <feature-branch>`. Pushes to `main`, force pushes, branch deletes, `reset --hard`, `clean -f`, `branch -D` and `gh pr merge` stay blocked, so the owner merges every pull request. `tests/guardrail.test.ts` pins these rules.
+2. Agent sessions are guarded by `.claude/hooks/block-dangerous-git.mjs` (installed with the `git-guardrails-claude-code` skill, then narrowed on 2026-10-17 at the owner's request). Agents may push only as `git push [-u] origin <feature-branch>`. Pushes to `main`, force pushes, branch deletes, `reset --hard`, `clean -f`, `branch -D` and `gh pr merge` stay blocked, so the owner merges every pull request. `.claude/hooks/block-dangerous-git.test.mjs` pins these rules (`npm run test:hooks`).
 3. Create the GitHub repository, add the remote, push `main`, enable branch protection (PRs required, CI must pass).
 4. Add `.github/workflows/ci.yml`: install, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Add the Playwright job from Phase 2.
 5. Import the repository in Vercel; every pull request now gets a preview deployment.

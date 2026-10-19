@@ -1,5 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { addDays, addMinutes } from "@/lib/dates";
 import { db } from "@/lib/db";
+import { isUuid } from "@/lib/uuid";
 
 /** A chosen Slot is kept for the cart this long (PRD CHK-2). */
 export const SLOT_HOLD_MINUTES = 10;
@@ -36,9 +38,6 @@ type SlotRequest = {
   now: Date;
 };
 
-const addMinutes = (date: Date, minutes: number) =>
-  new Date(date.getTime() + minutes * 60_000);
-
 type SlotRow = {
   id: string;
   date: Date;
@@ -72,7 +71,7 @@ export async function listSlots(
     FROM slots s
     WHERE s.hub_id = ${hubId}::uuid
       AND s.starts_at > ${addMinutes(now, SLOT_CUTOFF_MINUTES)}
-      AND s.starts_at < ${addMinutes(now, (options.days ?? 7) * 24 * 60)}
+      AND s.starts_at < ${addDays(now, options.days ?? BOOKING_DAYS)}
     ORDER BY s.starts_at`;
   return rows.map((row) => {
     const left = row.capacity - row.booked - row.held_by_others;
@@ -100,7 +99,7 @@ async function lockSlot(
   >`
     SELECT capacity, booked, starts_at FROM slots
     WHERE id = ${slotId}::uuid AND hub_id = ${hubId}::uuid
-      AND starts_at < ${addMinutes(now, BOOKING_DAYS * 24 * 60)}
+      AND starts_at < ${addDays(now, BOOKING_DAYS)}
     FOR UPDATE`;
   if (!slot) return null;
   const [{ others, mine }] = await tx.$queryRaw<
@@ -122,8 +121,7 @@ export async function holdSlot(
   slotId: string,
   { hubId, now = new Date() }: { hubId: string; now?: Date }
 ): Promise<HoldResult> {
-  const UUID = /^[0-9a-f-]{36}$/i;
-  if (!UUID.test(slotId)) return { ok: false, reason: "not_found" };
+  if (!isUuid(slotId)) return { ok: false, reason: "not_found" };
   return db.$transaction(async (tx) => {
     const slot = await lockSlot(tx, { slotId, cartId, hubId, now });
     if (!slot) return { ok: false, reason: "not_found" } as const;
@@ -174,17 +172,22 @@ export async function bookSlot(
   return true;
 }
 
-/** Give a booked place back, such as when an Order is cancelled. */
+/**
+ * Give a booked place back, such as when an Order is cancelled. A release
+ * with nothing booked breaks the slots check and throws, so an accounting
+ * bug surfaces instead of hiding.
+ */
 export async function releaseSlot(
   tx: Prisma.TransactionClient,
   slotId: string
 ): Promise<void> {
-  await tx.$executeRaw`
+  const updated = await tx.$executeRaw`
     UPDATE slots SET booked = booked - 1, updated_at = now()
-    WHERE id = ${slotId}::uuid AND booked > 0`;
+    WHERE id = ${slotId}::uuid`;
+  if (updated !== 1) throw new Error(`No Slot ${slotId}`);
 }
 
-/** Delete lapsed holds (cron, Batch 2.5). Returns how many went. */
+/** Delete lapsed holds (cron tick). Returns how many went. */
 export async function purgeExpiredHolds(now = new Date()): Promise<number> {
   const { count } = await db.slotHold.deleteMany({
     where: { expiresAt: { lte: now } },

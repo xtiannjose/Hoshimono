@@ -4,6 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "../src/generated/prisma/client";
 import { seedDatabase } from "../prisma/seed-data";
+import { resetDb } from "../tests/db/helpers";
 
 const url = process.env.DATABASE_URL ?? "";
 if (!/_e2e(\?|$)/.test(url))
@@ -13,13 +14,7 @@ const db = new PrismaClient({
   adapter: new PrismaPg({ connectionString: url }),
 });
 try {
-  await db.$executeRawUnsafe(`
-    DO $$ DECLARE t text;
-    BEGIN
-      SELECT string_agg(format('%I', tablename), ', ') INTO t
-      FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations';
-      EXECUTE 'TRUNCATE ' || t || ' CASCADE';
-    END $$;`);
+  await resetDb(db);
   await seedDatabase(db);
 } finally {
   await db.$disconnect();

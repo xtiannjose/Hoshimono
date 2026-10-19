@@ -1,6 +1,6 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 
-/** Plain GET form: works without JavaScript; Batch 1.3 adds suggestions. */
+/** Plain GET form that works without JavaScript; the header SearchBox adds suggestions. */
 export function SearchForm({
   id,
   className = "",

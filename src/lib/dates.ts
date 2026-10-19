@@ -1,6 +1,16 @@
 // Store UTC, show Asia/Manila (CLAUDE.md). Manila has no daylight saving.
 const ZONE = "Asia/Manila";
 
+/** `date` moved by `minutes`; negative goes back. */
+export function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+/** `date` moved by whole 24-hour days; safe because Manila has no DST. */
+export function addDays(date: Date, days: number): Date {
+  return addMinutes(date, days * 24 * 60);
+}
+
 /** "2026-10-19": the Manila calendar date of an instant. */
 export function manilaDate(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -38,7 +48,7 @@ function dayLabel(date: Date): string {
 function dayName(date: Date, now: Date): string {
   const target = manilaDate(date);
   if (target === manilaDate(now)) return "Today";
-  if (target === manilaDate(new Date(now.getTime() + 86_400_000))) {
+  if (target === manilaDate(addDays(now, 1))) {
     return "Tomorrow";
   }
   return dayLabel(date);

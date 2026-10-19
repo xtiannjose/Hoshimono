@@ -15,11 +15,12 @@ import {
   updateProduct,
 } from "@/modules/catalog";
 import { parseCsv } from "@/lib/csv";
+import { db as appDb } from "@/lib/db";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
 
-// Admin catalogue writes (Batch 1.4, PRD ADM-1 and ADM-2).
+// Admin catalogue writes (PRD ADM-1 and ADM-2).
 const db = createTestDb();
 const MEDIA = path.join(process.cwd(), "public", "media", "test");
 process.env.MEDIA_LOCAL_DIR = MEDIA;
@@ -305,6 +306,32 @@ describe("createProduct", () => {
         },
       ],
     });
+  });
+});
+
+describe("catalogue writes inside a caller's transaction", () => {
+  it("are undone when that transaction fails, as an admin audit row would", async () => {
+    const vinegar =
+      "Coconut Vinegar,Datu Puti,sauces-and-condiments,1000,ml,59.50,,vatable,no,ambient,active,,,,";
+    await expect(
+      appDb.$transaction(async (tx) => {
+        expect(
+          await createCategory({ name: "Pantry Staples" }, tx)
+        ).toMatchObject({ ok: true });
+        expect(
+          await importProductsCsv([HEADER, vinegar].join("\n"), tx)
+        ).toMatchObject({ ok: true, created: 1 });
+        throw new Error("audit row failed");
+      })
+    ).rejects.toThrow("audit row failed");
+    expect(
+      await db.category.findUnique({ where: { slug: "pantry-staples" } })
+    ).toBeNull();
+    expect(
+      await db.product.findUnique({
+        where: { slug: "datu-puti-coconut-vinegar" },
+      })
+    ).toBeNull();
   });
 });
 

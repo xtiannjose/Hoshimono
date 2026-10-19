@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  addMoney,
-  formatMoney,
-  parseMoney,
-  percentOf,
-  prorate,
-} from "@/lib/money";
+import { addMoney, formatMoney, parseMoney, prorate } from "@/lib/money";
 
 describe("formatMoney", () => {
   it("shows pesos with grouping and two decimals", () => {
@@ -74,32 +68,6 @@ describe("addMoney", () => {
   });
 });
 
-describe("percentOf", () => {
-  it("takes a percentage given in basis points (1200 is 12%)", () => {
-    expect(percentOf(10000, 1200)).toBe(1200);
-    expect(percentOf(5900, 1200)).toBe(708);
-    expect(percentOf(0, 1200)).toBe(0);
-  });
-
-  it("rounds half up, once", () => {
-    expect(percentOf(5, 1000)).toBe(1);
-    expect(percentOf(15, 1000)).toBe(2);
-    expect(percentOf(14, 1000)).toBe(1);
-    expect(percentOf(4, 1000)).toBe(0);
-  });
-
-  it("mirrors for negatives so a refund equals the original charge", () => {
-    expect(percentOf(-5, 1000)).toBe(-1);
-    expect(percentOf(-14, 1000)).toBe(-1);
-    expect(percentOf(-5900, 1200)).toBe(-708);
-  });
-
-  it("rejects non-integer inputs", () => {
-    expect(() => percentOf(59.5, 1200)).toThrow(RangeError);
-    expect(() => percentOf(5900, 12.5)).toThrow(RangeError);
-  });
-});
-
 describe("prorate", () => {
   it("scales centavos by a ratio, rounding half up once", () => {
     // ₱95.00 per kg, 1,250 g picked: ₱118.75
@@ -111,6 +79,12 @@ describe("prorate", () => {
     // exactly half a centavo rounds up
     expect(prorate(1, 1, 2)).toBe(1);
     expect(prorate(3, 1, 2)).toBe(2);
+  });
+
+  it("mirrors negatives, so a refund equals its charge", () => {
+    expect(prorate(-9500, 1250, 1000)).toBe(-11875);
+    expect(prorate(-3, 1, 2)).toBe(-2);
+    expect(Object.is(prorate(-1, 1, 4), 0)).toBe(true);
   });
 
   it("rejects non-integers and a zero or negative denominator", () => {
