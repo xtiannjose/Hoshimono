@@ -221,8 +221,8 @@ Refuted during verification, so not changed: weighed items sold per piece (unrea
 **Batch 3.1 Provider and ledger** (W8). Stack: Xendit or PayMongo SDK, route handlers. Skills: `research`, `tdd`, `domain-modeling`.
 
 - [x] Provider chosen; [ADR 0003](adr/0003-payment-provider-interface.md) updated. PayMongo, chosen 19 Oct on fees, signed webhooks and GCash partial refunds; the test-mode trial still checks payouts, verification time, card hold length and refund fees
-- [ ] `PaymentProvider` adapter: create checkout, verify webhook, parse event, capture, refund
-- [ ] `payment_events` ledger with unique provider event id; duplicate-webhook tests
+- [x] `PaymentProvider` adapter: create checkout, verify webhook, parse event, capture, refund. PayMongo adapter, requests checked against a fake HTTP layer; PayMongo test mode confirms them in Batch 3.2
+- [x] `payment_events` ledger with unique provider event id; duplicate-webhook tests. `handleWebhook` verifies the HMAC signature first, records each event once (`ON CONFLICT DO NOTHING`), refuses a paid amount that differs from the Payment; route `/api/webhooks/[provider]`
 
 **Batch 3.2 Checkout integration** (W8 to W9). Stack: hosted checkout, cron. Skills: `tdd`, `playwright-cli`.
 
