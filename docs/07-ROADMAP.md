@@ -67,17 +67,21 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 
 ## 4. Decisions due along the way
 
-| Decision               | Options                                                                                       | Decide in |
-| ---------------------- | --------------------------------------------------------------------------------------------- | --------- |
-| Postgres host          | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                             | Done      |
-| Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
-| Maps and geocoding     | Google Maps, Mapbox or similar                                                                | Batch 2.3 |
-| SMS provider           | Semaphore or Twilio                                                                           | Batch 2.5 |
-| Rate-limit store       | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6 |
-| Payment provider       | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1 |
-| Weighed-item charging  | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3 |
-| PWA tooling and push   | Service worker library; whether to send web push                                              | Batch 5.5 |
-| Load-test tool         | k6, Artillery or similar                                                                      | Batch 6.1 |
+| Decision                                                        | Options                                                                                       | Decide in   |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- |
+| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                             | Done        |
+| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4   |
+| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                | Batch 2.3   |
+| SMS provider                                                    | Semaphore or Twilio                                                                           | Batch 2.5   |
+| Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6   |
+| Payment provider                                                | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1   |
+| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3   |
+| Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)         | Done        |
+| VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                        | Batch 4.4   |
+| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts, ADR 0007 item 3                                              | Soft launch |
+| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0007 item 4                              | Phase 6     |
+| PWA tooling and push                                            | Service worker library; whether to send web push                                              | Batch 5.5   |
+| Load-test tool                                                  | k6, Artillery or similar                                                                      | Batch 6.1   |
 
 Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
@@ -240,7 +244,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 
 **Carried over from the Phase 1 and 2 review** (18 Oct):
 
-- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5): measure on a Vercel preview, then self-host subset fonts. Blocked: Vercel account
+- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5). No longer blocked: the CI `lighthouse` job measures a production build on a clean runner (`lighthouserc.json`; performance warns until it passes). Local medians on 19 Oct: 79 Home, 81 Category, 85 Product; accessibility, best practices and SEO 100. Cause, measured on Phase 1: about 190 KB of JavaScript runs before the first paint and the simulated phone charges it to LCP; with JavaScript blocked the pages score 96 to 99, with fonts blocked only a few points better, so subset fonts alone cannot reach 90. Fix: the Add button arrives as server HTML and loads the stepper and Motion on first tap; header search loads on first use. Then switch the CI assertion from warn to error
 - [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
 - [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
 - [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
