@@ -58,7 +58,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   if (!found || path.join("/") !== slugs.join("/"))
     return (
       <div className="wrap">
-        <Suspense fallback={<ListingSkeleton />}>
+        <Suspense fallback={null}>
           <NotHere
             href={found && categoryHref(path)}
             searchParams={searchParams}
@@ -76,36 +76,35 @@ export default async function CategoryPage({ params, searchParams }: Props) {
     { name: found.name, href },
   ];
   // The heading renders in the page shell, so it paints first (LCP). The
-  // rest depends on the query and streams; its parts share one listing.
+  // count, sort and listing depend on the query and stream in together,
+  // filling the grid cells around it.
   const listing = loadListing(found.slug, href, searchParams);
 
   return (
     <div className="wrap">
       <Breadcrumb items={crumbs} />
-      <div className="flex flex-wrap items-end justify-between gap-6 pt-1 pb-6">
-        <div>
-          <h1 className="type-h1">{found.name}</h1>
-          <Suspense
-            fallback={<p className="text-muted-foreground mt-1">&nbsp;</p>}
-          >
-            <ProductCount listing={listing} />
-          </Suspense>
-        </div>
-        <Suspense fallback={<div className="h-11" />}>
-          <ListingSort listing={listing} href={href} />
+      {/* Phones: heading, count, then sort on its own row (it never fits
+          beside a title). From sm up: sort beside heading and count. */}
+      <div className="grid items-end gap-x-6 pt-1 sm:grid-cols-[1fr_auto]">
+        <h1 className="type-h1 sm:col-start-1 sm:row-start-1">{found.name}</h1>
+        <Suspense fallback={<ListingFallback />}>
+          <CategoryListing
+            listing={listing}
+            found={found}
+            path={path}
+            href={href}
+          />
         </Suspense>
       </div>
-      <Suspense fallback={<ProductGridSkeleton count={8} />}>
-        <CategoryListing
-          listing={listing}
-          found={found}
-          path={path}
-          href={href}
-        />
-      </Suspense>
     </div>
   );
 }
+
+// Grid cells shared by the streamed listing and its fallback.
+const COUNT_CELL = "text-muted-foreground mt-1 sm:col-start-1 sm:row-start-2";
+const SORT_CELL =
+  "mt-6 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:self-end";
+const LIST_CELL = "pt-6 sm:col-span-2";
 
 // shortcut: inside Suspense, so a missing Category streams a noindex
 // not-found page with status 200 (see the Product page).
@@ -141,34 +140,6 @@ async function loadListing(
   return { query, filters, page, min, max, list, stock, sort };
 }
 
-async function ProductCount({ listing }: { listing: Promise<Listing> }) {
-  const { list } = await listing;
-  return (
-    <p className="text-muted-foreground mt-1">
-      {list.total} {list.total === 1 ? "product" : "products"}
-    </p>
-  );
-}
-
-async function ListingSort({
-  listing,
-  href,
-}: {
-  listing: Promise<Listing>;
-  href: string;
-}) {
-  const { query, sort } = await listing;
-  // Sorting keeps the filters; a new sort starts again at page 1.
-  const keep = Object.entries(query).flatMap(([name, v]) =>
-    name === "sort" || name === "page"
-      ? []
-      : (Array.isArray(v) ? v : v ? [v] : []).map(
-          (one) => [name, one] as [string, string]
-        )
-  );
-  return <SortSelect action={href} value={sort} keep={keep} />;
-}
-
 async function CategoryListing({
   listing,
   found,
@@ -181,6 +152,14 @@ async function CategoryListing({
   href: string;
 }) {
   const { query, filters, page, min, max, list, stock, sort } = await listing;
+  // Sorting keeps the filters; a new sort starts again at page 1.
+  const keep = Object.entries(query).flatMap(([name, v]) =>
+    name === "sort" || name === "page"
+      ? []
+      : (Array.isArray(v) ? v : v ? [v] : []).map(
+          (one) => [name, one] as [string, string]
+        )
+  );
   const filtered =
     (filters.brands?.length ?? 0) + (filters.dietaryTags?.length ?? 0) > 0 ||
     min !== "" ||
@@ -205,65 +184,72 @@ async function CategoryListing({
     />
   );
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[248px_1fr]">
-      {/* Phones: filters fold away; desktop: a sticky sidebar. */}
-      <details className="rounded-card border-border bg-card border px-4 py-2 lg:hidden">
-        <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold">
-          <FunnelSimpleIcon size={20} aria-hidden />
-          Filters
-        </summary>
-        <div className="pt-3 pb-2">{filterForm("filters-phone")}</div>
-      </details>
-      <aside
-        aria-label="Filters"
-        className="sticky top-[136px] hidden lg:block"
+    <>
+      <p className={COUNT_CELL}>
+        {list.total} {list.total === 1 ? "product" : "products"}
+      </p>
+      <div className={SORT_CELL}>
+        <SortSelect action={href} value={sort} keep={keep} />
+      </div>
+      <div
+        className={`${LIST_CELL} grid items-start gap-8 lg:grid-cols-[248px_1fr]`}
       >
-        {filterForm("filters-wide")}
-      </aside>
+        {/* Phones: filters fold away; desktop: a sticky sidebar. */}
+        <details className="rounded-card border-border bg-card border px-4 py-2 lg:hidden">
+          <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold">
+            <FunnelSimpleIcon size={20} aria-hidden />
+            Filters
+          </summary>
+          <div className="pt-3 pb-2">{filterForm("filters-phone")}</div>
+        </details>
+        <aside
+          aria-label="Filters"
+          className="sticky top-[136px] hidden lg:block"
+        >
+          {filterForm("filters-wide")}
+        </aside>
 
-      <section aria-label="Products">
-        <ProductGrid
-          products={list.items}
-          stock={stock}
-          priorityCount={4}
-          empty={
-            filtered ? (
-              <p>
-                No products match these filters.{" "}
-                <Link
-                  href={href}
-                  className="font-semibold underline underline-offset-4"
-                >
-                  Clear filters
-                </Link>
-              </p>
-            ) : (
-              <p>Nothing here yet. We are stocking this aisle soon.</p>
-            )
-          }
-        />
-        <Pagination
-          page={page}
-          pageSize={PAGE_SIZE}
-          total={list.total}
-          href={(p) => withParams(href, query, { page: String(p) })}
-        />
-      </section>
-    </div>
+        <section aria-label="Products">
+          <ProductGrid
+            products={list.items}
+            stock={stock}
+            priorityCount={4}
+            empty={
+              filtered ? (
+                <p>
+                  No products match these filters.{" "}
+                  <Link
+                    href={href}
+                    className="font-semibold underline underline-offset-4"
+                  >
+                    Clear filters
+                  </Link>
+                </p>
+              ) : (
+                <p>Nothing here yet. We are stocking this aisle soon.</p>
+              )
+            }
+          />
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={list.total}
+            href={(p) => withParams(href, query, { page: String(p) })}
+          />
+        </section>
+      </div>
+    </>
   );
 }
 
-function ListingSkeleton() {
+function ListingFallback() {
   return (
-    <div
-      role="status"
-      aria-busy="true"
-      aria-label="Loading products"
-      className="pt-5"
-    >
-      <div className="rounded-pill bg-muted h-5 w-48 animate-pulse" />
-      <div className="rounded-pill bg-muted mt-6 mb-6 h-12 w-64 animate-pulse" />
-      <ProductGridSkeleton count={8} />
-    </div>
+    <>
+      <p className={COUNT_CELL}>&nbsp;</p>
+      <div className={`${SORT_CELL} h-11`} />
+      <div className={LIST_CELL}>
+        <ProductGridSkeleton count={8} />
+      </div>
+    </>
   );
 }
