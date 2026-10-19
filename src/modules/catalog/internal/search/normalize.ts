@@ -217,7 +217,8 @@ function isOneSwap(a: string, b: string): boolean {
 
 /**
  * How far a typo may be from the word it means. Words of 4 letters or fewer
- * only forgive a swap ("mlik"), because one edit turns "ham" into "jam".
+ * only forgive a swap ("mlik") or one missing letter ("gtas"), never a wrong
+ * letter, because one edit turns "ham" into "jam".
  */
 function allowedEdits(length: number): number {
   return length <= 8 ? 1 : 2;
@@ -244,7 +245,9 @@ export function correctTerm(
   for (const [word, uses] of vocabulary) {
     const distance = editDistanceWithin(term, word, limit);
     if (distance > limit) continue;
-    if (term.length <= 4 && !isOneSwap(term, word)) continue;
+    // Within one edit and one letter longer: exactly one letter missing.
+    const missingOne = word.length === term.length + 1;
+    if (term.length <= 4 && !isOneSwap(term, word) && !missingOne) continue;
     if (
       !best ||
       distance < best.distance ||

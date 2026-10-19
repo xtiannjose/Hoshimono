@@ -311,6 +311,12 @@ describe("searchProducts", () => {
     expect(bananna.total).toBeGreaterThan(0);
 
     expect((await search("fresh mlik")).correctedQuery).toBe("fresh milk");
+
+    // A short word missing one letter, common on a phone keyboard.
+    const gtas = await search("gtas");
+    expect(gtas.correctedQuery).toBe("gatas");
+    expect(gtas.items.map((p) => p.name)).toContain("Fresh Milk");
+    expect((await search("mlk")).correctedQuery).toBe("milk");
   });
 
   it("returns an empty result, not an error, when nothing matches", async () => {
