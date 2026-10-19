@@ -67,17 +67,21 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 
 ## 4. Decisions due along the way
 
-| Decision               | Options                                                                                       | Decide in |
-| ---------------------- | --------------------------------------------------------------------------------------------- | --------- |
-| Postgres host          | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                             | Done      |
-| Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
-| Maps and geocoding     | Google Maps, Mapbox or similar                                                                | Batch 2.3 |
-| SMS provider           | Semaphore or Twilio                                                                           | Batch 2.5 |
-| Rate-limit store       | Upstash Redis, Vercel KV or Postgres-based                                                    | Batch 2.6 |
-| Payment provider       | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1 |
-| Weighed-item charging  | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3 |
-| PWA tooling and push   | Service worker library; whether to send web push                                              | Batch 5.5 |
-| Load-test tool         | k6, Artillery or similar                                                                      | Batch 6.1 |
+| Decision                                                        | Options                                                                                                             | Decide in                 |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                                                   | Done                      |
+| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront                       | Batch 1.4                 |
+| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                                      | Batch 2.3                 |
+| SMS provider                                                    | Semaphore or Twilio                                                                                                 | Batch 2.5                 |
+| Rate-limit store                                                | Upstash Redis, Vercel KV or Postgres-based                                                                          | Batch 2.6                 |
+| Pricing and VAT rules                                           | **Decided provisionally**, see [ADR 0006](adr/0006-pricing-vat-and-thresholds.md); its "To confirm" items stay open | Batch 2.1                 |
+| VAT registration and Tax Class per Product                      | Accountant confirms ADR 0006 rules 1 and 2 (frozen, dried and salted raw food, salt, raw sugar)                     | Before Batch 4.4 receipts |
+| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts in ADR 0006 rule 12                                                                 | Before soft launch        |
+| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0006 rule 15                                                   | Before Phase 6            |
+| Payment provider                                                | Xendit or PayMongo (sandbox evaluation)                                                                             | Batch 3.1                 |
+| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                                                   | Batch 3.3                 |
+| PWA tooling and push                                            | Service worker library; whether to send web push                                                                    | Batch 5.5                 |
+| Load-test tool                                                  | k6, Artillery or similar                                                                                            | Batch 6.1                 |
 
 Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
@@ -146,9 +150,11 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] Sitemaps (static, products), `robots.txt`, canonical URLs, Open Graph images
 - [x] Tag-based revalidation so admin edits reach the storefront within a minute (`updateTag` in every admin action: immediate)
-- [ ] Lighthouse budget met on Home, Category, Product. Not yet: median mobile performance 78 (Home), 79 (Category), 84 (Product) on the local dev machine under load; accessibility, best practices and SEO 100 on all three. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
+- [ ] Lighthouse budget met on Home, Category, Product. **Moved to Batch 2.2 (owner decision, 2026-10-19).** Production build, median mobile performance 80 (Home), 80 (Category), 83 (Product); accessibility, best practices and SEO 100. Cause: about 190 KB of JavaScript (React and Next.js about 130 KB, Motion about 40 KB, one Add button and stepper hydrated per card) runs before the first paint, and Lighthouse's simulated phone charges it all to LCP (4.1 s). With JavaScript blocked the same pages score 96 to 99; with fonts blocked only a few points better, so self-hosting fonts alone cannot reach 90. Lighthouse CI now runs on every PR (`lighthouserc.json`; performance warns until 2.2). Re-measure once real Product photos exist
 
 **Exit criteria:** a non-developer imports a 500-row CSV, edits a Product in admin, and sees the change on the storefront within a minute; search finds "gatas" and "milk" and tolerates one typo; Lighthouse performance 90+ on mobile profile for the three key pages.
+
+**Status 2026-10-19:** CSV import and edit covered by `e2e/admin.spec.ts` (green); one-typo search including a missing letter ("gtas") covered by `tests/db/catalog.test.ts`. Open: the owner's own non-developer run of the import, and Lighthouse (Batch 2.2).
 
 ## 7. Phase 2: Cart, checkout and cash on delivery (W5 to W7, 16 Nov to 4 Dec)
 
@@ -156,12 +162,13 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.1 Pricing core** (W5). Stack: pure TypeScript, Vitest. Skills: `tdd`, `grilling` for VAT and rounding rules.
 
-- [ ] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
+- [ ] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold; rules in [ADR 0006](adr/0006-pricing-vat-and-thresholds.md)
 
 **Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
 - [ ] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
 - [ ] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
+- [ ] Storefront JavaScript budget (moved from Batch 1.5): the Add button arrives as server HTML and loads the stepper and Motion on first tap; the cart drawer and header search load on first use. Done when Lighthouse CI shows mobile performance 90+ on Home, Category and Product and Category JavaScript is under 170 KB; then switch the CI performance assertion from warn to error
 
 **Batch 2.3 Delivery and addresses** (W6). Stack: atomic SQL updates, maps and geocoding. Skills: `tdd`, `codebase-design`.
 
