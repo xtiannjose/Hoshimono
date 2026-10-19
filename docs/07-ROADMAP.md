@@ -1,8 +1,49 @@
 # Roadmap and build plan
 
-Status: v0.2, 2026-10-17. This is the build plan: what we build, in which order, in which batch, with which tools. Tick items as they are finished. A phase is **done only when every exit criterion is observably met** (run the app and exercise the flow; passing tests alone are not enough).
+Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order, in which batch, with which tools. Tick items as they are finished. A phase is **done only when every exit criterion is observably met** (run the app and exercise the flow; passing tests alone are not enough).
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
+
+## 0. Where we are (updated 2026-10-19)
+
+Resume here: read this section, then the batch named first under Next.
+
+**Done**
+
+- Phases 0 to 2 are on `main`. Phase 2 reached `main` through PR #6: the stacked PRs #4 and #5 had merged into their base branches, not `main`.
+- Phase 1 close-out and Phase 2 follow-ups (PR #7): one-typo search, Lighthouse CI job, pricing rules ahead of their phase ([ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)).
+- Carry-over code health (PR #8): 11 of 12 items; the result convention for module errors waits on an owner decision.
+
+**Open pull requests** (merge in any order)
+
+- PR #9 `carry-over/storefront-perf`: Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
+- PR #10 `phase-3/provider-and-ledger`: Batch 3.1, PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
+
+**Current phase:** 3, Online payments. Batch 3.1 is in PR #10.
+
+**Next, in order**
+
+1. Owner merges PR #9 and PR #10; update local `main`.
+2. Batch 3.2 Checkout integration (section 8). It can be built against a fake provider; runs against PayMongo test mode need the keys below.
+3. Batch 3.3 Weighed items and refunds. Decide first: a card hold through the Payment Intent flow with PayMongo's card fields, or charge the estimate and refund the difference as for wallets (ADR 0003, consequences).
+4. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
+5. Phase 4, Operations (section 10).
+
+**Waiting on the owner**
+
+- PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET`, and "Hold then Capture" enabled on the account by PayMongo support. Start PayMongo business verification now: it takes weeks and blocks live payments.
+- A decision on one result convention for module errors (section 9).
+- Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
+- The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
+- Business tracks in section 11; after PayMongo: SMS sender ID, BIR and VAT, Hub, Riders.
+- Dev machine: `npm i -g @playwright/cli ui-ux-pro-max-cli`; Motion+ sign-in through `/mcp` only if the paid plan is wanted.
+
+**Local setup when resuming**
+
+- Docker container `hoshimono-db` holds `hoshimono`, `hoshimono_test` and `hoshimono_e2e`. After pulling: `npm install`, `npm run db:deploy`, `npm run db:seed`.
+- `.env.local` needs `CRON_SECRET`, and the PayMongo keys once they exist.
+- Stop the dev server before `npx playwright test`: both use `.next`.
+- Local Lighthouse swings by about 10 points on the same code; the CI `lighthouse` job is the measurement to trust.
 
 ## 1. Timeline at a glance
 
