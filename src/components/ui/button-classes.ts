@@ -6,3 +6,7 @@ export const PRIMARY_BUTTON =
 
 export const ICON_BUTTON =
   "inline-flex size-11 items-center justify-center rounded-pill text-foreground transition-colors hover:bg-muted active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-reduce:active:scale-100";
+
+/** The Product card's Add pill (docs/05 ProductCard). */
+export const ADD_BUTTON =
+  "rounded-pill bg-accent-soft text-foreground hover:bg-accent hover:text-on-accent inline-flex h-11 w-full items-center justify-center gap-1.5 text-[15px] font-bold transition-[background-color,transform] duration-150 active:scale-[0.97] motion-reduce:active:scale-100";

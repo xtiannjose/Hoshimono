@@ -2,9 +2,7 @@
 
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
-import { useReducedMotion } from "motion/react";
-import * as m from "motion/react-m";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { z } from "@/config/z";
@@ -15,6 +13,10 @@ import { setCartOpen, setCartView, useCart } from "./cart-store";
 
 // The drawer's code loads on the first open, not with every page.
 const CartDrawer = dynamic(() => import("./cart-drawer"), { ssr: false });
+// The count's bump brings Motion, so it loads once the Cart has items.
+const CountBadge = lazy(() => import("./count-badge"));
+const BADGE =
+  "rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums";
 
 /** Hands the server's Cart to the store once it streams in. */
 export function CartSync({ view }: { view: CartView }) {
@@ -33,7 +35,6 @@ export function CartButton() {
   const total = useCart((s) =>
     s.view ? s.view.priced.subtotalCents - s.view.priced.discountCents : 0
   );
-  const reduce = useReducedMotion();
   const drawerLoaded = useCart((s) => s.drawerLoaded);
 
   return (
@@ -50,17 +51,19 @@ export function CartButton() {
           <>
             <span className="sr-only">Cart:</span>
             <span className="tabular-nums">{formatMoney(total)}</span>
-            <m.span
-              key={count}
-              // Count bump (docs/05 section 7): enlarge, settle.
-              initial={reduce ? false : { scale: 1.18 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", visualDuration: 0.2, bounce: 0.1 }}
-              className="rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums"
+            <Suspense
+              fallback={
+                <span className={BADGE}>
+                  {count}
+                  <span className="sr-only">
+                    {" "}
+                    {count === 1 ? "item" : "items"}
+                  </span>
+                </span>
+              }
             >
-              {count}
-              <span className="sr-only"> {count === 1 ? "item" : "items"}</span>
-            </m.span>
+              <CountBadge count={count} className={BADGE} />
+            </Suspense>
           </>
         ) : (
           <span>Cart</span>
