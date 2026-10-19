@@ -41,23 +41,10 @@ export function addMoney(...amounts: number[]): number {
 }
 
 /**
- * `bps` of `cents`, in basis points (1200 is 12%). The one rounding rule for
- * percentages: round half up on the magnitude, so negatives mirror positives
- * and a refund always equals its charge. Apply per Order Line, then sum.
- */
-export function percentOf(cents: number, bps: number): number {
-  assertCentavos(cents);
-  assertCentavos(bps);
-  const rounded = Math.floor((Math.abs(cents) * Math.abs(bps) + 5000) / 10000);
-  const result = cents < 0 !== bps < 0 ? -rounded : rounded;
-  assertCentavos(result);
-  return result === 0 ? 0 : result; // normalise -0
-}
-
-/**
- * `cents` scaled by `numerator / denominator`, rounded half up once on the
- * magnitude (the same rule as percentOf). Used for Unit Prices and weighed
- * lines: price per kg times grams over 1,000.
+ * `cents` scaled by `numerator / denominator`. The one rounding rule: round
+ * half up once on the magnitude, so negatives mirror positives and a refund
+ * always equals its charge. Used for VAT (12/112), Unit Prices and weighed
+ * lines; apply per Order Line, then sum.
  */
 export function prorate(
   cents: number,

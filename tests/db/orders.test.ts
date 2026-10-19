@@ -8,7 +8,6 @@ import { holdSlot, resolveZone } from "@/modules/delivery";
 import { jobHandlers } from "@/app/api/cron/handlers";
 import {
   cancelOrder,
-  expireUnpaidOrders,
   getOrder,
   listOrders,
   MAX_COD_TOTAL_CENTS,
@@ -606,38 +605,6 @@ describe("order status", () => {
       expect(await transitionOrder(id, to, staff), to).toBe(true);
     }
     expect(await transitionOrder(id, "cancelled", staff)).toBe(false);
-  });
-
-  it("cancels online Orders left unpaid past the payment window", async () => {
-    const id = await placed();
-    await db.order.update({
-      where: { id },
-      data: { status: "pending_payment" },
-    });
-    const placedAt = (await db.order.findUniqueOrThrow({ where: { id } }))
-      .placedAt;
-    expect(
-      await expireUnpaidOrders(new Date(placedAt.getTime() + 14 * 60_000))
-    ).toBe(0);
-    expect(
-      await expireUnpaidOrders(new Date(placedAt.getTime() + 15 * 60_000))
-    ).toBe(1);
-    const order = await db.order.findUniqueOrThrow({
-      where: { id },
-      include: { statusEvents: true },
-    });
-    expect(order.status).toBe("cancelled");
-    expect(order.statusEvents.find((e) => e.to === "cancelled")).toMatchObject({
-      actorType: "system",
-      reason: "Payment not completed in time",
-    });
-    expect(
-      (
-        await db.stockLevel.findFirstOrThrow({
-          where: { productId: MILK, hubId: HUB },
-        })
-      ).reserved
-    ).toBe(0);
   });
 
   it("sends no confirmed notice for an Order cancelled before the job ran", async () => {

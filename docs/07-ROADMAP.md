@@ -273,7 +273,7 @@ Engineering:
 - [ ] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
 - [ ] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
 - [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code")
-- [ ] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
+- [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
 - [ ] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
 - [ ] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
 - [ ] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
@@ -283,7 +283,7 @@ Frontend:
 
 - [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
 - [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
-- [ ] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
+- [x] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
 - [ ] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
 - [ ] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop
 - [ ] Return structured parts instead of parsing formatted text (`size.replace("approx. ", "")`, the Slot label split at ", ", `splitMoney`); needed before the Filipino pass

@@ -48,13 +48,6 @@ export async function resolveZone(place: {
   return zone ? toMatch(zone) : null;
 }
 
-export async function getZone(zoneId: string): Promise<ZoneMatch | null> {
-  const zone = await db.zone.findFirst({
-    where: { id: zoneId, hub: { isActive: true } },
-  });
-  return zone ? toMatch(zone) : null;
-}
-
 function toMatch(
   zone: Awaited<ReturnType<typeof activeZones>>[number]
 ): ZoneMatch {
