@@ -74,7 +74,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                | Batch 2.3   |
 | SMS provider                                                    | Semaphore or Twilio                                                                           | Batch 2.5   |
 | Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6   |
-| Payment provider                                                | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1   |
+| Payment provider                                                | **Decided: PayMongo**, see [ADR 0003](adr/0003-payment-provider-interface.md)                 | Done        |
 | Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3   |
 | Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)         | Done        |
 | VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                        | Batch 4.4   |
@@ -220,7 +220,7 @@ Refuted during verification, so not changed: weighed items sold per piece (unrea
 
 **Batch 3.1 Provider and ledger** (W8). Stack: Xendit or PayMongo SDK, route handlers. Skills: `research`, `tdd`, `domain-modeling`.
 
-- [ ] Provider chosen after sandbox evaluation; [ADR 0003](adr/0003-payment-provider-interface.md) updated
+- [x] Provider chosen; [ADR 0003](adr/0003-payment-provider-interface.md) updated. PayMongo, chosen 19 Oct on fees, signed webhooks and GCash partial refunds; the test-mode trial still checks payouts, verification time, card hold length and refund fees
 - [ ] `PaymentProvider` adapter: create checkout, verify webhook, parse event, capture, refund
 - [ ] `payment_events` ledger with unique provider event id; duplicate-webhook tests
 

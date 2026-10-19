@@ -135,7 +135,7 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 
 ## 8. Payments
 
-- **Interface:** `PaymentProvider` with `createCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. Adapters for Xendit and PayMongo implement it; the active one is chosen by `PAYMENT_PROVIDER`.
+- **Interface:** `PaymentProvider` with `createCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the active one.
 - **Webhooks** hit `/api/webhooks/[provider]`. The handler verifies the signature, records the raw event in `payment_events` with a unique constraint on the provider event id, then applies it. A duplicate event is acknowledged and ignored. The handler never trusts amounts from the browser return URL; the webhook (or a provider fetch) is the source of truth.
 - **Cash on delivery:** the Rider records collected cash at delivery; Dispatch reconciles per Rider per day.
 - **Weighed items:** where the method supports it (cards), authorise estimate plus 10% and capture the final amount after picking. Wallets such as GCash generally cannot hold funds, so charge the estimate and refund any difference once the final weight is entered. Picker tolerance is plus or minus 10% of ordered weight; a heavier pick within tolerance is absorbed by Hoshimono. **Open decision:** confirm provider capabilities in Phase 3 and revise this paragraph.
