@@ -46,7 +46,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Media           | Object storage + CDN, `next/image`                                                          | Product photos converted to WebP/AVIF at the right sizes                                                                                       | Phase 1                                         |
 | Maps            | Geocoding and map pin provider                                                              | Address pin and Zone check                                                                                                                     | Phase 2                                         |
 | Jobs            | `jobs` table + Vercel Cron calling `/api/cron/[job]`                                        | Expire holds and unpaid Orders, retry notices, reminders                                                                                       | Phase 2                                         |
-| Rate limits     | Redis or KV store                                                                           | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
+| Rate limits     | Postgres table (ADR 0006)                                                                   | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
 | Admin tables    | TanStack Table                                                                              | Dense, sortable admin lists                                                                                                                    | Phase 1                                         |
 | i18n            | `next-intl`                                                                                 | Filipino language pass                                                                                                                         | Phase 5                                         |
 | PWA             | Web manifest + service worker                                                               | Installable app, offline-friendly cart and browse shell                                                                                        | Phase 5                                         |
@@ -73,7 +73,7 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 | Object storage and CDN | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4 |
 | Maps and geocoding     | Google Maps, Mapbox or similar                                                                | Batch 2.3 |
 | SMS provider           | Semaphore or Twilio                                                                           | Batch 2.5 |
-| Rate-limit store       | Upstash Redis, Vercel KV or Postgres-based                                                    | Batch 2.6 |
+| Rate-limit store       | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6 |
 | Payment provider       | Xendit or PayMongo (sandbox evaluation)                                                       | Batch 3.1 |
 | Weighed-item charging  | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3 |
 | PWA tooling and push   | Service worker library; whether to send web push                                              | Batch 5.5 |
@@ -146,7 +146,7 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 - [x] Sitemaps (static, products), `robots.txt`, canonical URLs, Open Graph images
 - [x] Tag-based revalidation so admin edits reach the storefront within a minute (`updateTag` in every admin action: immediate)
-- [ ] Lighthouse budget met on Home, Category, Product. Not yet: median mobile performance 78 (Home), 79 (Category), 84 (Product) on the local dev machine under load; accessibility, best practices and SEO 100 on all three. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
+- [ ] Lighthouse budget met on Home, Category, Product. Not yet: mobile performance 85 to 87 (Home), 81 to 87 (Category), 85 to 88 (Product) against `next start` on localhost; accessibility, best practices and SEO 100 on all three. The Product and Category headings now render in the page shell instead of a streamed Suspense segment (Product was 79), so first paint is the LCP. The rest is a localhost effect: scripts arrive at once and run before Chrome's first paint, so the simulated LCP counts all JavaScript. JavaScript cut from 203 to 189 KB (LazyMotion, no Radix or cn on storefront client code). Next: measure on a clean CI runner or Vercel preview, then self-host fonts subset to Latin plus U+20B1 with `next/font/local` (docs/05 section 11)
 
 **Exit criteria:** a non-developer imports a 500-row CSV, edits a Product in admin, and sees the change on the storefront within a minute; search finds "gatas" and "milk" and tolerates one typo; Lighthouse performance 90+ on mobile profile for the three key pages.
 
@@ -156,36 +156,36 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
 **Batch 2.1 Pricing core** (W5). Stack: pure TypeScript, Vitest. Skills: `tdd`, `grilling` for VAT and rounding rules.
 
-- [ ] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
+- [x] `pricing.priceCart` built test-first, covering rounding, VAT split, Promotions stub, minimums, free-delivery threshold
 
-**Batch 2.2 Cart** (W5). Stack: Server Actions, signed cookies, Motion. Skills: `tdd`, `apple-design`, `motion`.
+**Batch 2.2 Cart** (W5). Stack: Server Actions, a hashed random cookie token, Motion. Skills: `tdd`, `apple-design`, `motion`.
 
-- [ ] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
-- [ ] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
+- [x] `cart` module: guest cart cookie, merge on sign-in, quantity limits, price/stock change flags
+- [x] Cart UI: drawer, full page, `QuantityStepper`, `SubstitutionSelect`, Weighed Product notes (optimistic updates, server reconciliation)
 
 **Batch 2.3 Delivery and addresses** (W6). Stack: atomic SQL updates, maps and geocoding. Skills: `tdd`, `codebase-design`.
 
-- [ ] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
-- [ ] Address book with map pin, landmark, Zone coverage check
+- [x] `delivery` module: Zone resolution, Slot listing, 10-minute holds, atomic booking
+- [x] Address book with landmark and Zone coverage check (`customers` module, `/account/addresses`). Map pin deferred until a maps provider is chosen; Zones match by city and barangay name
 
 **Batch 2.4 Inventory and orders** (W6). Stack: Postgres transactions, guarded `UPDATE ... WHERE`. Skills: `tdd`.
 
-- [ ] `inventory` module: availability, atomic reserve/release, movements log
-- [ ] `orders` module: `placeOrder` (idempotent), status machine, history events
-- [ ] Concurrency tests: two checkouts competing for the last unit and the last Slot
+- [x] `inventory` module: availability, atomic reserve/release, movements log
+- [x] `orders` module: `placeOrder` (idempotent), status machine, history events
+- [x] Concurrency tests: two checkouts competing for the last unit and the last Slot
 
 **Batch 2.5 Checkout, confirmation and notices** (W7). Stack: React Hook Form + Zod, Resend + React Email, SMS provider, Vercel Cron. Skills: `design-taste-frontend`.
 
-- [ ] Checkout page: Address, Slot, contact, COD, summary, server re-pricing
-- [ ] Order confirmation page and tracking page
-- [ ] `notifications`: order confirmed email and SMS
-- [ ] Jobs table and cron: expire holds and stale reservations
+- [x] Checkout page: Address, Slot, contact, COD, summary, server re-pricing (forms use `useActionState`; React Hook Form stays deferred, see 06-SETUP)
+- [x] Order confirmation page and tracking page (`/checkout/confirmed/[orderNo]`, `/orders/[orderNo]`, cancel before picking)
+- [x] `notifications`: order confirmed email and SMS through console providers and a delivery log. Resend and the SMS sender plug in when those accounts exist (business tracks)
+- [x] Jobs table and cron: `/api/cron/tick` purges Slot holds, cancels unpaid online Orders and runs the jobs outbox (`vercel.json`, `CRON_SECRET`)
 
 **Batch 2.6 Accounts and the full journey** (W7). Stack: Better Auth, rate-limit store, Playwright. Skills: `security-review`, `playwright-cli`.
 
-- [ ] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1)
-- [ ] Account area: profile, addresses, order history, cancel before picking
-- [ ] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking
+- [x] Customer sign-in: mobile OTP, email magic link, Google, with rate limits (PRD ACC-1). OTP texts go through the console SMS provider and Google shows once its OAuth keys are set (business tracks); limits in Postgres ([ADR 0006](adr/0006-postgres-rate-limit-store.md))
+- [x] Account area: profile, addresses, order history, cancel before picking
+- [x] Playwright journey: browse, add, checkout as guest then sign in, place COD order, see tracking (`e2e/checkout.spec.ts`, phone viewport; CI `e2e` job)
 
 **Exit criteria:** a Customer places and tracks a COD order on a phone; two simultaneous buyers of the last item result in exactly one Order; the total on the confirmation page equals the total computed by `priceCart` to the centavo; the E2E journey is green in CI.
 
@@ -195,6 +195,20 @@ Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 2. Sign-in methods beyond the first working one (PRD ACC-1). If the SMS sender ID is late, ship email magic link and Google first and move mobile OTP.
 
 Never cut: server re-pricing, atomic stock reservation, atomic Slot booking, the concurrency tests, cancel before picking (PRD ACC-5).
+
+**Review of Phases 1 and 2** (18 Oct, PR #5). Reviewers checked both phases. Every confirmed finding that needs no outside account is fixed:
+
+- [x] Security: open redirect after sign-in closed (`safeNext`); cron secret compared in constant time; text-message codes limited per number and IP, per number (10 an hour) and on verify; new Guest Carts limited to 60 per IP an hour; console senders and the dev mailbox can never run on a real domain (`src/lib/test-mode.ts`)
+- [x] Admin: CSV import keeps columns missing from the file, matches by slug, brand and name, or name alone, skips blank rows and checks barcodes; audit entries carry before and after values; saving keeps the Unit Price basis; price capped at PHP 100,000; photo uploads up to 10 MB, padded to square instead of cropped; forms keep a select's value after an error
+- [x] Orders: `placeOrder` re-checks the Cart version inside its transaction and retries deadlocks; COD limited to 3 open Orders and PHP 20,000 an Order; Slot holds and bookings check the Hub and a 7-day window; cancelling releases the Slot, the stock and the COD Payment (new `payments` module); no delivery fee when nothing is priced; the VAT split includes the fee; weighed items say "about" and show an estimated total
+- [x] Cart and Checkout: writes lock the open Cart; archived lines can be removed; an older Cart view never overwrites a newer one; a late Slot answer cannot replace a newer choice; "Held for you until" with expiry; inline address step; an address in another Zone re-prices the Order
+- [x] Ops: cron steps run in isolation with logged errors; purge of idle Guest Carts, old checked-out Carts and finished jobs (partial indexes); Vercel region `sin1`
+- [x] Storefront: filters and sort keep each other; pages past the end redirect; 44 px Cart controls and 16 px fields; long-press stepper; search keeps text typed before hydration; Cart drawer as a sheet with a delivery row; `/delivery` coverage page; copy says cash on delivery only
+- [x] Performance: Product and Category headings render in the page shell (Lighthouse Product 79 to 85-88). Both pages set `instant = false`, so a Product or Category added after the build renders on its first visit without a skeleton
+- [x] Tests: CI runs e2e against a production build (`E2E_PROD=1`); 220 Vitest tests and 41 Playwright tests green on the dev server and the production build
+- [x] Docs: Glossary adds Guest Cart, Picker Note, Order Number, Slot Hold and Slot Cutoff; docs 03, 04 and 05 match the code
+
+Refuted during verification, so not changed: weighed items sold per piece (unreachable), the Order text to an unverified number, `x-forwarded-for` spoofing. What is still open is in the carry-over list in section 9.
 
 ## 8. Phase 3: Online payments (W8 to W9, 7 to 18 Dec)
 
@@ -223,6 +237,56 @@ Never cut: server re-pricing, atomic stock reservation, atomic Slot booking, the
 ## 9. Holiday buffer (W10 to W11, 21 Dec to 1 Jan)
 
 No new features over Christmas and New Year. Use the time for bugs from Phases 0 to 3, test gaps, docs and the business tracks (Hub fit-out, Rider hiring, BIR registration). This is also where items cut from Phase 2 land (see the cut order in section 7).
+
+**Carried over from the Phase 1 and 2 review** (18 Oct):
+
+- [ ] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5): measure on a Vercel preview, then self-host subset fonts. Blocked: Vercel account
+- [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
+- [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
+- [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
+- [ ] Cart drawer delivery row shows the held Slot, not a generic line
+- [ ] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
+- [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
+- [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
+
+**Review: what reads as AI-made** (18 Oct). Senior engineer, senior frontend and UI/UX reviewers looked at the running app (desktop, phone, dark mode, admin) and the code for signs a human expert would not leave. The core is senior-grade: stock and Slot races, idempotent `placeOrder`, money in centavos, enforced module boundaries, forms that work without JavaScript. The tells are on the surface: build-process comments, near-duplicate copies, fixes layered on fixes, and a placeholder-heavy template look.
+
+UI and UX:
+
+- [ ] Placeholders: every Product, the hero and the category tiles show one striped box with a mismatched line icon (cheese and yogurt get a basket; avocado, calamansi and mango share one icon). Until real photos arrive (business track), drop the empty hero box and make cards text-first with quieter placeholders
+- [ ] Home follows the stock AI landing formula: highlighted last word, one pill button, image on the right, three equal feature tiles, mostly empty category tiles. Rework with `design-taste-frontend`
+- [ ] Product page: quantity stepper and a large "Add to cart" as in `mockup-v2/product.html`, the next Slot and delivery fee, the substitution choice; "Ingredients and allergens" shows only allergens
+- [ ] Checkout without an address shows no order summary or total: show it from the start; do not pre-tick "Use this address by default" on the first address; put the coverage note next to City
+- [ ] Phone Category page: header, chips, heading, sort and filters push the first Product below the fold
+- [ ] Admin: its own shell without the shopper header (cart, "Deliver to"); status badges in words, not raw values like `active`
+- [ ] Small tells: straight quotes in `Results for "gatas"`; "Showing 1 to 6 of 6" on a single page; the name pre-filled from the email; a footer with no help, terms or contact; the lime banner at full brightness in dark mode; a generic letter-in-a-circle logo
+
+Engineering:
+
+- [ ] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
+- [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
+- [ ] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
+- [ ] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
+- [ ] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
+- [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code")
+- [ ] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
+- [ ] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
+- [ ] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
+- [ ] Cron job handlers imported from `app/api/cron` by checkout and tests: move them to a server composition file; derive open statuses from the status machine
+- [ ] Tests: group search tests by behaviour, not review round, and drop seed counts; drop the e2e warm-up and `networkidle` waits now that CI tests a production build; the not-found test pins status 200; move `tests/guardrail.test.ts` (the agent's git hook) out of the app suite; delete the scaffold comment in `next.config.ts`
+
+Frontend:
+
+- [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
+- [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
+- [ ] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
+- [ ] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
+- [ ] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop
+- [ ] Return structured parts instead of parsing formatted text (`size.replace("approx. ", "")`, the Slot label split at ", ", `splitMoney`); needed before the Filipino pass
+- [ ] Replace workarounds: the `CartSync` effect, the hidden `data-no-cart-bar` div (use a route-group layout), the WeakMap `formKey`
+- [ ] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category
+- [ ] Category page: one Suspense boundary instead of three with filler fallbacks; no skeleton on the redirect and not-found branches (both added in the Lighthouse fix)
+- [ ] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff
 
 ## 10. Phases 4 to 6 and launch
 

@@ -22,8 +22,16 @@ export const productFields = z
       .max(1_000_000),
     packSizeUnit: z.enum(["g", "ml", "pc"], "Use g, ml or pc"),
     unitPriceBasis: z.enum(["per_100g", "per_litre", "per_piece"]),
-    priceCents: z.int().min(0).max(100_000_000),
-    compareAtCents: z.int().min(0).max(100_000_000).nullable(),
+    // PHP 100,000: 99 of the dearest Product still fit in an int4 total.
+    priceCents: z
+      .int()
+      .min(0)
+      .max(10_000_000, "Enter a price up to 100,000.00"),
+    compareAtCents: z
+      .int()
+      .min(0)
+      .max(10_000_000, "Enter a price up to 100,000.00")
+      .nullable(),
     taxClass: z.enum(
       ["vatable", "vat_exempt", "zero_rated"],
       "Use vatable, vat_exempt or zero_rated"

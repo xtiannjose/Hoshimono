@@ -10,6 +10,7 @@ import {
   createCategory,
   createProduct,
   deleteCategory,
+  getCategoryForAdmin,
   getProductForAdmin,
   importProductsCsv,
   removeProductImage,
@@ -19,7 +20,7 @@ import {
   type FieldError,
   type ImportError,
 } from "@/modules/catalog";
-import { recordAudit, requireStaff } from "@/modules/identity";
+import { recordAudit, recordAudits, requireStaff } from "@/modules/identity";
 import { parseMoney } from "@/lib/money";
 
 // Every action re-checks the role (docs/03 section 12: per operation),
@@ -74,6 +75,13 @@ export async function saveProduct(
   if (Object.keys(errors).length) return { errors, values: submitted };
 
   const unit = text(fd, "packSizeUnit") as "g" | "ml" | "pc";
+  const before = id ? await getProductForAdmin(id) : null;
+  // The form has no Unit Price basis field: keep the stored one (it may be
+  // per piece from a CSV) unless the unit changed.
+  const unitPriceBasis =
+    before && before.packSizeUnit === unit
+      ? before.unitPriceBasis
+      : basisFor(unit);
   const fields = {
     name: text(fd, "name"),
     brand: text(fd, "brand") || null,
@@ -81,7 +89,7 @@ export async function saveProduct(
     categoryId: text(fd, "categoryId"),
     packSizeValue: Number(text(fd, "packSizeValue")),
     packSizeUnit: unit,
-    unitPriceBasis: text(fd, "unitPriceBasis") || basisFor(unit),
+    unitPriceBasis,
     priceCents: price ?? 0,
     compareAtCents: compareAt,
     taxClass: text(fd, "taxClass"),
@@ -94,7 +102,6 @@ export async function saveProduct(
   };
 
   if (id) {
-    const before = await getProductForAdmin(id);
     const result = await updateProduct(id, fields);
     if (!result.ok)
       return { errors: toErrors(result.errors), values: submitted };
@@ -171,7 +178,7 @@ export async function deleteImage(productId: string, imageId: string) {
       action: "remove-image",
       entity: "product",
       entityId: productId,
-      before: { imageId },
+      before: { imageId, ...result.removed },
     });
     updateTag(CATALOG_TAG);
   }
@@ -211,6 +218,16 @@ export async function importCsv(
       updated: result.updated,
     },
   });
+  await recordAudits(
+    result.changes.map((change) => ({
+      staffId: staff.id,
+      action: change.before ? "import-update" : "import-create",
+      entity: "product",
+      entityId: change.id,
+      before: change.before,
+      after: change.after,
+    }))
+  );
   updateTag(CATALOG_TAG);
   return { status: "done", created: result.created, updated: result.updated };
 }
@@ -248,6 +265,7 @@ export async function editCategory(
     parentId: parent === "" ? null : parent,
     sortOrder: Number(text(fd, "sortOrder") || 0),
   };
+  const before = await getCategoryForAdmin(id);
   const result = await updateCategory(id, patch);
   if (!result.ok) return { errors: toErrors(result.errors) };
   await recordAudit({
@@ -255,6 +273,7 @@ export async function editCategory(
     action: "update",
     entity: "category",
     entityId: id,
+    before,
     after: patch,
   });
   updateTag(CATALOG_TAG);
@@ -266,6 +285,7 @@ export async function removeCategory(
   _prev: FormState
 ): Promise<FormState> {
   const staff = await merchandiser("/admin/categories");
+  const before = await getCategoryForAdmin(id);
   const result = await deleteCategory(id);
   if (!result.ok) return { errors: toErrors(result.errors) };
   await recordAudit({
@@ -273,6 +293,7 @@ export async function removeCategory(
     action: "delete",
     entity: "category",
     entityId: id,
+    before,
   });
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };

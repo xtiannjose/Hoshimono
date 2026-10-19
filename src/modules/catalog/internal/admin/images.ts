@@ -19,8 +19,10 @@ const error = (message: string) => ({
 });
 
 /**
- * Checks an upload and stores one square 1200 px WebP master. next/image
- * then serves AVIF or WebP at the sizes each page asks for.
+ * Checks an upload and stores one square 1200 px WebP master. A photo that
+ * is not square is padded with white, never cropped, so a tall bottle keeps
+ * its cap and label (docs/03 section 13). next/image then serves AVIF or
+ * WebP at the sizes each page asks for.
  */
 export async function addProductImage(
   productId: string,
@@ -50,7 +52,10 @@ export async function addProductImage(
 
   const master = await sharp(file.bytes)
     .rotate() // respect camera orientation
-    .resize(MASTER, MASTER, { fit: "cover" })
+    .resize(MASTER, MASTER, {
+      fit: "contain",
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    })
     .webp({ quality: 82 })
     .toBuffer();
   const url = await mediaStore().put(
@@ -89,7 +94,9 @@ export async function setPrimaryImage(imageId: string): Promise<WriteResult> {
 /** Removes an image; if it was primary, the next one becomes primary. */
 export async function removeProductImage(
   imageId: string
-): Promise<WriteResult> {
+): Promise<
+  WriteResult<{ removed: { url: string; alt: string; isPrimary: boolean } }>
+> {
   const image = await db.productImage.findUnique({ where: { id: imageId } });
   if (!image) return error("No such image");
   await db.productImage.delete({ where: { id: imageId } });
@@ -105,5 +112,8 @@ export async function removeProductImage(
       });
   }
   await mediaStore().remove(image.url);
-  return { ok: true };
+  return {
+    ok: true,
+    removed: { url: image.url, alt: image.alt, isPrimary: image.isPrimary },
+  };
 }

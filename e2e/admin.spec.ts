@@ -1,6 +1,10 @@
+import { randomBytes } from "node:crypto";
+
 import AxeBuilder from "@axe-core/playwright";
+import sharp from "sharp";
 import { expect, test } from "@playwright/test";
 
+import { freshEmail, RUN } from "./run-tag";
 import { signIn } from "./sign-in";
 
 // Phase 1 exit criterion: a non-developer imports a 500-row CSV, edits a
@@ -48,7 +52,7 @@ test("a 500-row CSV imports and the Products appear in search", async ({
   const rows = Array.from(
     { length: 500 },
     (_, i) =>
-      `Import Test Rice ${i + 1},E2E Mills,rice,1000,g,${(60 + (i % 40)).toFixed(2)},,vat_exempt,no,ambient,active,,,,`
+      `Import Test Rice ${i + 1},E2E Mills ${RUN},rice,1000,g,${(60 + (i % 40)).toFixed(2)},,vat_exempt,no,ambient,active,,,,`
   );
   await signIn(page, MERCHANDISER, "/admin/import");
   await page.goto("/admin/import", { waitUntil: "networkidle" });
@@ -100,19 +104,30 @@ test("the export downloads every Product as CSV", async ({ page }) => {
 test("a Merchandiser adds a Category", async ({ page }) => {
   await signIn(page, MERCHANDISER, "/admin/categories");
   await page.goto("/admin/categories");
-  await page.getByLabel("New Category name").fill("Baby Food");
-  await page.getByLabel("Under").selectOption({ label: "Pantry" });
-  await page.getByRole("button", { name: "Add Category" }).click();
+  // Production can keep a hidden copy of the page while it streams.
+  const visible = { visible: true } as const;
+  await page
+    .getByLabel("New Category name")
+    .filter(visible)
+    .fill(`Baby Food ${RUN}`);
+  await page
+    .getByLabel("Under")
+    .filter(visible)
+    .selectOption({ label: "Pantry" });
+  await page
+    .getByRole("button", { name: "Add Category" })
+    .filter(visible)
+    .click();
   await expect(
     page.getByRole("status").filter({ hasText: "Category added" })
   ).toBeVisible();
   await expect(
-    page.getByRole("textbox", { name: "Name of Baby Food" })
+    page.getByRole("textbox", { name: `Name of Baby Food ${RUN}` })
   ).toBeVisible();
 });
 
 test("Customers cannot open the admin", async ({ page }) => {
-  await signIn(page, "ligaya@example.com", "/account");
+  await signIn(page, freshEmail("not-staff"), "/account");
   const res = await page.goto("/admin/products");
   await expect(
     page.getByRole("heading", { name: "We could not find that page" })
@@ -130,4 +145,37 @@ test("the admin Products list has no axe violations", async ({ page }) => {
     .withTags(["wcag2a", "wcag2aa", "wcag22aa", "best-practice"])
     .analyze();
   expect(results.violations).toEqual([]);
+});
+
+test("a Merchandiser uploads a phone-sized photo and it shows", async ({
+  page,
+}) => {
+  // Random noise compresses badly: several MB, well over the 1 MB that
+  // Server Actions used to accept. Not square, so it gets white edges.
+  const raw = randomBytes(1200 * 1600 * 3);
+  const png = await sharp(raw, {
+    raw: { width: 1200, height: 1600, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+  expect(png.length).toBeGreaterThan(1_000_000);
+
+  await signIn(page, MERCHANDISER, "/admin/products");
+  await page.goto("/admin/products?q=Banana+Ketchup");
+  await page.getByRole("link", { name: "Banana Ketchup" }).click();
+  await page.getByLabel("Add a photo").setInputFiles({
+    name: "ketchup.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await page
+    .getByLabel("Describe the photo (optional)")
+    .fill(`Banana ketchup bottle ${RUN}`);
+  await page.getByRole("button", { name: "Upload photo" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Photo added." })
+  ).toBeVisible({ timeout: 60_000 });
+  await expect(
+    page.getByRole("img", { name: `Banana ketchup bottle ${RUN}` })
+  ).toBeVisible();
 });

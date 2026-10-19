@@ -6,6 +6,8 @@ import type { CategoryNode, ProductFacets } from "@/modules/catalog";
 type Props = {
   id: string;
   action: string;
+  /** The chosen sort, kept when filters apply. */
+  sort: string;
   facets: ProductFacets;
   selected: {
     brands: string[];
@@ -28,12 +30,14 @@ const BOX = "size-5 accent-[var(--ink)]";
 export function Filters({
   id,
   action,
+  sort,
   facets,
   selected,
   subCategories,
 }: Props) {
   return (
     <form id={id} action={action} className="grid gap-6">
+      {sort !== "featured" && <input type="hidden" name="sort" value={sort} />}
       {subCategories.length > 0 && (
         <div className={GROUP}>
           <h2 className={HEADING}>Categories</h2>

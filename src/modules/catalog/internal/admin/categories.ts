@@ -159,3 +159,19 @@ export async function listCategoriesForAdmin() {
     productCount: _count.products,
   }));
 }
+
+/** One Category as stored, for the audit log's "before". */
+export async function getCategoryForAdmin(id: string) {
+  const UUID = /^[0-9a-f-]{36}$/i;
+  if (!UUID.test(id)) return null;
+  return db.category.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      parentId: true,
+      sortOrder: true,
+    },
+  });
+}

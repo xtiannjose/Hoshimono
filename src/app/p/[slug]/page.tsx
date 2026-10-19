@@ -31,6 +31,11 @@ type Props = PageProps<"/p/[slug]">;
 const ID = /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 const idFrom = (slug: string) => ID.exec(slug)?.[1] ?? "";
 
+// The shell reads params, so the generic [slug] fallback shell is empty:
+// a Product not prerendered renders on its first visit (blocking). Without
+// this, Next errors regenerating that shell after a catalog updateTag.
+export const instant = false;
+
 // Prerender the first page of the catalogue; the rest render on first visit.
 export async function generateStaticParams() {
   const list = await productList({ limit: 96 });
@@ -68,14 +73,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProductPage({ params }: Props) {
+export default async function ProductPage({ params }: Props) {
+  const { slug } = await params;
+  const found = await loadProduct(idFrom(slug));
+  // A live Product renders in the page shell, not behind a Suspense
+  // skeleton: streamed content is revealed by script, which held back the
+  // name and photo (LCP) on slow phones.
+  if (found && slug === `${found.slug}-${found.id}`)
+    return (
+      <div className="wrap">
+        <ProductView found={found} />
+      </div>
+    );
   return (
     <div className="wrap">
       <Suspense fallback={<ProductSkeleton />}>
-        <ProductView params={params} />
+        <NotHere found={found} />
       </Suspense>
     </div>
   );
+}
+
+// shortcut: inside Suspense, so a missing Product streams a noindex
+// not-found page with status 200. Next 16 bails out of on-demand renders
+// that call notFound() in the page shell, so the check cannot move up.
+function NotHere({ found }: { found: ProductDetail | null }): never {
+  // The id resolves the Product; a stale slug redirects to the current one.
+  if (found) permanentRedirect(productHref(found));
+  notFound();
 }
 
 const STORAGE = {
@@ -84,14 +109,7 @@ const STORAGE = {
   frozen: "Keep frozen at -18 °C or colder.",
 } as const;
 
-async function ProductView({ params }: Pick<Props, "params">) {
-  const { slug } = await params;
-  const found = await loadProduct(idFrom(slug));
-  if (!found) notFound();
-  // The id resolves the Product; a stale slug redirects to the current one.
-  if (slug !== `${found.slug}-${found.id}`)
-    permanentRedirect(productHref(found));
-
+async function ProductView({ found }: { found: ProductDetail }) {
   const [stock, paths] = await Promise.all([
     stockStates([found.id]),
     categoryTree().then(categoryPaths),
@@ -173,7 +191,7 @@ async function ProductView({ params }: Pick<Props, "params">) {
               below.
             </p>
           ) : (
-            <AddToCart name={found.name} />
+            <AddToCart productId={found.id} name={found.name} />
           )}
         </div>
       </div>

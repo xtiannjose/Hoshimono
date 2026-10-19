@@ -14,7 +14,7 @@ import {
   type CategoryNode,
   type ListProductsInput,
 } from "@/modules/catalog";
-import { getDefaultHubId } from "@/modules/delivery";
+import { getDefaultHubId, listCoverage } from "@/modules/delivery";
 import { getStockStates } from "@/modules/inventory";
 
 export const CATALOG_TAG = "catalog";
@@ -79,6 +79,13 @@ export async function stockStates(productIds: string[]) {
   if (!hubId)
     return Object.fromEntries(productIds.map((id) => [id, "out" as const]));
   return getStockStates(productIds, hubId);
+}
+
+/** Served Zones and their fees: the coverage page and the service strip. */
+export async function deliveryCoverage() {
+  "use cache";
+  cacheLife("hours");
+  return listCoverage();
 }
 
 /** Root-to-node slug path for every Category, for building /c/ links. */

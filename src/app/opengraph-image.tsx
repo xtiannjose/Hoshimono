@@ -65,8 +65,7 @@ export default function OpenGraphImage() {
           Fresh groceries, delivered today.
         </div>
         <div style={{ fontSize: 34, color: MUTED }}>
-          Same-day delivery across Metro Manila. GCash, card or cash on
-          delivery.
+          Same-day delivery across Metro Manila. Cash on delivery.
         </div>
       </div>
     </div>,

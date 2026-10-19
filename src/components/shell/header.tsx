@@ -2,9 +2,14 @@ import { UserIcon } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { CartButton } from "@/components/cart/cart-button";
 import { BrandLogo } from "@/components/shell/brand-logo";
+import { CartSlot } from "@/components/shell/cart-slot";
 import { CategoryNav } from "@/components/shell/category-nav";
-import { DeliveryButton } from "@/components/shell/delivery-button";
+import {
+  DeliveryButton,
+  DeliverySlot,
+} from "@/components/shell/delivery-button";
 import { SearchBox } from "@/components/shell/search-box";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { z } from "@/config/z";
@@ -20,7 +25,9 @@ export function Header() {
           <BrandLogo />
           <SearchBox id="q" className="hidden max-w-[560px] flex-1 md:flex" />
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
-            <DeliveryButton />
+            <Suspense fallback={<DeliveryButton />}>
+              <DeliverySlot />
+            </Suspense>
             <Link
               href="/account"
               aria-label="Account"
@@ -29,6 +36,9 @@ export function Header() {
               <UserIcon size={24} aria-hidden />
             </Link>
             <ThemeToggle />
+            <Suspense fallback={<CartButton />}>
+              <CartSlot />
+            </Suspense>
           </div>
         </div>
         <div className="wrap pb-3 md:hidden">

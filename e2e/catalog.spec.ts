@@ -8,10 +8,14 @@ test("a Category page lists, filters and keeps one canonical URL", async ({
   await expect(
     page.getByRole("heading", { level: 1, name: "Milk" })
   ).toBeVisible();
-  await expect(page.getByText("6 products")).toBeVisible();
+  await expect(
+    page.getByText("6 products").filter({ visible: true })
+  ).toBeVisible();
 
   await page.goto("/c/dairy-and-eggs/milk?brand=Alaska");
-  await expect(page.getByText("3 products")).toBeVisible();
+  await expect(
+    page.getByText("3 products").filter({ visible: true })
+  ).toBeVisible();
 
   // A partial path redirects to the full one.
   await page.goto("/c/milk");
@@ -44,7 +48,9 @@ test("search finds Filipino words, corrects typos and guides on no results", asy
   ).toBeVisible();
 
   await page.goto("/search?q=mlik");
-  await expect(page.getByText('we searched for "milk"')).toBeVisible();
+  await expect(
+    page.getByText('we searched for "milk"').filter({ visible: true })
+  ).toBeVisible();
 
   await page.goto("/search?q=xylophone");
   await expect(
@@ -57,7 +63,7 @@ test("the header search suggests while typing and works by keyboard", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/", { waitUntil: "networkidle" }); // typed before hydration is not seen
+  await page.goto("/", { waitUntil: "networkidle" });
   const box = page.getByRole("combobox", { name: "Search groceries" });
   await box.fill("alas");
   const list = page.getByRole("listbox", { name: "Suggestions" });

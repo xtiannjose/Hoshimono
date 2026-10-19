@@ -2,7 +2,10 @@
 // Owns Product, Category, ProductImage and the search index.
 export { getCategory, getCategoryTree } from "./internal/categories";
 export type { CategoryDetail, CategoryNode } from "./internal/categories";
-export { getProduct } from "./internal/products";
+export {
+  getProduct,
+  loadSummaries as getProductSummaries,
+} from "./internal/products";
 export type {
   ProductDetail,
   ProductImageView,
@@ -34,10 +37,15 @@ export type {
   WriteResult,
 } from "./internal/admin/products";
 export { exportProductsCsv, importProductsCsv } from "./internal/admin/import";
-export type { ImportError, ImportResult } from "./internal/admin/import";
+export type {
+  ImportChange,
+  ImportError,
+  ImportResult,
+} from "./internal/admin/import";
 export {
   createCategory,
   deleteCategory,
+  getCategoryForAdmin,
   listCategoriesForAdmin,
   updateCategory,
 } from "./internal/admin/categories";

@@ -44,3 +44,41 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: dev
+          POSTGRES_DB: hoshimono_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # playwright.config.ts migrates, resets and seeds this database, then
+      # starts its own dev server against it.
+      E2E_DATABASE_URL: postgresql://postgres:dev@localhost:5432/hoshimono_e2e
+      BETTER_AUTH_SECRET: ci-placeholder-not-used-for-real-sessions
+      # Test the production build, not the dev server (review finding).
+      E2E_PROD: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7

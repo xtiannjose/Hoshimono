@@ -16,7 +16,7 @@ import { categoryHref } from "@/lib/routes";
 
 export const metadata: Metadata = {
   description:
-    "Fresh groceries delivered the same day across Metro Manila. Pick a delivery window, pay with GCash, card or cash on delivery.",
+    "Fresh groceries delivered the same day across Metro Manila. Pick a 2-hour delivery slot and pay cash on delivery.",
   alternates: { canonical: "/" },
 };
 
@@ -37,8 +37,8 @@ export default function Home() {
             Fresh groceries, delivered <span className="hl">today.</span>
           </h1>
           <p className="type-lead">
-            Pick a delivery window, then pay with GCash, card or cash on
-            delivery.
+            Pick a 2-hour delivery slot, then pay the Rider in cash when your
+            order arrives.
           </p>
           <div>
             <Link

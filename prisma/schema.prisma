@@ -93,7 +93,8 @@ model Product {
   stockMovements     StockMovement[]
   cartLines          CartLine[]               @relation("CartLineProduct")
   preferredInLines   CartLine[]               @relation("CartLinePreferred")
-  orderLines         OrderLine[]
+  orderLines         OrderLine[]              @relation("OrderLineProduct")
+  preferredInOrders  OrderLine[]              @relation("OrderLinePreferred")
   substitutions      Substitution[]
   createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -318,6 +319,8 @@ model CartLine {
   productId              String                 @map("product_id") @db.Uuid
   product                Product                @relation("CartLineProduct", fields: [productId], references: [id], onDelete: Cascade)
   quantity               Int
+  // Price when the line was last set, so the Cart can flag a change (CRT-5).
+  seenPriceCents         Int                    @map("seen_price_cents")
   substitutionPreference SubstitutionPreference @default(allow) @map("substitution_preference")
   preferredProductId     String?                @map("preferred_product_id") @db.Uuid
   preferredProduct       Product?               @relation("CartLinePreferred", fields: [preferredProductId], references: [id], onDelete: SetNull)
@@ -360,6 +363,7 @@ model Order {
   statusEvents     OrderStatusEvent[]
   payments         Payment[]
   stockMovements   StockMovement[]
+  notifications    Notification[]
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -374,7 +378,7 @@ model OrderLine {
   orderId                String                 @map("order_id") @db.Uuid
   order                  Order                  @relation(fields: [orderId], references: [id], onDelete: Restrict)
   productId              String                 @map("product_id") @db.Uuid
-  product                Product                @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product                Product                @relation("OrderLineProduct", fields: [productId], references: [id], onDelete: Restrict)
   // Snapshots at checkout: catalogue edits never rewrite past Orders.
   nameSnapshot           String                 @map("name_snapshot")
   unitPriceCents         Int                    @map("unit_price_cents")
@@ -386,6 +390,10 @@ model OrderLine {
   finalWeightGrams       Int?                   @map("final_weight_grams")
   lineTotalCents         Int                    @map("line_total_cents")
   substitutionPreference SubstitutionPreference @map("substitution_preference")
+  // The Customer's own pick for "I'll choose", and their note for the Picker.
+  preferredProductId     String?                @map("preferred_product_id") @db.Uuid
+  preferredProduct       Product?               @relation("OrderLinePreferred", fields: [preferredProductId], references: [id], onDelete: SetNull)
+  note                   String?
   status                 OrderLineStatus        @default(pending)
   substitutions          Substitution[]
   createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -563,17 +571,20 @@ model AuditLog {
 // src/modules/identity/internal/auth.ts. Ids are strings Better Auth generates.
 
 model AuthUser {
-  id            String        @id
-  name          String
-  email         String        @unique
-  emailVerified Boolean       @default(false) @map("email_verified")
-  image         String?
-  sessions      AuthSession[]
-  accounts      AuthAccount[]
-  customer      Customer?
-  staff         Staff?
-  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                  String        @id
+  name                String
+  email               String        @unique
+  emailVerified       Boolean       @default(false) @map("email_verified")
+  // Better Auth phone-number plugin (mobile OTP sign-in, Batch 2.6).
+  phoneNumber         String?       @unique @map("phone_number")
+  phoneNumberVerified Boolean?      @map("phone_number_verified")
+  image               String?
+  sessions            AuthSession[]
+  accounts            AuthAccount[]
+  customer            Customer?
+  staff               Staff?
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("auth_users")
 }
@@ -623,4 +634,54 @@ model AuthVerification {
 
   @@index([identifier])
   @@map("auth_verifications")
+}
+
+// ---------- jobs and notifications ----------
+
+// Outbox for work after a commit (docs/03 section 11): the cron route
+// leases due rows with FOR UPDATE SKIP LOCKED and retries with backoff.
+model Job {
+  id        String    @id @default(uuid(7)) @db.Uuid
+  kind      String
+  payload   Json      @default("{}")
+  runAt     DateTime  @default(now()) @map("run_at") @db.Timestamptz(3)
+  attempts  Int       @default(0)
+  lastError String?   @map("last_error")
+  doneAt    DateTime? @map("done_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([doneAt, runAt])
+  @@map("jobs")
+}
+
+enum NotificationChannel {
+  email
+  sms
+}
+
+// Delivery log: one row per message sent, so a retried job never sends twice.
+model Notification {
+  id          String              @id @default(uuid(7)) @db.Uuid
+  template    String
+  channel     NotificationChannel
+  recipient   String
+  orderId     String?             @map("order_id") @db.Uuid
+  order       Order?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  provider    String
+  providerRef String?             @map("provider_ref")
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([template, channel, orderId])
+  @@map("notifications")
+}
+
+// Fixed-window counters for sign-in and other abuse-prone requests
+// (src/lib/rate-limit.ts). Expired rows are purged by the cron tick.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime @map("reset_at") @db.Timestamptz(3)
+
+  @@index([resetAt])
+  @@map("rate_limits")
 }

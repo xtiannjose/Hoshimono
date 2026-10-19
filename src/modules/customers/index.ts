@@ -1,0 +1,21 @@
+// Public interface of the customers module (docs/03-ARCHITECTURE.md section 3).
+// Owns the Customer row (created or linked at sign-in through
+// customerForUser), the profile and the Address book.
+export {
+  deleteAddress,
+  getAddress,
+  getDefaultAddress,
+  listAddresses,
+  MAX_ADDRESSES,
+  saveAddress,
+  setDefaultAddress,
+} from "./internal/addresses";
+export type {
+  AddressField,
+  AddressView,
+  SaveAddressResult,
+} from "./internal/addresses";
+export { getProfile, updateName } from "./internal/profile";
+export type { Profile } from "./internal/profile";
+export { customerForUser } from "./internal/link";
+export type { AuthUserInfo } from "./internal/link";

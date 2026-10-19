@@ -15,8 +15,8 @@ export function Pagination({
   href: (page: number) => string;
 }) {
   if (total === 0) return null;
-  const first = (page - 1) * pageSize + 1;
   const last = Math.min(total, page * pageSize);
+  const first = Math.min((page - 1) * pageSize + 1, last);
   const pages = Math.ceil(total / pageSize);
   return (
     <nav

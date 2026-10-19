@@ -2,6 +2,8 @@
 
 import { useActionState } from "react";
 
+import { formKey } from "@/components/form-key";
+
 import { Button } from "@/components/ui/button";
 
 import {
@@ -52,7 +54,11 @@ export function CategoryRow({
       className="border-border grid gap-1 border-t py-3"
       style={{ paddingLeft: depth * 24 }}
     >
-      <form action={save} className="flex flex-wrap items-end gap-2">
+      <form
+        key={formKey(saved)}
+        action={save}
+        className="flex flex-wrap items-end gap-2"
+      >
         <label className="grid gap-1 text-xs font-semibold">
           Name
           <input
@@ -120,6 +126,7 @@ export function NewCategoryForm({ parents }: { parents: Option[] }) {
   const message = state.errors.name ?? state.errors.parent;
   return (
     <form
+      key={formKey(state)}
       action={action}
       className="rounded-card border-border bg-card flex max-w-3xl flex-wrap items-end gap-3 border p-4"
     >
