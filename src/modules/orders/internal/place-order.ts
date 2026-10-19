@@ -29,7 +29,7 @@ import { OPEN_STATUSES } from "./status";
 export const MAX_OPEN_COD_ORDERS = 3;
 export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
 
-/** Job that sends the order confirmed email and SMS (Batch 2.5). */
+/** Job that sends the order confirmed email and SMS. */
 export const ORDER_CONFIRMED_JOB = "order.confirmed";
 
 export type PlaceOrderInput = {

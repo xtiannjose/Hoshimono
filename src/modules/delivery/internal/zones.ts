@@ -31,7 +31,7 @@ async function activeZones() {
  * The Zone that delivers to a city and barangay, or null when none does.
  * A Zone with listed barangays serves only those; one without serves the
  * whole city. A barangay match wins over a whole-city match.
- * shortcut: names, not map polygons, until maps arrive (Batch 2.3 deferral).
+ * shortcut: names, not map polygons, until a maps provider is chosen.
  */
 export async function resolveZone(place: {
   city: string;

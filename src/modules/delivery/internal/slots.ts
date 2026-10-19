@@ -187,7 +187,7 @@ export async function releaseSlot(
   if (updated !== 1) throw new Error(`No Slot ${slotId}`);
 }
 
-/** Delete lapsed holds (cron, Batch 2.5). Returns how many went. */
+/** Delete lapsed holds (cron tick). Returns how many went. */
 export async function purgeExpiredHolds(now = new Date()): Promise<number> {
   const { count } = await db.slotHold.deleteMany({
     where: { expiresAt: { lte: now } },

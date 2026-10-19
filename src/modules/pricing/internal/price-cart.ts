@@ -104,7 +104,7 @@ export function priceCart(
   });
 
   const subtotalCents = addMoney(0, ...priced.map((l) => l.lineTotalCents));
-  // shortcut: no Promotions or Vouchers until Batch 5.3; they reduce this.
+  // shortcut: no Promotions or Vouchers until Phase 5; they reduce this.
   const discountCents = 0;
   const goodsCents = subtotalCents - discountCents;
   const weighedSubtotalCents = addMoney(

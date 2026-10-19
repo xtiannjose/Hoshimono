@@ -20,7 +20,7 @@ import { db as appDb } from "@/lib/db";
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
 
-// Admin catalogue writes (Batch 1.4, PRD ADM-1 and ADM-2).
+// Admin catalogue writes (PRD ADM-1 and ADM-2).
 const db = createTestDb();
 const MEDIA = path.join(process.cwd(), "public", "media", "test");
 process.env.MEDIA_LOCAL_DIR = MEDIA;

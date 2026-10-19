@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
 
-// shortcut: one Hub at launch (PRD assumptions). Batch 2.3 resolves the Hub
-// from the Customer's Zone; until then everything uses the active Hub.
+// shortcut: one Hub at launch (PRD assumptions). A Customer's Zone names
+// their Hub; guests, before an address, use the active one.
 /** The active Hub, or null before any Hub is set up (a fresh database). */
 export async function getDefaultHubId(): Promise<string | null> {
   const hub = await db.hub.findFirst({

@@ -267,7 +267,7 @@ UI and UX:
 
 Engineering:
 
-- [ ] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
+- [x] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
 - [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
 - [x] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
 - [x] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
