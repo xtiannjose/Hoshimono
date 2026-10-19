@@ -22,6 +22,10 @@ _Avoid_: Price per kilo (when the measure is not a kilo), rate
 A Product sold by weight where the delivered weight differs from the ordered weight (meat, fish, loose produce).
 _Avoid_: Variable-weight item, catch-weight, loose item
 
+**Tax Class**:
+How VAT applies to a Product: vatable (12% included in the price), VAT-exempt (fresh and unprocessed food), or zero-rated.
+_Avoid_: Tax code, tax type, VAT flag
+
 **Promotion**:
 A time-boxed price reduction or offer attached to Products or a Cart.
 _Avoid_: Sale, deal, discount (use Voucher for code-based reductions)
@@ -87,8 +91,20 @@ A non-public fulfilment facility where staff pick Orders and from which Riders d
 _Avoid_: Store, warehouse, branch, dark store
 
 **Zone**:
-A geographic area a Hub serves, defined by city and barangay lists, with its own delivery fee and minimum Order value.
+A geographic area a Hub serves, defined by city and barangay lists, with its own Delivery Fee, Free-Delivery Threshold and Order Minimum.
 _Avoid_: Region, coverage area, delivery area
+
+**Delivery Fee**:
+The flat amount an Order pays for delivery, set per Zone.
+_Avoid_: Shipping fee, service fee, delivery charge
+
+**Free-Delivery Threshold**:
+The Cart value at or above which a Zone waives the Delivery Fee.
+_Avoid_: Free shipping minimum, free delivery over
+
+**Order Minimum**:
+The lowest Cart value a Zone accepts at Checkout.
+_Avoid_: Minimum spend, minimum order value, MOV
 
 **Slot**:
 A bookable delivery window at a Hub for a date, with a capacity of Orders. Customer copy says "delivery slot".
