@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { addMoney, formatMoney, parseMoney, prorate } from "@/lib/money";
+import {
+  addMoney,
+  formatMoney,
+  moneyParts,
+  parseMoney,
+  prorate,
+} from "@/lib/money";
 
 describe("formatMoney", () => {
   it("shows pesos with grouping and two decimals", () => {
@@ -22,6 +28,14 @@ describe("formatMoney", () => {
   it("rejects anything that is not an integer number of centavos", () => {
     expect(() => formatMoney(59.5)).toThrow(RangeError);
     expect(() => formatMoney(Number.NaN)).toThrow(RangeError);
+  });
+});
+
+describe("moneyParts", () => {
+  it("splits pesos from centavos for the small-centavos card style", () => {
+    expect(moneyParts(16000)).toEqual({ whole: "₱160", fraction: ".00" });
+    expect(moneyParts(124950)).toEqual({ whole: "₱1,249", fraction: ".50" });
+    expect(moneyParts(-5)).toEqual({ whole: "-₱0", fraction: ".05" });
   });
 });
 

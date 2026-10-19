@@ -7,7 +7,7 @@ import { Suspense } from "react";
 import { readCartOwner } from "@/app/cart/owner";
 import { CartSync } from "@/components/cart/cart-button";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
-import { formatSlot } from "@/lib/dates";
+import { slotParts } from "@/lib/dates";
 import { getCart, getCartId } from "@/modules/cart";
 import { AddressForm } from "@/components/address/address-form";
 import { listAddresses } from "@/modules/customers";
@@ -29,7 +29,6 @@ export default function CheckoutPage({ searchParams }: PageProps<"/checkout">) {
   return (
     <section className="wrap py-8 md:py-12">
       <h1 className="type-h1">Checkout</h1>
-      <div data-no-cart-bar hidden />
       <Suspense fallback={<CheckoutSkeleton />}>
         <Checkout searchParams={searchParams} />
       </Suspense>
@@ -124,7 +123,7 @@ async function Checkout({
         slots={slots.map((s) => ({
           id: s.id,
           date: s.date,
-          label: formatSlot(s.startsAt, s.endsAt, now),
+          ...slotParts(s.startsAt, s.endsAt, now),
           state: s.state,
         }))}
         heldSlotId={hold?.slotId ?? null}

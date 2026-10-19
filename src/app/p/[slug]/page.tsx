@@ -186,8 +186,8 @@ async function ProductView({ found }: { found: ProductDetail }) {
           {found.isWeighed && (
             <p className="rounded-field bg-warn-soft text-warn px-4 py-3 text-sm leading-5">
               Sold by weight. You pay for the exact weight we pack, within 10%
-              of {size.replace("approx. ", "")}. Your final total is confirmed
-              at delivery.
+              of {formatPackSize(found.packSize, false)}. Your final total is
+              confirmed at delivery.
             </p>
           )}
           {state === "out" ? (

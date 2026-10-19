@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  formatPackSize,
-  salePercent,
-  splitMoney,
-  unitPriceLabel,
-} from "./format";
+import { formatPackSize, salePercent, unitPriceLabel } from "./format";
 
 describe("formatPackSize", () => {
   it("uses kg and L from 1,000 and keeps small sizes as they are", () => {
@@ -36,13 +31,6 @@ describe("unitPriceLabel", () => {
     expect(unitPriceLabel({ cents: 4125, basis: "per_piece" })).toBe(
       "₱41.25 per piece"
     );
-  });
-});
-
-describe("splitMoney", () => {
-  it("splits pesos from centavos for the small-centavos card style", () => {
-    expect(splitMoney(16000)).toEqual({ whole: "₱160", fraction: ".00" });
-    expect(splitMoney(124950)).toEqual({ whole: "₱1,249", fraction: ".50" });
   });
 });
 

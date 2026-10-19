@@ -2,6 +2,7 @@
 
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 
@@ -78,13 +79,21 @@ export function CartButton() {
 /** Phones: a floating bar with count, "View cart" and the goods total. */
 function CartBar({ count, total }: { count: number; total: number }) {
   const open = useCart((s) => s.open);
+  // Nothing in the Cart is also the server render, so the page shell never
+  // reads the URL (Next requires that to sit inside Suspense).
   if (count === 0 || open) return null;
+  return <FloatingCartBar count={count} total={total} />;
+}
+
+function FloatingCartBar({ count, total }: { count: number; total: number }) {
+  // The Cart and Checkout pages show the Cart already.
+  const path = usePathname();
+  if (path === "/cart" || path.startsWith("/checkout")) return null;
   // Portalled: the header's backdrop blur would pin a fixed child to it.
   return createPortal(
     <div
       style={{ zIndex: z.sticky }}
-      // The Cart and Checkout pages mark themselves with data-no-cart-bar.
-      className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden [body:has([data-no-cart-bar])_&]:hidden"
+      className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden"
     >
       <button
         type="button"
