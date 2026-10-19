@@ -70,7 +70,8 @@ export async function requestSignInLink(
   try {
     await emailSignInLink(email, next);
     return { status: "sent", email };
-  } catch {
+  } catch (error) {
+    console.error("[sign-in] link not sent:", error);
     return {
       status: "error",
       message:
@@ -111,7 +112,8 @@ export async function requestSignInCode(
   try {
     await textSignInCode(phone);
     return { step: "code", typed, phone };
-  } catch {
+  } catch (error) {
+    console.error("[sign-in] code not sent:", error);
     return {
       step: "number",
       typed,
@@ -136,7 +138,20 @@ export async function verifySignInCodeAction(
     CODE_CHECKS,
   ]);
   if (tooMany) return { ...prev, step: "code", phone, message: tooMany };
-  if (!(await verifySignInCode(phone, code))) {
+  let accepted: boolean;
+  try {
+    accepted = await verifySignInCode(phone, code);
+  } catch (error) {
+    console.error("[sign-in] code not checked:", error);
+    return {
+      ...prev,
+      step: "code",
+      phone,
+      message:
+        "We could not check your code just now. Please try again in a minute.",
+    };
+  }
+  if (!accepted) {
     return {
       ...prev,
       step: "code",
