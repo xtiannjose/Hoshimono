@@ -139,6 +139,9 @@
     sans-serif;
   --font-heading: var(--font-display);
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Skeleton pulse: opacity only, 1.2 s (docs/05 section 7). */
+  --animate-pulse: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ---------- Base ---------- */

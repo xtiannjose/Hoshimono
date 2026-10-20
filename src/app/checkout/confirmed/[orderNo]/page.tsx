@@ -12,6 +12,7 @@ import { formatMoney } from "@/lib/money";
 import { getCart } from "@/modules/cart";
 import { requireCustomer } from "@/modules/identity";
 import { getOrder } from "@/modules/orders";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
   title: "Order confirmed",
@@ -23,9 +24,7 @@ export default function ConfirmedPage({
 }: PageProps<"/checkout/confirmed/[orderNo]">) {
   return (
     <section className="wrap max-w-3xl py-10 md:py-14">
-      <Suspense
-        fallback={<div className="bg-muted rounded-card h-96 animate-pulse" />}
-      >
+      <Suspense fallback={<Skeleton className="rounded-card h-96" />}>
         <Confirmed params={params} />
       </Suspense>
     </section>

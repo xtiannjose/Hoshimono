@@ -44,7 +44,7 @@ async function Form({
 function FormSkeleton() {
   return (
     <div className="grid gap-4" aria-hidden>
-      <Skeleton className="h-5 w-16" />
+      <Skeleton className="rounded-pill h-5 w-16" />
       <Skeleton className="rounded-field h-12" />
       <Skeleton className="rounded-pill h-12" />
     </div>

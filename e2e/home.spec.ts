@@ -4,6 +4,14 @@ test("home page loads", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Hoshimono/);
+  // Placeholders are decoration until real photos arrive: nothing to read out.
+  await expect(page.getByRole("img", { name: /Photo to come/ })).toHaveCount(0);
+  // Not inside a shop aisle, so no Category is marked.
+  await expect(
+    page
+      .getByRole("navigation", { name: "Categories" })
+      .locator('[aria-current="page"]')
+  ).toHaveCount(0);
 });
 
 test("home shows the Category mosaic and fresh picks", async ({ page }) => {

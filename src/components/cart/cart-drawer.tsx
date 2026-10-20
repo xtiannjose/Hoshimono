@@ -9,6 +9,7 @@ import { loadCart, loadDelivery, type DeliveryRow } from "@/app/cart/actions";
 import { ICON_BUTTON, PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { z } from "@/config/z";
 import { formatMoney } from "@/lib/money";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { CartLines, EmptyCart } from "./cart-contents";
 import { setCartOpen, setCartView, useCart } from "./cart-store";
@@ -115,19 +116,13 @@ export default function CartDrawer() {
               Same-day delivery in 2-hour slots. Choose yours at checkout.
             </p>
           ) : (
-            <div
-              aria-hidden
-              className="rounded-field bg-muted mx-5 mb-1 h-14 animate-pulse"
-            />
+            <Skeleton className="rounded-field mx-5 mb-1 h-14" />
           )}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3">
             {!view ? (
               <div aria-hidden className="grid gap-3 py-3">
                 {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="bg-muted rounded-field h-20 animate-pulse"
-                  />
+                  <Skeleton key={i} className="rounded-field h-20" />
                 ))}
               </div>
             ) : hasLines ? (

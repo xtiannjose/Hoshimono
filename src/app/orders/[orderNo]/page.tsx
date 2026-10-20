@@ -9,6 +9,7 @@ import { OrderTimeline } from "@/components/order/order-timeline";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { requireCustomer } from "@/modules/identity";
 import { getOrder } from "@/modules/orders";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { cancelOrderAction } from "./actions";
 
@@ -22,9 +23,7 @@ export default function TrackingPage({
 }: PageProps<"/orders/[orderNo]">) {
   return (
     <section className="wrap max-w-3xl py-10 md:py-14">
-      <Suspense
-        fallback={<div className="bg-muted rounded-card h-96 animate-pulse" />}
-      >
+      <Suspense fallback={<Skeleton className="rounded-card h-96" />}>
         <Tracking params={params} />
       </Suspense>
     </section>

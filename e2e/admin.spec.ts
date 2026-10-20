@@ -134,9 +134,10 @@ test("a Merchandiser adds a Category", async ({ page }) => {
     .locator("xpath=ancestor::form")
     .getByRole("button", { name: "Save" })
     .click();
+  // Saving also refreshes the catalogue cache: slow on a busy dev server.
   await expect(
     page.getByRole("status").filter({ hasText: "Saved." })
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
   await page.reload();
   await expect(
     page

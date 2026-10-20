@@ -27,6 +27,7 @@ import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { categoryHref, productHref } from "@/lib/routes";
 import { isUuid } from "@/lib/uuid";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Props = PageProps<"/p/[slug]">;
 
@@ -325,10 +326,10 @@ function StructuredData({
 function ProductSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading product" className="pt-5">
-      <div className="rounded-pill bg-muted h-5 w-56 animate-pulse" />
+      <Skeleton className="rounded-pill h-5 w-56" />
       <div className="mt-4 grid gap-8 lg:grid-cols-[7fr_5fr]">
-        <div className="rounded-card bg-muted aspect-square animate-pulse" />
-        <div className="rounded-card bg-muted h-96 animate-pulse" />
+        <Skeleton className="rounded-card aspect-square" />
+        <Skeleton className="rounded-card h-96" />
       </div>
     </div>
   );
