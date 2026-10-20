@@ -6,6 +6,8 @@ import { purgeRateLimits } from "@/lib/rate-limit";
 import { purgeExpiredHolds } from "@/modules/delivery";
 import { purgeIdleCarts } from "@/modules/cart";
 import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
+import { expireUnpaidOrders } from "@/modules/orders";
+import { paymentProvider } from "@/modules/payments";
 
 import { jobHandlers } from "@/server/job-handlers";
 
@@ -21,8 +23,9 @@ function authorised(request: Request): boolean {
 
 /**
  * Called every minute by the host (docs/03-ARCHITECTURE.md section 11):
- * drops lapsed Slot holds, runs due jobs, clears ended rate-limit windows
- * and purges idle Carts and finished jobs.
+ * drops lapsed Slot holds, cancels online Orders unpaid after 15 minutes,
+ * runs due jobs, clears ended rate-limit windows and purges idle Carts and
+ * finished jobs.
  * Everything it does is idempotent, so an extra call is harmless.
  */
 export async function GET(
@@ -41,6 +44,13 @@ export async function GET(
   // keep going out even if, say, the Slot hold purge fails).
   const steps: [string, () => Promise<unknown>][] = [
     ["holds", () => purgeExpiredHolds(now)],
+    [
+      "unpaid",
+      async () => {
+        const provider = paymentProvider();
+        return provider ? expireUnpaidOrders(provider, now) : 0;
+      },
+    ],
     ["jobs", () => runDueJobs(jobHandlers, { now })],
     ["rateLimits", () => purgeRateLimits(now)],
     ["carts", () => purgeIdleCarts(now)],

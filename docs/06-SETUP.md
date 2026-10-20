@@ -116,7 +116,7 @@ Fill `.env.local`. Never commit it.
 | `BETTER_AUTH_URL`                                | Auth base URL                          | Same as app URL                                                                                   |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`       | Google sign-in                         | Google Cloud OAuth credentials; redirect URI `http://localhost:3000/api/auth/callback/google`     |
 | `CRON_SECRET`                                    | Lets the host call `/api/cron/tick`    | `openssl rand -base64 32`; Vercel sends it on cron calls (needs a plan with per-minute crons)     |
-| `PAYMENT_PROVIDER`                               | `paymongo`                             | Decided 2026-10-19, ADR 0003                                                                      |
+| `PAYMENT_PROVIDER`                               | `paymongo`, or `fake` locally          | Decided 2026-10-19, ADR 0003. `fake` pays on a local stand-in page; refused on a real domain      |
 | `PAYMONGO_SECRET_KEY`, `PAYMONGO_WEBHOOK_SECRET` | API key; secret for verifying webhooks | PayMongo dashboard (key) and the webhook endpoint's `secret_key`; **test mode only** until launch |
 | `RESEND_API_KEY`, `EMAIL_FROM`                   | Email                                  | Resend                                                                                            |
 | `SMS_PROVIDER`, `SEMAPHORE_API_KEY`              | SMS                                    | Semaphore                                                                                         |

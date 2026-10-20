@@ -20,6 +20,6 @@ Xendit's same-day e-wallet void (fees returned) and wider bank and over-the-coun
 - Cash on delivery stays a first-class method with no provider.
 - Webhook handlers verify the signature first, then record the raw event under the unique `(provider, provider_event_id)` constraint, so a repeated event is acknowledged and ignored. The browser return URL is never trusted for payment state.
 - PayMongo's hosted Checkout Session documents no manual capture, so a card hold for a Weighed Product would need the Payment Intent flow with PayMongo's card fields on our page. Batch 3.3 decides between that and charging the estimate and refunding the difference, as wallets do; `03-ARCHITECTURE.md` section 8 follows that decision.
-- A Checkout Session does not expire on its own: the 15-minute unpaid-Order job (Batch 3.2) must expire it through the API as well as cancel the Order.
+- A Checkout Session does not expire on its own: the 15-minute unpaid-Order job (Batch 3.2) must expire it through the API as well as cancel the Order. Batch 3.2 added `expireCheckout` to the interface for this; PayMongo's refusal (paid or processing) leaves the Order to its webhook.
 - To confirm during the test-mode trial: payout timing, business verification lead time, how long a card hold lasts, and whether a refund returns the transaction fee.
 - Switching provider later means writing a new adapter, not changing Orders or Checkout.

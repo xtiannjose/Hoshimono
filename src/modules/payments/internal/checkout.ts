@@ -32,10 +32,11 @@ export async function startCheckout(
     successUrl,
     cancelUrl,
   });
-  // Only the first session to land is kept. Any other is expired at once,
-  // so it can never take money for an Order that is not waiting for it.
+  // Only the first session to land is kept, and only while the Payment is
+  // still open (closeOnlinePayment may have closed it meanwhile). Any other
+  // is expired at once, so it never takes money for an Order not waiting.
   const { count } = await db.payment.updateMany({
-    where: { id: payment.id, providerRef: null },
+    where: { id: payment.id, providerRef: null, status: "unpaid" },
     data: {
       providerRef: session.providerRef,
       checkoutUrl: session.redirectUrl,
@@ -48,4 +49,39 @@ export async function startCheckout(
     select: { checkoutUrl: true },
   });
   return kept.checkoutUrl;
+}
+
+/**
+ * Close an Order's unpaid online Payment so it can never take money: expire
+ * its hosted checkout, or keep one from opening. False when the provider
+ * refuses (paid, or a payment still going through: its webhook settles the
+ * Order) or there is nothing to close.
+ */
+export async function closeOnlinePayment(
+  provider: PaymentProvider,
+  orderId: string
+): Promise<boolean> {
+  const payment = await db.payment.findFirst({
+    where: { orderId, provider: provider.name },
+  });
+  if (!payment || payment.method === "cod") return false;
+  // Closed on an earlier run that stopped before cancelling the Order.
+  if (payment.status === "failed") return true;
+  if (payment.status !== "unpaid") return false;
+  if (
+    payment.providerRef &&
+    (await provider.expireCheckout(payment.providerRef)) === "refused"
+  ) {
+    return false;
+  }
+  // A session stored since the read above stays open: the next run expires it.
+  const { count } = await db.payment.updateMany({
+    where: {
+      id: payment.id,
+      status: "unpaid",
+      providerRef: payment.providerRef,
+    },
+    data: { status: "failed" },
+  });
+  return count === 1;
 }

@@ -3,7 +3,8 @@
 // PaymentProvider interface (ADR 0003).
 export { createCodPayment, voidCodPayment } from "./internal/cod";
 export { createOnlinePayment } from "./internal/online";
-export { startCheckout } from "./internal/checkout";
+export { closeOnlinePayment, startCheckout } from "./internal/checkout";
+export { fakePaidWebhook } from "./internal/fake";
 export { createPaymongo } from "./internal/paymongo";
 export type {
   Checkout,

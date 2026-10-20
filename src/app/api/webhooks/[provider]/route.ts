@@ -1,8 +1,15 @@
+import { after } from "next/server";
+
+import { runDueJobs } from "@/modules/jobs";
+import { confirmPaidOrder } from "@/modules/orders";
 import { handleWebhook, paymentProvider } from "@/modules/payments";
+
+import { jobHandlers } from "@/server/job-handlers";
 
 /**
  * Payment provider webhooks (docs/03 section 8). The raw body is read as
- * text, untouched, because the signature covers its exact bytes.
+ * text, untouched, because the signature covers its exact bytes. A paid
+ * Order is confirmed in the same transaction as its Payment.
  */
 export async function POST(
   request: Request,
@@ -13,8 +20,13 @@ export async function POST(
   const result = await handleWebhook(
     provider,
     await request.text(),
-    request.headers
+    request.headers,
+    { onPaid: confirmPaidOrder }
   );
+  // Send the confirmation now; the cron run is the safety net.
+  if (result === "applied") {
+    after(() => runDueJobs(jobHandlers).then(() => undefined));
+  }
   // Anything but a bad signature is acknowledged, so the provider stops
   // retrying; duplicates and unmatched events are already recorded.
   return result === "rejected"

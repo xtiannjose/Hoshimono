@@ -7,9 +7,12 @@ export {
 } from "./internal/place-order";
 export type { PlaceOrderInput, PlaceOrderResult } from "./internal/place-order";
 export {
+  abandonPayment,
   cancelOrder,
   confirmPaidOrder,
+  expireUnpaidOrders,
   ORDER_CONFIRMED_JOB,
+  PAYMENT_WINDOW_MINUTES,
   transitionOrder,
 } from "./internal/status";
 export type { Actor } from "./internal/status";

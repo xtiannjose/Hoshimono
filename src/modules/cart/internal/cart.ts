@@ -449,6 +449,37 @@ export async function checkOutCart(
   return closed === 1;
 }
 
+/**
+ * Put an unpaid Order's lines back in the Customer's open Cart, opening one
+ * if needed. A line already in the Cart keeps what the Customer set since.
+ */
+export async function returnLinesToCart(
+  tx: Prisma.TransactionClient,
+  customerId: string,
+  lines: {
+    productId: string;
+    quantity: number;
+    seenPriceCents: number;
+    substitutionPreference: SubstitutionPreference;
+    preferredProductId: string | null;
+    note: string | null;
+  }[]
+): Promise<void> {
+  await tx.$executeRaw`
+    INSERT INTO carts (id, customer_id, updated_at)
+    VALUES (${randomUUID()}::uuid, ${customerId}::uuid, now())
+    ON CONFLICT DO NOTHING`;
+  // Locks the open Cart, so checkout cannot close it under these lines.
+  const [cart] = await tx.$queryRaw<{ id: string }[]>`
+    UPDATE carts SET updated_at = now()
+    WHERE customer_id = ${customerId}::uuid AND checked_out_at IS NULL
+    RETURNING id`;
+  await tx.cartLine.createMany({
+    data: lines.map((line) => ({ cartId: cart.id, ...line })),
+    skipDuplicates: true,
+  });
+}
+
 /** Idle guest Carts and checked-out Carts are kept this long; also the guest cookie's life. */
 export const CART_RETENTION_DAYS = 30;
 

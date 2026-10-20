@@ -1,6 +1,12 @@
 "use client";
 
-import { CheckCircleIcon, MoneyIcon, ScalesIcon } from "@phosphor-icons/react";
+import {
+  CheckCircleIcon,
+  CreditCardIcon,
+  DeviceMobileIcon,
+  MoneyIcon,
+  ScalesIcon,
+} from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +49,26 @@ const SUBSTITUTION = {
   preferred: "I'll choose",
   none: "No substitute",
 } as const;
+const PAYMENT = [
+  {
+    value: "gcash",
+    Icon: DeviceMobileIcon,
+    name: "GCash",
+    hint: "You approve the payment in the GCash app",
+  },
+  {
+    value: "card",
+    Icon: CreditCardIcon,
+    name: "Credit or debit card",
+    hint: "Visa and Mastercard, entered on our payment partner's secure page",
+  },
+  {
+    value: "cod",
+    Icon: MoneyIcon,
+    name: "Cash on delivery",
+    hint: "Pay the Rider when your order arrives",
+  },
+] as const;
 const initial: CheckoutState = {};
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
@@ -71,6 +97,7 @@ export function CheckoutForm({
   heldSlotId,
   heldExpiresAt,
   phone,
+  onlinePayments,
 }: {
   idempotencyKey: string;
   addresses: AddressView[];
@@ -82,6 +109,8 @@ export function CheckoutForm({
   /** When the cart's current hold ends. */
   heldExpiresAt: Date | null;
   phone: string;
+  /** GCash and card are on offer (a payment provider is set up). */
+  onlinePayments: boolean;
 }) {
   const router = useRouter();
   const [state, action, pending] = useActionState(placeOrderAction, initial);
@@ -90,6 +119,10 @@ export function CheckoutForm({
     state.values?.slotId ?? heldSlotId ?? ""
   );
   const [slotMessage, setSlotMessage] = useState<string | null>(null);
+  const [payment, setPayment] = useState(
+    onlinePayments ? (state.values?.payment ?? "cod") : "cod"
+  );
+  const online = payment !== "cod";
   // When the hold on the chosen Slot ends; null means no live hold shown.
   const [heldUntil, setHeldUntil] = useState<Date | null>(
     heldSlotId && slotId === heldSlotId ? heldExpiresAt : null
@@ -319,30 +352,38 @@ export function CheckoutForm({
         </Panel>
 
         <Panel title="Payment">
-          <fieldset>
+          <fieldset className="grid gap-2">
             <legend className="sr-only">Payment method</legend>
-            <label
-              className={`${CARD} grid grid-cols-[28px_1fr_22px] items-center gap-3.5 px-4 py-3.5 has-[:checked]:px-[15px] has-[:checked]:py-[13px]`}
-            >
-              <MoneyIcon size={26} aria-hidden />
-              <span>
-                <b className="block">Cash on delivery</b>
-                <small className="text-muted-foreground block text-[13px] leading-[18px]">
-                  Pay the Rider when your order arrives
-                </small>
-              </span>
-              <input
-                type="radio"
-                name="payment"
-                value="cod"
-                defaultChecked
-                className="accent-ink size-5"
-              />
-            </label>
+            {PAYMENT.filter((p) => onlinePayments || p.value === "cod").map(
+              ({ value, Icon, name, hint }) => (
+                <label
+                  key={value}
+                  className={`${CARD} grid grid-cols-[28px_1fr_22px] items-center gap-3.5 px-4 py-3.5 has-[:checked]:px-[15px] has-[:checked]:py-[13px]`}
+                >
+                  <Icon size={26} aria-hidden />
+                  <span>
+                    <b className="block">{name}</b>
+                    <small className="text-muted-foreground block text-[13px] leading-[18px]">
+                      {hint}
+                    </small>
+                  </span>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value={value}
+                    checked={payment === value}
+                    onChange={() => setPayment(value)}
+                    className="accent-ink size-5"
+                  />
+                </label>
+              )
+            )}
           </fieldset>
-          <p className="text-muted-foreground text-[13px]">
-            GCash and card payments are coming soon.
-          </p>
+          {!onlinePayments && (
+            <p className="text-muted-foreground text-[13px]">
+              GCash and card payments are coming soon.
+            </p>
+          )}
           {priced.weighedSubtotalCents > 0 && (
             <p className="rounded-field bg-warn-soft flex items-start gap-3 px-4 py-3.5 text-[15px] leading-[22px]">
               <ScalesIcon
@@ -350,9 +391,9 @@ export function CheckoutForm({
                 aria-hidden
                 className="text-warn mt-px shrink-0"
               />
-              Some items are sold by weight. We charge the weight we actually
-              pack, so your final total may change a little. You pay the final
-              amount in cash.
+              {online
+                ? "Some items are sold by weight. You pay this estimate now; we charge the weight we actually pack and refund any difference within one day."
+                : "Some items are sold by weight. We charge the weight we actually pack, so your final total may change a little. You pay the final amount in cash."}
             </p>
           )}
         </Panel>
@@ -426,9 +467,16 @@ export function CheckoutForm({
           className={`${PRIMARY_BUTTON} w-full`}
         >
           {pending
-            ? "Placing your order..."
+            ? online
+              ? "Opening payment page..."
+              : "Placing your order..."
             : `Place order, ${formatMoney(priced.totalCents)}`}
         </button>
+        {online && slotId && !blocked && (
+          <p className="text-muted-foreground text-center text-[13px]">
+            Next, you pay on our payment partner&apos;s secure page.
+          </p>
+        )}
         {!slotId && !blocked && (
           <p className="text-muted-foreground text-center text-[13px]">
             Choose a delivery slot to continue.
