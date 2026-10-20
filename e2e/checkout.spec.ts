@@ -162,3 +162,44 @@ test("choosing an address in another Zone re-prices the Order", async ({
   await place.click();
   await expect(page.getByTestId("order-total")).toHaveText("₱874.00");
 });
+
+test("the cart drawer names the Slot held at Checkout", async ({ page }) => {
+  await page.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
+  await page
+    .getByRole("group", { name: "Quantity of Fresh Milk" })
+    .getByRole("button", { name: "Add one" })
+    .click();
+  // Phones open the Cart from the floating bar.
+  await expect(
+    page.getByRole("button", { name: /2\s*View cart/ })
+  ).toBeVisible();
+  await page.goto("/checkout");
+  await signIn(page, freshEmail("drawer"), "/checkout");
+  await page
+    .getByLabel("House or unit number and street")
+    .fill("12 Sampaguita Street");
+  await page.getByLabel("City").selectOption("Pasig");
+  await page.getByLabel("Barangay").fill("Kapitolyo");
+  await page
+    .getByRole("textbox", { name: "Landmark" })
+    .fill("Beside the guardhouse");
+  await page.getByRole("button", { name: "Deliver here" }).click();
+  await page.waitForLoadState("networkidle");
+  await page
+    .locator('input[name="slot"]:not([disabled])')
+    .first()
+    .locator("xpath=..")
+    .click();
+  await expect(page.getByText(/Held for you until \d/)).toBeVisible();
+
+  // Back on the shelves, the drawer names that Slot and links to change it.
+  await page.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: /View cart/ }).click();
+  const drawer = page.getByRole("dialog", { name: "Your cart" });
+  await expect(drawer.getByText(/^Held for you until \d/)).toBeVisible();
+  await expect(drawer.getByRole("link", { name: "Change" })).toHaveAttribute(
+    "href",
+    "/checkout"
+  );
+});

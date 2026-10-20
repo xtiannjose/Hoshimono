@@ -3,9 +3,9 @@
 import { TruckIcon, XIcon } from "@phosphor-icons/react";
 import Link from "next/link";
 import { Drawer } from "vaul";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { loadCart } from "@/app/cart/actions";
+import { loadCart, loadDelivery, type DeliveryRow } from "@/app/cart/actions";
 import { ICON_BUTTON, PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { z } from "@/config/z";
 import { formatMoney } from "@/lib/money";
@@ -24,8 +24,8 @@ const subscribe = (change: () => void) => {
 /**
  * Bottom sheet on phones, side sheet from md up (docs/05 CartDrawer), built
  * on vaul: it follows the finger 1:1 and closes on a fast or long drag.
- * shortcut: vaul's own transition, not the Motion spring from docs/05 section
- * 7; no detents, as the Cart has one height.
+ * vaul's own transition, not a Motion spring, and no detents: the Cart has
+ * one height (docs/05, as built in Phase 2).
  */
 export default function CartDrawer() {
   const open = useCart((s) => s.open);
@@ -41,6 +41,21 @@ export default function CartDrawer() {
   useEffect(() => {
     if (open && !view) loadCart().then(setCartView, () => {});
   }, [open, view]);
+
+  // undefined while loading; null when there is no Slot to name (a guest).
+  const [delivery, setDelivery] = useState<DeliveryRow | null>();
+  // Asked again on each open: a hold can start or lapse in between.
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    loadDelivery().then(
+      (row) => live && setDelivery(row),
+      () => live && setDelivery(null)
+    );
+    return () => {
+      live = false;
+    };
+  }, [open]);
 
   const hasLines = (view?.lines.length ?? 0) > 0;
   const canCheckout = (view?.priced.lines.length ?? 0) > 0;
@@ -77,10 +92,34 @@ export default function CartDrawer() {
             </Drawer.Close>
           </div>
 
-          <p className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
-            <TruckIcon size={20} aria-hidden className="shrink-0" />
-            Same-day delivery in 2-hour slots. Choose yours at checkout.
-          </p>
+          {delivery ? (
+            <div className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
+              <TruckIcon size={20} aria-hidden className="shrink-0" />
+              <p className="min-w-0 flex-1">
+                <b className="block">{delivery.slot}</b>
+                <span className="text-muted-foreground">{delivery.note}</span>
+              </p>
+              {hasLines && (
+                <Link
+                  href="/checkout"
+                  onClick={close}
+                  className="font-semibold underline underline-offset-[3px]"
+                >
+                  Change
+                </Link>
+              )}
+            </div>
+          ) : delivery === null ? (
+            <p className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
+              <TruckIcon size={20} aria-hidden className="shrink-0" />
+              Same-day delivery in 2-hour slots. Choose yours at checkout.
+            </p>
+          ) : (
+            <div
+              aria-hidden
+              className="rounded-field bg-muted mx-5 mb-1 h-14 animate-pulse"
+            />
+          )}
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-3">
             {!view ? (
               <div aria-hidden className="grid gap-3 py-3">
