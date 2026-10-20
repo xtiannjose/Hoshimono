@@ -35,8 +35,9 @@ export default defineConfig({
       NEXT_PUBLIC_APP_URL: BASE_URL,
       E2E_MAILBOX: "1",
       CRON_SECRET: "e2e-cron-secret",
+      // New Orders pay through the stand-in provider (e2e/online-payment.spec.ts).
+      PAYMENT_PROVIDER: "fake",
       // Test-mode PayMongo settings; e2e/payments.spec.ts signs with this secret.
-      PAYMENT_PROVIDER: "paymongo",
       PAYMONGO_SECRET_KEY: "sk_test_e2e",
       PAYMONGO_WEBHOOK_SECRET: "whsk_e2e",
     },

@@ -1,8 +1,16 @@
+import type { Prisma } from "@/generated/prisma/client";
 import type { ActorType, OrderStatus } from "@/generated/prisma/enums";
-import { db } from "@/lib/db";
+import { addMinutes } from "@/lib/dates";
+import { db, inTransaction, type Client } from "@/lib/db";
+import { returnLinesToCart } from "@/modules/cart";
 import { releaseSlot } from "@/modules/delivery";
 import { releaseStock } from "@/modules/inventory";
-import { voidCodPayment } from "@/modules/payments";
+import { enqueueJob } from "@/modules/jobs";
+import {
+  closeOnlinePayment,
+  voidCodPayment,
+  type PaymentProvider,
+} from "@/modules/payments";
 
 /** The Order lifecycle (docs/03-ARCHITECTURE.md section 7). */
 const NEXT: Record<OrderStatus, OrderStatus[]> = {
@@ -21,6 +29,9 @@ export const OPEN_STATUSES = (Object.keys(NEXT) as OrderStatus[]).filter(
   (status) => NEXT[status].length > 0
 );
 
+/** Job that sends the order confirmed email and SMS. */
+export const ORDER_CONFIRMED_JOB = "order.confirmed";
+
 export type Actor = { type: ActorType; id?: string | null };
 
 /**
@@ -33,9 +44,9 @@ export async function transitionOrder(
   to: OrderStatus,
   actor: Actor,
   reason?: string,
-  options: { from?: OrderStatus[] } = {}
+  options: { from?: OrderStatus[]; client?: Client } = {}
 ): Promise<boolean> {
-  return db.$transaction(async (tx) => {
+  return inTransaction(options.client ?? db, async (tx) => {
     const [order] = await tx.$queryRaw<
       { status: OrderStatus; hub_id: string; slot_id: string }[]
     >`SELECT status, hub_id, slot_id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
@@ -89,7 +100,11 @@ export async function transitionOrder(
   });
 }
 
-/** The Customer may cancel until picking starts (PRD ACC-5, docs/03 section 7). */
+/**
+ * The Customer may cancel until picking starts (PRD ACC-5, docs/03 section
+ * 7). An Order still waiting for payment goes through abandonPayment
+ * instead, which closes its checkout first.
+ */
 export async function cancelOrder(
   customerId: string,
   orderId: string
@@ -104,6 +119,128 @@ export async function cancelOrder(
     "cancelled",
     { type: "customer", id: customerId },
     "Cancelled by the Customer",
-    { from: ["pending_payment", "confirmed"] }
+    { from: ["confirmed"] }
   );
+}
+
+/**
+ * The provider says an online Order is paid: confirm it and queue its
+ * notice, inside the webhook's transaction. "late" when the Order is no
+ * longer waiting (the 15-minute job cancelled it): the money arrived, so a
+ * refund is owed (Batch 3.3).
+ */
+export async function confirmPaidOrder(
+  tx: Prisma.TransactionClient,
+  { orderId }: { orderId: string }
+): Promise<"confirmed" | "late"> {
+  const moved = await transitionOrder(
+    orderId,
+    "confirmed",
+    { type: "system" },
+    "Paid online",
+    { from: ["pending_payment"], client: tx }
+  );
+  if (!moved) return "late";
+  await tx.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: "paid" },
+  });
+  await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId });
+  return "confirmed";
+}
+
+/** An online Order waits this long for payment (docs/03 section 6). */
+export const PAYMENT_WINDOW_MINUTES = 15;
+
+/**
+ * Cancel online Orders unpaid after PAYMENT_WINDOW_MINUTES (cron tick):
+ * their checkout is closed first, so no money can arrive after, then stock
+ * and the Slot place go back and the lines return to the Customer's Cart.
+ * An Order the provider will not close is left for its webhook.
+ * Returns how many were cancelled.
+ */
+export async function expireUnpaidOrders(
+  provider: PaymentProvider,
+  now = new Date()
+): Promise<number> {
+  const stale = await db.order.findMany({
+    where: {
+      status: "pending_payment",
+      placedAt: { lte: addMinutes(now, -PAYMENT_WINDOW_MINUTES) },
+    },
+    orderBy: { placedAt: "asc" },
+    select: { id: true },
+    take: 100,
+  });
+  let cancelled = 0;
+  for (const { id } of stale) {
+    if (!(await closeOnlinePayment(provider, id))) continue;
+    const system = { type: "system" } as const;
+    if (await cancelUnpaid(id, system, "Not paid within 15 minutes")) {
+      cancelled++;
+    }
+  }
+  return cancelled;
+}
+
+/**
+ * The Customer gives up paying (back from the hosted checkout): the same
+ * as the payment window ending, now. False when the Order is not theirs or
+ * not waiting, or a payment is already going through.
+ */
+export async function abandonPayment(
+  provider: PaymentProvider,
+  customerId: string,
+  orderId: string
+): Promise<boolean> {
+  const mine = await db.order.findFirst({
+    where: { id: orderId, customerId, status: "pending_payment" },
+    select: { id: true },
+  });
+  if (!mine || !(await closeOnlinePayment(provider, orderId))) return false;
+  return cancelUnpaid(
+    orderId,
+    { type: "customer", id: customerId },
+    "Payment not finished"
+  );
+}
+
+// The Order row, then the Cart, then (in transitionOrder) Slot and stock:
+// placeOrder takes Cart, Slot, stock in that order, so the two cannot deadlock.
+async function cancelUnpaid(
+  orderId: string,
+  actor: Actor,
+  reason: string
+): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const [order] = await tx.$queryRaw<{ customer_id: string }[]>`
+      SELECT customer_id FROM orders
+      WHERE id = ${orderId}::uuid AND status = 'pending_payment'
+      FOR UPDATE`;
+    if (!order) return false;
+    const lines = await tx.orderLine.findMany({
+      where: { orderId },
+      orderBy: { createdAt: "asc" },
+    });
+    await returnLinesToCart(
+      tx,
+      order.customer_id,
+      lines.map((l) => ({
+        productId: l.productId,
+        quantity: l.orderedQty,
+        seenPriceCents: l.unitPriceCents,
+        substitutionPreference: l.substitutionPreference,
+        preferredProductId: l.preferredProductId,
+        note: l.note,
+      }))
+    );
+    await tx.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: "failed" },
+    });
+    return transitionOrder(orderId, "cancelled", actor, reason, {
+      from: ["pending_payment"],
+      client: tx,
+    });
+  });
 }

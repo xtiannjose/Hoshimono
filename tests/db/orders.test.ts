@@ -2,12 +2,21 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { getCart, setLineQuantity, type CartOwner } from "@/modules/cart";
+import { addMinutes } from "@/lib/dates";
+import {
+  getCart,
+  setLineNote,
+  setLineQuantity,
+  setSubstitution,
+  type CartOwner,
+} from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import { jobHandlers } from "@/server/job-handlers";
 import {
+  abandonPayment,
   cancelOrder,
+  expireUnpaidOrders,
   getOrder,
   listOrders,
   MAX_COD_TOTAL_CENTS,
@@ -17,6 +26,7 @@ import {
   transitionOrder,
   type PlaceOrderInput,
 } from "@/modules/orders";
+import { startCheckout, type PaymentProvider } from "@/modules/payments";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
@@ -399,6 +409,242 @@ describe("cash on delivery limits", () => {
       reason: "over_cod_limit",
       limitCents: MAX_COD_TOTAL_CENTS,
     });
+  });
+});
+
+describe("online payment", () => {
+  it("holds stock and the Slot while the Customer pays, without confirming yet", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const result = await placeOrder(
+      await checkout(ligaya, { paymentMethod: "gcash" })
+    );
+    if (!result.ok) throw new Error(result.reason);
+
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: result.orderId },
+      include: { payments: true, statusEvents: true },
+    });
+    expect(order).toMatchObject({
+      status: "pending_payment",
+      paymentStatus: "unpaid",
+    });
+    expect(order.payments).toEqual([
+      expect.objectContaining({
+        method: "gcash",
+        provider: "paymongo",
+        providerRef: null,
+        amountCents: order.totalCents,
+        status: "unpaid",
+      }),
+    ]);
+    expect(order.statusEvents.map((e) => e.to)).toEqual(["pending_payment"]);
+    // The confirmation goes out once PayMongo says paid, not now.
+    expect(await db.job.count()).toBe(0);
+    expect(
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).reserved
+    ).toBe(2);
+    expect(
+      (await db.slot.findUniqueOrThrow({ where: { id: slots[0] } })).booked
+    ).toBe(1);
+  });
+});
+
+describe("payment window", () => {
+  /** A provider that answers every expiry with `answer` and records it. */
+  function fakeProvider(answer: "expired" | "refused" = "expired") {
+    const expired: string[] = [];
+    const provider: PaymentProvider = {
+      name: "paymongo",
+      createCheckout: async () => ({
+        providerRef: "cs_after",
+        redirectUrl: "https://pay.test/cs_after",
+      }),
+      expireCheckout: async (ref) => {
+        expired.push(ref);
+        return answer;
+      },
+      capture: async () => {},
+      refund: async () => ({ refundRef: "ref_unused" }),
+      verifyWebhook: () => false,
+      parseEvent: () => {
+        throw new Error("not used here");
+      },
+    };
+    return Object.assign(provider, { expired });
+  }
+
+  /** A GCash Order waiting for payment, with a Checkout Session or none yet. */
+  async function waiting(sessionId: string | null) {
+    const result = await placeOrder(
+      await checkout(ligaya, { paymentMethod: "gcash" })
+    );
+    if (!result.ok) throw new Error(result.reason);
+    if (sessionId) {
+      await db.payment.updateMany({
+        where: { orderId: result.orderId },
+        data: {
+          providerRef: sessionId,
+          checkoutUrl: `https://pay.test/${sessionId}`,
+        },
+      });
+    }
+    return result.orderId;
+  }
+
+  const reserved = async (productId: string) =>
+    (
+      await db.stockLevel.findFirstOrThrow({
+        where: { productId, hubId: HUB },
+      })
+    ).reserved;
+
+  it("cancels an Order still unpaid after 15 minutes and puts its lines back in the Cart", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    await setSubstitution(owner(ligaya), MILK, {
+      preference: "preferred",
+      preferredProductId: ALT_MILK,
+    });
+    await setLineNote(owner(ligaya), MILK, "Coldest one please");
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    const id = await waiting("cs_window");
+    // Shopping again meanwhile: a line already in the new Cart stays as set.
+    await setLineQuantity(owner(ligaya), LIEMPO, 3, HUB);
+    const paymongo = fakeProvider();
+
+    expect(await expireUnpaidOrders(paymongo, addMinutes(NOW, 14))).toBe(0);
+    expect(paymongo.expired).toEqual([]);
+    expect(await expireUnpaidOrders(paymongo, addMinutes(NOW, 16))).toBe(1);
+    expect(await expireUnpaidOrders(paymongo, addMinutes(NOW, 17))).toBe(0);
+
+    expect(paymongo.expired).toEqual(["cs_window"]);
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { payments: true, statusEvents: { orderBy: { at: "asc" } } },
+    });
+    expect(order).toMatchObject({
+      status: "cancelled",
+      paymentStatus: "failed",
+    });
+    expect(order.payments.map((p) => p.status)).toEqual(["failed"]);
+    expect(order.statusEvents.at(-1)).toMatchObject({
+      from: "pending_payment",
+      to: "cancelled",
+      actorType: "system",
+    });
+    expect(await reserved(MILK)).toBe(0);
+    // The new Cart's 3 are not reserved; the Order's 1 went back.
+    expect(await reserved(LIEMPO)).toBe(0);
+    expect(
+      (await db.slot.findUniqueOrThrow({ where: { id: slots[0] } })).booked
+    ).toBe(0);
+
+    const lines = await db.cartLine.findMany({
+      where: { cart: { customerId: ligaya, checkedOutAt: null } },
+    });
+    expect(lines).toHaveLength(2);
+    expect(lines.find((l) => l.productId === MILK)).toMatchObject({
+      quantity: 2,
+      substitutionPreference: "preferred",
+      preferredProductId: ALT_MILK,
+      note: "Coldest one please",
+    });
+    expect(lines.find((l) => l.productId === LIEMPO)).toMatchObject({
+      quantity: 3,
+    });
+  });
+
+  it("leaves an Order PayMongo will not expire: its payment is going through", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const id = await waiting("cs_busy");
+    const paymongo = fakeProvider("refused");
+
+    expect(await expireUnpaidOrders(paymongo, addMinutes(NOW, 16))).toBe(0);
+
+    expect(paymongo.expired).toEqual(["cs_busy"]);
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { payments: true },
+    });
+    expect(order).toMatchObject({
+      status: "pending_payment",
+      paymentStatus: "unpaid",
+    });
+    expect(order.payments.map((p) => p.status)).toEqual(["unpaid"]);
+    expect(await reserved(MILK)).toBe(2);
+    expect(
+      await db.cartLine.count({
+        where: { cart: { customerId: ligaya, checkedOutAt: null } },
+      })
+    ).toBe(0);
+  });
+
+  it("cancels an Order that never reached PayMongo, and no checkout opens for it after", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const id = await waiting(null);
+    const paymongo = fakeProvider();
+
+    expect(await expireUnpaidOrders(paymongo, addMinutes(NOW, 16))).toBe(1);
+
+    expect(paymongo.expired).toEqual([]);
+    expect((await db.order.findUniqueOrThrow({ where: { id } })).status).toBe(
+      "cancelled"
+    );
+    expect(
+      await startCheckout(paymongo, {
+        orderId: id,
+        orderNo: "SW-LATE",
+        successUrl: "https://hoshimono.test/ok",
+        cancelUrl: "https://hoshimono.test/back",
+      })
+    ).toBeNull();
+  });
+});
+
+describe("giving up on paying", () => {
+  it("cancels the Customer's own unpaid Order and puts its lines back in the Cart", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const placed = await placeOrder(
+      await checkout(ligaya, { paymentMethod: "card" })
+    );
+    if (!placed.ok) throw new Error(placed.reason);
+    await db.payment.updateMany({
+      where: { orderId: placed.orderId },
+      data: { providerRef: "cs_back" },
+    });
+    const expired: string[] = [];
+    const provider = {
+      name: "paymongo",
+      expireCheckout: async (ref: string) => {
+        expired.push(ref);
+        return "expired" as const;
+      },
+    } as unknown as PaymentProvider;
+
+    // Plain cancel would leave the checkout open to take money.
+    expect(await cancelOrder(ligaya, placed.orderId)).toBe(false);
+    expect(await abandonPayment(provider, paolo, placed.orderId)).toBe(false);
+    expect(expired).toEqual([]);
+    expect(await abandonPayment(provider, ligaya, placed.orderId)).toBe(true);
+
+    expect(expired).toEqual(["cs_back"]);
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: placed.orderId },
+      include: { statusEvents: { orderBy: { at: "asc" } } },
+    });
+    expect(order.status).toBe("cancelled");
+    expect(order.statusEvents.at(-1)).toMatchObject({
+      actorType: "customer",
+      actorId: ligaya,
+    });
+    expect(
+      await db.cartLine.findMany({
+        where: { cart: { customerId: ligaya, checkedOutAt: null } },
+      })
+    ).toEqual([expect.objectContaining({ productId: MILK, quantity: 2 })]);
   });
 });
 

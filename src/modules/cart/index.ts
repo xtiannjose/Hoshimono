@@ -13,6 +13,7 @@ export {
   newGuestToken,
   purgeIdleCarts,
   readCartVersion,
+  returnLinesToCart,
   setLineNote,
   setLineQuantity,
   setSubstitution,

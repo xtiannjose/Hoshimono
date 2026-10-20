@@ -2,7 +2,14 @@ import { createHmac, randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { createPaymongo, handleWebhook } from "@/modules/payments";
+import { confirmPaidOrder, ORDER_CONFIRMED_JOB } from "@/modules/orders";
+import {
+  createPaymongo,
+  handleWebhook,
+  startCheckout,
+  type CheckoutRequest,
+  type PaymentProvider,
+} from "@/modules/payments";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
@@ -199,5 +206,176 @@ describe("handleWebhook", () => {
       },
     });
     expect(event).toMatchObject({ paymentId: null, processedAt: null });
+  });
+});
+
+describe("a paid webhook and its Order", () => {
+  it("confirms the Order and queues its notice in the same transaction", async () => {
+    const { paymentId, sessionId } = await onlinePayment(61000);
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    const body = paidEvent({ sessionId, amount: 61000 });
+
+    expect(
+      await handleWebhook(paymongo, body, signed(body), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("applied");
+
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { statusEvents: true },
+    });
+    expect(order).toMatchObject({ status: "confirmed", paymentStatus: "paid" });
+    expect(order.statusEvents).toEqual([
+      expect.objectContaining({
+        from: "pending_payment",
+        to: "confirmed",
+        actorType: "system",
+      }),
+    ]);
+    const jobs = await db.job.findMany({
+      where: { kind: ORDER_CONFIRMED_JOB },
+    });
+    expect(
+      jobs.filter(
+        (j) => (j.payload as { orderId?: string }).orderId === orderId
+      )
+    ).toHaveLength(1);
+  });
+
+  it("flags money that arrives after the Order was cancelled, and leaves it cancelled", async () => {
+    const { paymentId, sessionId } = await onlinePayment(28000);
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    await db.order.update({
+      where: { id: orderId },
+      data: { status: "cancelled" },
+    });
+    const body = paidEvent({ sessionId, amount: 28000 });
+
+    expect(
+      await handleWebhook(paymongo, body, signed(body), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("late");
+
+    expect(
+      await db.order.findUniqueOrThrow({ where: { id: orderId } })
+    ).toMatchObject({
+      status: "cancelled",
+    });
+    // The money did arrive: the Payment says so, and a refund is owed.
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
+    ).toMatchObject({ status: "paid", capturedCents: 28000 });
+  });
+});
+
+describe("startCheckout", () => {
+  /** A provider that hands out numbered sessions and records what it did. */
+  function fakeProvider() {
+    const created: CheckoutRequest[] = [];
+    const expired: string[] = [];
+    const provider: PaymentProvider = {
+      name: "paymongo",
+      async createCheckout(request) {
+        created.push(request);
+        const n = created.length;
+        // A slow provider, so two requests at once really overlap.
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return {
+          providerRef: `cs_fake_${n}_${randomUUID().slice(0, 8)}`,
+          redirectUrl: `https://pay.example/${n}`,
+        };
+      },
+      async expireCheckout(ref) {
+        expired.push(ref);
+        return "expired";
+      },
+      capture: async () => {},
+      refund: async () => ({ refundRef: "ref_unused" }),
+      verifyWebhook: () => false,
+      parseEvent: () => {
+        throw new Error("unused");
+      },
+    };
+    return { provider, created, expired };
+  }
+
+  /** An unpaid online Payment without a session yet. */
+  async function waiting(amountCents = 51000) {
+    const { paymentId } = await onlinePayment(amountCents);
+    await db.payment.update({
+      where: { id: paymentId },
+      data: { providerRef: null },
+    });
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    return { paymentId, orderId };
+  }
+
+  const urls = {
+    orderNo: "SW-201026-TEST",
+    successUrl: "https://hoshimono.test/checkout/return/SW-201026-TEST",
+    cancelUrl: "https://hoshimono.test/checkout",
+  };
+
+  it("opens one session per Order and sends the Customer back to it", async () => {
+    const { paymentId, orderId } = await waiting(51000);
+    const { provider, created } = fakeProvider();
+
+    const first = await startCheckout(provider, { orderId, ...urls });
+    const again = await startCheckout(provider, { orderId, ...urls });
+
+    expect(first).toBe("https://pay.example/1");
+    expect(again).toBe(first);
+    expect(created).toEqual([
+      {
+        reference: "SW-201026-TEST",
+        description: "Hoshimono order SW-201026-TEST",
+        amountCents: 51000,
+        methods: ["gcash"],
+        successUrl: urls.successUrl,
+        cancelUrl: urls.cancelUrl,
+      },
+    ]);
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
+    ).toMatchObject({ checkoutUrl: "https://pay.example/1" });
+  });
+
+  it("keeps one live session when two requests race, expiring the other", async () => {
+    const { paymentId, orderId } = await waiting(47000);
+    const { provider, created, expired } = fakeProvider();
+
+    const [a, b] = await Promise.all([
+      startCheckout(provider, { orderId, ...urls }),
+      startCheckout(provider, { orderId, ...urls }),
+    ]);
+
+    expect(a).toBe(b);
+    const payment = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    expect(payment.checkoutUrl).toBe(a);
+    // Every session but the kept one is expired, so only one can be paid.
+    expect(expired).toHaveLength(created.length - 1);
+    expect(expired).not.toContain(payment.providerRef);
+  });
+
+  it("has nothing to open for an Order that is already paid", async () => {
+    const { paymentId, orderId } = await waiting(33000);
+    await db.payment.update({
+      where: { id: paymentId },
+      data: { status: "paid" },
+    });
+    const { provider, created } = fakeProvider();
+
+    expect(await startCheckout(provider, { orderId, ...urls })).toBeNull();
+    expect(created).toHaveLength(0);
   });
 });

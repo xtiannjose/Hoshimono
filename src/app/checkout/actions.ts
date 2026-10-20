@@ -14,7 +14,17 @@ import { getAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
-import { placeOrder, type PlaceOrderResult } from "@/modules/orders";
+import {
+  abandonPayment,
+  getOrder,
+  placeOrder,
+  type PlaceOrderResult,
+} from "@/modules/orders";
+import {
+  paymentProvider,
+  startCheckout,
+  type PaymentProvider,
+} from "@/modules/payments";
 
 import { takeOrderAttempt } from "./order-limits";
 
@@ -51,7 +61,12 @@ export async function holdSlotAction(
 export type CheckoutState = {
   message?: string;
   /** What was typed, so the form refills after React resets it. */
-  values?: { phone: string; riderNotes: string; slotId: string };
+  values?: {
+    phone: string;
+    riderNotes: string;
+    slotId: string;
+    payment: string;
+  };
 };
 
 function explain(result: Exclude<PlaceOrderResult, { ok: true }>): string {
@@ -97,7 +112,20 @@ export async function placeOrderAction(
     phone: text("phone"),
     riderNotes: text("riderNotes"),
     slotId: text("slotId"),
+    payment: text("payment"),
   };
+  const paymentMethod =
+    values.payment === "gcash" || values.payment === "card"
+      ? values.payment
+      : "cod";
+  const provider = paymentMethod === "cod" ? null : paymentProvider();
+  if (paymentMethod !== "cod" && !provider) {
+    return {
+      message:
+        "Paying online is not available right now. Please choose cash on delivery.",
+      values,
+    };
+  }
   if (!(await takeOrderAttempt(customer.id, clientIp(await headers())))) {
     return {
       message:
@@ -111,13 +139,14 @@ export async function placeOrderAction(
     slotId: values.slotId,
     contactPhone: values.phone,
     riderNotes: values.riderNotes,
-    paymentMethod: "cod",
+    paymentMethod,
     expectedTotalCents: Number(text("expectedTotalCents")),
     idempotencyKey: text("idempotencyKey"),
   });
   if (result.ok) {
     // Stock just changed: shelves must not keep offering what is reserved.
     updateTag(STOCK_TAG);
+    if (provider) await goToPayment(provider, result.orderId, result.orderNo);
     // Send the confirmation now; the cron run is the safety net.
     after(() => runDueJobs(jobHandlers).then(() => undefined));
     redirect(`/checkout/confirmed/${result.orderNo}`);
@@ -125,4 +154,61 @@ export async function placeOrderAction(
   // Show the Cart, Slots and total as they are now.
   refresh();
   return { message: explain(result), values };
+}
+
+const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+/**
+ * Send the Customer to the hosted checkout for their unpaid Order. Both
+ * ways back land on /checkout/pay, which reads the Order and never takes
+ * the redirect's word for it.
+ */
+async function goToPayment(
+  provider: PaymentProvider,
+  orderId: string,
+  orderNo: string
+): Promise<never> {
+  const page = `/checkout/pay/${encodeURIComponent(orderNo)}`;
+  let url: string | null;
+  try {
+    url = await startCheckout(provider, {
+      orderId,
+      orderNo,
+      successUrl: new URL(`${page}?back=paid`, appUrl()).toString(),
+      cancelUrl: new URL(`${page}?back=cancelled`, appUrl()).toString(),
+    });
+  } catch (error) {
+    console.error(`[checkout] could not open payment for ${orderNo}:`, error);
+    redirect(`${page}?back=error`);
+  }
+  // Null: nothing left to pay. The page shows where the Order stands.
+  redirect(url ?? page);
+}
+
+/** "Pay now" on /checkout/pay: reopen the Order's hosted checkout. */
+export async function payNowAction(orderNo: string): Promise<void> {
+  const page = `/checkout/pay/${encodeURIComponent(orderNo)}`;
+  const customer = await requireCustomer(page);
+  const order = await getOrder(customer.id, orderNo);
+  const provider = paymentProvider();
+  if (!order || !provider) redirect(page);
+  await goToPayment(provider, order.id, order.orderNo);
+}
+
+/**
+ * "Back to cart" on /checkout/pay: give up on paying. The Order is
+ * cancelled and its items go back in the Cart.
+ */
+export async function backToCartAction(orderNo: string): Promise<void> {
+  const page = `/checkout/pay/${encodeURIComponent(orderNo)}`;
+  const customer = await requireCustomer(page);
+  const order = await getOrder(customer.id, orderNo);
+  const provider = paymentProvider();
+  if (!order || !provider) redirect(page);
+  if (!(await abandonPayment(provider, customer.id, order.id))) {
+    // Paid, or a payment still going through: the page says which.
+    redirect(`${page}?back=busy`);
+  }
+  updateTag(STOCK_TAG); // the stock is back on the shelf
+  redirect("/cart");
 }

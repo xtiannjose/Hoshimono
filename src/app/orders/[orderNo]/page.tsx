@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import Link from "next/link";
+
 import { OrderDetails } from "@/components/order/order-details";
 import { OrderTimeline } from "@/components/order/order-timeline";
+import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { requireCustomer } from "@/modules/identity";
 import { getOrder } from "@/modules/orders";
 
@@ -46,6 +49,14 @@ async function Tracking({
         <h1 className="type-h1">Track your order</h1>
       </div>
       <OrderTimeline status={order.status} events={order.events} />
+      {order.status === "pending_payment" && (
+        <Link
+          href={`/checkout/pay/${order.orderNo}`}
+          className={`${PRIMARY_BUTTON} justify-self-start`}
+        >
+          Finish paying
+        </Link>
+      )}
       <OrderDetails order={order} />
       {cancellable && (
         <form

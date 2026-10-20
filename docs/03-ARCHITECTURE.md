@@ -135,8 +135,17 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 
 ## 8. Payments
 
-- **Interface:** `PaymentProvider` with `createCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the active one.
+- **Interface:** `PaymentProvider` with `createCheckout`, `expireCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the one new Orders pay through. `fake` is a stand-in for development and the local e2e build only (refused on a real domain): its hosted checkout is `/dev/pay/[ref]`, whose Pay button sends a signed webhook.
 - **Webhooks** hit `/api/webhooks/[provider]`. The handler verifies the signature, records the raw event in `payment_events` with a unique constraint on the provider event id, then applies it. A duplicate event is acknowledged and ignored. The handler never trusts amounts from the browser return URL; the webhook (or a provider fetch) is the source of truth.
+- **Online checkout, as built (Batch 3.2):**
+  - `placeOrder` holds stock and the Slot as `pending_payment` with an `unpaid` Payment; no notice yet. The COD limits do not apply.
+  - The Checkout action then calls `startCheckout`: one hosted checkout per Order, stored on the Payment (`checkout_url`) and reused on a second click. When two requests race, the first stored wins and the other session is expired at once.
+  - Both return URLs land on `/checkout/pay/[orderNo]`. It reads the Order, never the redirect, and refreshes for two minutes while waiting. It offers Pay now and Back to cart.
+  - Only a verified `paid` webhook confirms: `handleWebhook` takes an `onPaid` callback (`orders.confirmPaidOrder`) that runs in its transaction, so the Payment and the Order change together, and the confirmation notice is queued with them.
+  - **Payment Window:** the cron tick's `expireUnpaidOrders` takes Orders unpaid after 15 minutes. It closes the checkout first (`closeOnlinePayment`: expire the session, or mark the Payment failed before one opens). PayMongo refuses to expire a paid or processing session; that Order is left for its webhook. Then, in one transaction (Order row, Cart, Slot, stock: the order placeOrder locks them in), it cancels, releases stock and the Slot place, and returns the lines to the Customer's open Cart without overwriting lines added since.
+  - Back to cart on the pay page, and Cancel on the tracking page for an unpaid Order, run the same path now (`abandonPayment`). `cancelOrder` takes only confirmed Orders, so no path cancels an unpaid Order with its checkout still open.
+  - Money for an Order no longer waiting is recorded `late` and logged as a refund owed (refunds: Batch 3.3).
+  - Dependencies: `orders` also calls `payments` (close a checkout) and `cart` (`returnLinesToCart`).
 - **Cash on delivery:** the Rider records collected cash at delivery; Dispatch reconciles per Rider per day.
 - **Weighed items:** where the method supports it (cards), authorise estimate plus 10% and capture the final amount after picking. Wallets such as GCash generally cannot hold funds, so charge the estimate and refund any difference once the final weight is entered. Picker tolerance is plus or minus 10% of ordered weight; a heavier pick within tolerance is absorbed by Hoshimono. **Open decision:** confirm provider capabilities in Phase 3 and revise this paragraph.
 - **Refunds** always go through `payments.refund`, produce a ledger row, and notify the Customer.

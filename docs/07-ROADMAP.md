@@ -15,17 +15,17 @@ Resume here: read this section, then the batch named first under Next.
 - Carry-over code health (PR #8): 11 of 12 items; the result convention for module errors waits on an owner decision.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
 - Batch 3.1 (PR #10): PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
+- Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
 
-**Open pull requests:** none.
+**Open pull requests:** #12 (Batch 3.2).
 
-**Current phase:** 3, Online payments. Batch 3.1 is done; Batch 3.2 is next.
+**Current phase:** 3, Online payments. Batches 3.1 and 3.2 are done; Batch 3.3 is next.
 
 **Next, in order**
 
-1. Batch 3.2 Checkout integration (section 8). It can be built against a fake provider; runs against PayMongo test mode need the keys below.
-2. Batch 3.3 Weighed items and refunds. Decide first: a card hold through the Payment Intent flow with PayMongo's card fields, or charge the estimate and refund the difference as for wallets (ADR 0003, consequences).
-3. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
-4. Phase 4, Operations (section 10).
+1. Batch 3.3 Weighed items and refunds. Also refunds the money a "late" webhook brings (logged as a refund owed today), and a sandbox run of Batch 3.2 once the PayMongo keys exist. Decide first: a card hold through the Payment Intent flow with PayMongo's card fields, or charge the estimate and refund the difference as for wallets (ADR 0003, consequences).
+2. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
+3. Phase 4, Operations (section 10).
 
 **Waiting on the owner**
 
@@ -265,9 +265,9 @@ Refuted during verification, so not changed: weighed items sold per piece (unrea
 
 **Batch 3.2 Checkout integration** (W8 to W9). Stack: hosted checkout, cron. Skills: `tdd`, `playwright-cli`.
 
-- [ ] Hosted checkout redirect and return page that waits for the webhook, never trusting the redirect
-- [ ] 15-minute unpaid-order expiry job
-- [ ] Failure UX: declined card, abandoned wallet, expired session; cart preserved
+- [x] Hosted checkout redirect and return page that waits for the webhook, never trusting the redirect. GCash and card at Checkout when a provider is set; one hosted checkout per Order, reused; `/checkout/pay/[orderNo]` reads the Order and refreshes; a paid webhook confirms the Order in its own transaction and sends the notice. Checked against the stand-in provider (`PAYMENT_PROVIDER=fake`, `e2e/online-payment.spec.ts`); PayMongo test mode waits for the keys
+- [x] 15-minute unpaid-order expiry job. Closes the checkout first and skips an Order PayMongo will not expire (paid or processing); cancels, frees stock and the Slot, and returns the lines to the Cart
+- [x] Failure UX: declined card, abandoned wallet, expired session; cart preserved. Back from the provider shows Pay now and Back to cart; Back to cart cancels and restores the Cart at once, and the Payment Window does the same after 15 minutes
 
 **Batch 3.3 Weighed items and refunds** (W9). Skills: `grilling`, `security-review`.
 

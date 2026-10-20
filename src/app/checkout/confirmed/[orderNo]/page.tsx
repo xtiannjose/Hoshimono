@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { cartContext, readCartOwner } from "@/app/cart/owner";
@@ -39,6 +39,10 @@ async function Confirmed({
   const customer = await requireCustomer(`/checkout/confirmed/${orderNo}`);
   const order = await getOrder(customer.id, orderNo);
   if (!order) notFound();
+  // Not paid yet: this page must not say the order is in.
+  if (order.status === "pending_payment") {
+    redirect(`/checkout/pay/${order.orderNo}`);
+  }
   const estimated = order.lines.some((l) => l.weighed);
   // The header still shows the Cart that became this Order; hand it the new one.
   const owner = await readCartOwner();
@@ -66,6 +70,12 @@ async function Confirmed({
               for the Rider.
             </p>
           ))}
+        {order.paymentStatus === "paid" && (
+          <p>
+            Paid <b>{formatMoney(order.totalCents)}</b>
+            {order.paymentMethod === "gcash" ? " with GCash" : " by card"}.
+          </p>
+        )}
         <Link href={`/orders/${order.orderNo}`} className={PRIMARY_BUTTON}>
           Track your order
         </Link>

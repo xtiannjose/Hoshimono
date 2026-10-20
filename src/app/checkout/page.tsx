@@ -19,6 +19,7 @@ import {
   resolveZone,
 } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
+import { paymentProvider } from "@/modules/payments";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -129,6 +130,7 @@ async function Checkout({
         heldSlotId={hold?.slotId ?? null}
         heldExpiresAt={hold?.expiresAt ?? null}
         phone={customer.phone ?? ""}
+        onlinePayments={paymentProvider() !== null}
       />
     </>
   );
