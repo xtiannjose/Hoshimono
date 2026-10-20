@@ -456,17 +456,56 @@ model Payment {
   providerRef   String?        @map("provider_ref")
   // The hosted checkout the Customer was sent to; reused, never opened twice.
   checkoutUrl   String?        @map("checkout_url")
+  // The provider id of the completed payment, from the paid webhook; refunds name it.
+  paymentRef    String?        @map("payment_ref")
   amountCents   Int            @map("amount_cents")
   capturedCents Int            @default(0) @map("captured_cents")
   refundedCents Int            @default(0) @map("refunded_cents")
   status        PaymentStatus
   events        PaymentEvent[]
+  refunds       Refund[]
   createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([orderId])
   @@index([provider, providerRef])
   @@map("payments")
+}
+
+enum RefundReason {
+  // A paid Order was cancelled: everything paid goes back.
+  cancelled
+  // Picking packed less than the estimate (lighter weight, short lines).
+  picked
+  // Money arrived after the Order was cancelled.
+  late_payment
+}
+
+enum RefundStatus {
+  pending
+  // Sent to the provider, answer not yet stored. Left here by a crash, it
+  // becomes needs_review: never resent, a refund cannot be undone.
+  sending
+  sent
+  needs_review
+}
+
+// Money going back to the Customer (ADR 0008). One per Payment and reason,
+// so a repeated trigger never refunds twice.
+model Refund {
+  id          String       @id @default(uuid(7)) @db.Uuid
+  paymentId   String       @map("payment_id") @db.Uuid
+  payment     Payment      @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  amountCents Int          @map("amount_cents")
+  reason      RefundReason
+  status      RefundStatus @default(pending)
+  providerRef String?      @map("provider_ref")
+  lastError   String?      @map("last_error")
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  sentAt      DateTime?    @map("sent_at") @db.Timestamptz(3)
+
+  @@unique([paymentId, reason])
+  @@map("refunds")
 }
 
 // Raw provider events. The unique (provider, provider_event_id) makes webhooks idempotent.

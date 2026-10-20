@@ -84,6 +84,14 @@ _Avoid_: Transaction, charge (as a noun for the record)
 A message from the payment provider about a Payment, kept exactly once however many times it arrives.
 _Avoid_: Callback, notification (for provider webhooks)
 
+**Refund**:
+Money going back to the Customer on a Payment made online: all of it when a paid Order is cancelled or money arrives after cancellation, or the difference once picked. Sent at most once.
+_Avoid_: Reversal, chargeback (a chargeback is the bank's, not ours)
+
+**Final Total**:
+What a picked Order comes to: each Order Line by what was packed, never above its checkout amount. Paid online, the difference from the estimate is refunded; cash on delivery, it is what the Rider collects.
+_Avoid_: Actual total, real total
+
 **Payment Window**:
 The 15 minutes an online Order waits for payment, holding its stock and Slot place. If it ends unpaid, the Order is cancelled and its lines go back to the Customer's Cart.
 _Avoid_: Payment timeout, expiry (for the Order)

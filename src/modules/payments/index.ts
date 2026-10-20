@@ -14,6 +14,12 @@ export type {
 } from "./internal/provider";
 export { paymentProvider } from "./internal/active";
 export {
+  getRefundNotice,
+  REFUND_JOB,
+  refundOrderPayment,
+  sendRefund,
+} from "./internal/refunds";
+export {
   handleWebhook,
   type WebhookOptions,
   type WebhookResult,

@@ -33,7 +33,9 @@ type PaymongoEvent = {
       type?: string;
       data?: {
         id?: string;
-        attributes?: { payments?: { attributes?: { amount?: number } }[] };
+        attributes?: {
+          payments?: { id?: string; attributes?: { amount?: number } }[];
+        };
       };
     };
   };
@@ -122,13 +124,27 @@ export function createPaymongo({
       });
     },
 
-    async refund(paymentRef, amountCents, reason) {
-      const refund = await post<{ data: { id: string } }>("/v1/refunds", {
-        amount: amountCents,
-        payment_id: paymentRef,
-        reason,
-      });
-      return { refundRef: refund.data.id };
+    async refund(paymentRef, amountCents, note) {
+      try {
+        const refund = await post<{ data: { id: string } }>("/v1/refunds", {
+          amount: amountCents,
+          payment_id: paymentRef,
+          // PayMongo takes only duplicate, fraudulent or others.
+          reason: "others",
+          notes: note,
+        });
+        return { ok: true, refundRef: refund.data.id };
+      } catch (error) {
+        // A 4xx is PayMongo saying no; anything else leaves us not knowing.
+        if (
+          error instanceof PaymongoError &&
+          error.status >= 400 &&
+          error.status < 500
+        ) {
+          return { ok: false, reason: error.message };
+        }
+        throw error;
+      }
     },
 
     verifyWebhook(rawBody, headers) {
@@ -154,14 +170,14 @@ export function createPaymongo({
       const type = event?.attributes?.type ?? "unknown";
       const resource = event?.attributes?.data;
       const paid = type === "checkout_session.payment.paid";
+      const payment = paid ? resource?.attributes?.payments?.[0] : undefined;
       return {
         id: event?.id ?? "",
         type,
         kind: paid ? "paid" : "other",
         providerRef: resource?.id ?? null,
-        amountCents: paid
-          ? (resource?.attributes?.payments?.[0]?.attributes?.amount ?? null)
-          : null,
+        paymentRef: payment?.id ?? null,
+        amountCents: payment?.attributes?.amount ?? null,
       };
     },
   };

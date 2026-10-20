@@ -40,7 +40,7 @@ export function createFakeProvider(appUrl: string): PaymentProvider {
     async capture() {},
 
     async refund() {
-      return { refundRef: `fake_ref_${randomUUID()}` };
+      return { ok: true, refundRef: `fake_ref_${randomUUID()}` };
     },
 
     verifyWebhook(rawBody, headers) {
@@ -54,6 +54,7 @@ export function createFakeProvider(appUrl: string): PaymentProvider {
         id: string;
         type: string;
         providerRef: string;
+        paymentRef: string;
         amountCents: number;
       };
       return {
@@ -61,6 +62,7 @@ export function createFakeProvider(appUrl: string): PaymentProvider {
         type: event.type,
         kind: event.type === PAID ? "paid" : "other",
         providerRef: event.providerRef,
+        paymentRef: event.paymentRef,
         amountCents: event.amountCents,
       };
     },
@@ -76,6 +78,7 @@ export function fakePaidWebhook(
     id: `fake_evt_${randomUUID()}`,
     type: PAID,
     providerRef,
+    paymentRef: `fake_pay_${randomUUID()}`,
     amountCents,
   });
   return {

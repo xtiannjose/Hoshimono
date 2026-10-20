@@ -2,12 +2,16 @@
 
 import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { STOCK_TAG } from "@/app/_data/storefront";
 
 import { requireCustomer } from "@/modules/identity";
+import { runDueJobs } from "@/modules/jobs";
 import { abandonPayment, cancelOrder } from "@/modules/orders";
 import { paymentProvider } from "@/modules/payments";
+
+import { jobHandlers } from "@/server/job-handlers";
 
 /** Cancel before picking (docs/03 section 7); the page then shows the result. */
 export async function cancelOrderAction(fd: FormData): Promise<void> {
@@ -22,6 +26,8 @@ export async function cancelOrderAction(fd: FormData): Promise<void> {
       (await abandonPayment(provider, customer.id, orderId)));
   if (cancelled) {
     updateTag(STOCK_TAG); // the stock is back on the shelf
+    // A paid Order queued its refund: send it now, the cron run is the safety net.
+    after(() => runDueJobs(jobHandlers).then(() => undefined));
   }
   redirect(`/orders/${encodeURIComponent(orderNo)}`);
 }

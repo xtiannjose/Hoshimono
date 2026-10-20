@@ -16,14 +16,15 @@ Resume here: read this section, then the batch named first under Next.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
 - Batch 3.1 (PR #10): PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
 - Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
+- Batch 3.3 (PR #13, built on #12): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
 
-**Open pull requests:** #12 (Batch 3.2).
+**Open pull requests:** #12 (Batch 3.2), then #13 (Batch 3.3; it contains #12's commits until #12 merges, so merge #12 first).
 
-**Current phase:** 3, Online payments. Batches 3.1 and 3.2 are done; Batch 3.3 is next.
+**Current phase:** 3, Online payments. Batches 3.1 to 3.3 are built; Phase 3 closes once the PayMongo sandbox run passes (its exit criteria need test mode).
 
 **Next, in order**
 
-1. Batch 3.3 Weighed items and refunds. Also refunds the money a "late" webhook brings (logged as a refund owed today), and a sandbox run of Batch 3.2 once the PayMongo keys exist. Decide first: a card hold through the Payment Intent flow with PayMongo's card fields, or charge the estimate and refund the difference as for wallets (ADR 0003, consequences).
+1. When the PayMongo test keys exist: the sandbox run for Batches 3.2 and 3.3 (pay, fail, expire, refund full and partial), then tick the Phase 3 exit criteria.
 2. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
 3. Phase 4, Operations (section 10).
 
@@ -271,9 +272,9 @@ Refuted during verification, so not changed: weighed items sold per piece (unrea
 
 **Batch 3.3 Weighed items and refunds** (W9). Skills: `grilling`, `security-review`.
 
-- [ ] Weighed-item handling per [03-ARCHITECTURE.md](03-ARCHITECTURE.md) section 8 (decision closed and documented)
-- [ ] Refund flow (full, partial) with Customer notification
-- [ ] Sandbox end-to-end tests for GCash and card
+- [x] Weighed-item handling per [03-ARCHITECTURE.md](03-ARCHITECTURE.md) section 8 (decision closed and documented). [ADR 0008](adr/0008-weighed-items-online-and-refunds.md): every online method charges the estimate, no card holds; on `picked` the Final Total follows what was packed, never above the estimate, and the difference is refunded in one go. The Picker screen that enters weights is Batch 4.2
+- [x] Refund flow (full, partial) with Customer notification. `refunds` ledger, one per Payment and reason; sent at most once (`needs_review` when the outcome is unknown); email and SMS per refund. Triggers: cancel of a paid Order, money after cancellation, `picked`. Checked with the stand-in provider in `e2e/online-payment.spec.ts` (cancel a paid Order, refund shown and texted)
+- [ ] Sandbox end-to-end tests for GCash and card. Blocked: PayMongo test keys. Also confirms the expire and refund paths and the event shapes the adapter reads
 
 **Exit criteria:** in sandbox, a paid order moves to confirmed only after a verified webhook; replaying the same webhook ten times changes nothing; a declined payment returns the Customer to Checkout with the Cart intact; a partial refund updates the ledger and the Order.
 
@@ -341,10 +342,11 @@ Frontend:
 
 - [ ] Staff roles and permissions (admin, merchandiser, picker, dispatcher); audit log
 - [ ] Order queue with filters, search, status changes, notes
+- [ ] Refunds that need review (ADR 0008, `refunds.status = needs_review`) listed for staff, with the PayMongo refund lookup and a way to mark them settled
 
 **Batch 4.2 Picking and Substitutions** (W12 to W13). Stack: mobile-first web views, SMS. Skills: `design-taste-frontend` (Picker rules in [05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) section 9), `tdd`.
 
-- [ ] Picker view (mobile-first): aisle-ordered list, tick, mark short, propose Substitution, enter final weight
+- [ ] Picker view (mobile-first): aisle-ordered list, tick, mark short, propose Substitution, enter final weight. Saving `fulfilled_qty` and `final_weight_grams`, then moving the Order to `picked`, sets the Final Total and refunds the difference (ADR 0008); Substitution price differences are not in it yet
 - [ ] Customer-side Substitution response (SMS link or app notice) with auto-accept on timeout
 - [ ] Final amount recalculation and payment adjustment after picking
 
@@ -412,6 +414,7 @@ Frontend:
 
 - [ ] Privacy policy, terms, refund policy, Tax and Business Compliance page, cookie consent
 - [ ] Runbook: how to handle a stuck payment, a wrong refund, a Hub shutdown, a provider outage
+- [ ] Owner study guide (asked 20 Oct): the whole app explained in depth for the owner to study. How the business runs (Hubs, Slots, Pickers, Riders, payments, refunds), every module and what it owns, how a request travels from the page to the database, each flow end to end (browse, Cart, Checkout, COD and online payment, picking, delivery, refunds, cron and jobs), how the pieces connect, and why each design choice was made (the ADRs). Written when most of the app is built, kept up to date until launch
 - [ ] Production domain, email DNS (SPF, DKIM, DMARC), SMS sender
 
 ### Soft launch and public launch (W20 to W22, from 1 Mar)

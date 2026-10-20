@@ -84,10 +84,27 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
             <dt>{estimated ? "Estimated total" : "Total"}</dt>
             <dd data-testid="order-total">{formatMoney(order.totalCents)}</dd>
           </div>
+          {order.finalTotalCents !== null &&
+            order.finalTotalCents !== order.totalCents && (
+              <div className="flex justify-between font-semibold">
+                <dt>Final total, as packed</dt>
+                <dd>{formatMoney(order.finalTotalCents)}</dd>
+              </div>
+            )}
+          {order.refundedCents > 0 && (
+            <div className="flex justify-between">
+              <dt>
+                Refund to your{" "}
+                {order.paymentMethod === "card" ? "card" : "GCash"}
+              </dt>
+              <dd>{formatMoney(order.refundedCents)}</dd>
+            </div>
+          )}
         </dl>
         <p className="text-muted-foreground mt-2 text-[13px]">
           VAT included ({formatMoney(order.vatCents)}).
           {estimated &&
+            order.finalTotalCents === null &&
             " Weighed items are charged by the weight we pack, so the final amount may change a little."}
         </p>
       </div>

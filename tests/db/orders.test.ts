@@ -16,6 +16,7 @@ import { jobHandlers } from "@/server/job-handlers";
 import {
   abandonPayment,
   cancelOrder,
+  confirmPaidOrder,
   expireUnpaidOrders,
   getOrder,
   listOrders,
@@ -468,7 +469,7 @@ describe("payment window", () => {
         return answer;
       },
       capture: async () => {},
-      refund: async () => ({ refundRef: "ref_unused" }),
+      refund: async () => ({ ok: true, refundRef: "ref_unused" }),
       verifyWebhook: () => false,
       parseEvent: () => {
         throw new Error("not used here");
@@ -645,6 +646,109 @@ describe("giving up on paying", () => {
         where: { cart: { customerId: ligaya, checkedOutAt: null } },
       })
     ).toEqual([expect.objectContaining({ productId: MILK, quantity: 2 })]);
+  });
+});
+
+describe("final total and refunds", () => {
+  const staff = { type: "staff" as const, id: seedId("staff:picker") };
+
+  /** Milk x2 and a 500 g pack of liempo, placed and paid (or COD). */
+  async function placed(paymentMethod: "gcash" | "cod") {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    const result = await placeOrder(await checkout(ligaya, { paymentMethod }));
+    if (!result.ok) throw new Error(result.reason);
+    if (paymentMethod === "gcash") {
+      const { totalCents } = await db.order.findUniqueOrThrow({
+        where: { id: result.orderId },
+      });
+      await db.payment.updateMany({
+        where: { orderId: result.orderId },
+        data: {
+          status: "paid",
+          capturedCents: totalCents,
+          paymentRef: "pay_1",
+        },
+      });
+      await db.$transaction((tx) =>
+        confirmPaidOrder(tx, { orderId: result.orderId })
+      );
+    }
+    return result.orderId;
+  }
+
+  /** The Picker's entries: one milk short, the liempo 450 g of 500 g. */
+  async function pick(orderId: string) {
+    await db.orderLine.updateMany({
+      where: { orderId, productId: MILK },
+      data: { fulfilledQty: 1 },
+    });
+    await db.orderLine.updateMany({
+      where: { orderId, productId: LIEMPO },
+      data: { finalWeightGrams: 450 },
+    });
+    await transitionOrder(orderId, "picking", staff);
+    expect(await transitionOrder(orderId, "picked", staff)).toBe(true);
+  }
+
+  it("refunds the whole payment when a paid Order is cancelled", async () => {
+    const id = await placed("gcash");
+
+    expect(await cancelOrder(ligaya, id)).toBe(true);
+
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { payments: { include: { refunds: true } } },
+    });
+    expect(order).toMatchObject({
+      status: "cancelled",
+      paymentStatus: "refunded",
+    });
+    expect(order.payments[0]).toMatchObject({
+      status: "refunded",
+      refundedCents: order.totalCents,
+    });
+    expect(order.payments[0].refunds).toEqual([
+      expect.objectContaining({
+        reason: "cancelled",
+        amountCents: order.totalCents,
+        status: "pending",
+      }),
+    ]);
+  });
+
+  it("charges what was packed once picked, refunding the difference in one go", async () => {
+    const id = await placed("gcash");
+
+    await pick(id);
+
+    const order = await db.order.findUniqueOrThrow({
+      where: { id },
+      include: { payments: { include: { refunds: true } } },
+    });
+    // Estimate: 2 x 115.00 + 195.00 + 49.00 delivery = 474.00.
+    // Packed: 1 x 115.00 + 195.00 x 450/500 + 49.00 = 339.50.
+    expect(order.totalCents).toBe(47400);
+    expect(order).toMatchObject({
+      finalTotalCents: 33950,
+      paymentStatus: "partially_refunded",
+    });
+    expect(order.payments[0].refunds).toEqual([
+      expect.objectContaining({ reason: "picked", amountCents: 13450 }),
+    ]);
+  });
+
+  it("sets the cash to collect for a COD Order, with nothing to refund", async () => {
+    const id = await placed("cod");
+
+    await pick(id);
+
+    const order = await db.order.findUniqueOrThrow({ where: { id } });
+    expect(order).toMatchObject({
+      finalTotalCents: 33950,
+      paymentStatus: "cod_pending",
+    });
+    expect(await db.refund.count()).toBe(0);
   });
 });
 

@@ -99,7 +99,9 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 ### payments
 
-**`payments`**: `id`, `order_id`, `provider`, `method` (`cod`, `gcash`, `card`, other wallets), `provider_ref`, `amount_cents`, `captured_cents`, `refunded_cents`, `status`.
+**`payments`**: `id`, `order_id`, `provider`, `method` (`cod`, `gcash`, `card`, other wallets), `provider_ref` (the hosted checkout), `checkout_url`, `payment_ref` (the provider's id of the completed payment, which refunds name), `amount_cents`, `captured_cents`, `refunded_cents` (check: within `captured_cents`), `status`.
+
+**`refunds`**: money going back on a Payment ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). `payment_id`, `amount_cents` (check: above 0), `reason` (`cancelled`, `picked`, `late_payment`; **unique with payment_id**, so a trigger never refunds twice), `status` (`pending`, `sending`, `sent`, `needs_review`), `provider_ref?`, `last_error?`, `created_at`, `sent_at?`.
 
 **`payment_events`**: raw provider events. `provider`, `provider_event_id` (**unique with provider**), `type`, `payload`, `received_at`, `processed_at?`.
 

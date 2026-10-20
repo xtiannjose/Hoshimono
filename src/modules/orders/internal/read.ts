@@ -22,6 +22,10 @@ export type OrderSummary = {
 export type OrderDetail = OrderSummary & {
   paymentStatus: PaymentStatus;
   paymentMethod: PaymentMethod | null;
+  /** Set once picked: what the packed items came to (ADR 0008). */
+  finalTotalCents: number | null;
+  /** Given back to the Customer so far, paid online. */
+  refundedCents: number;
   subtotalCents: number;
   discountCents: number;
   deliveryFeeCents: number;
@@ -82,7 +86,7 @@ export async function getOrder(
       payments: {
         orderBy: { createdAt: "desc" },
         take: 1,
-        select: { method: true },
+        select: { method: true, refundedCents: true },
       },
     },
   });
@@ -98,6 +102,8 @@ export async function getOrder(
     itemCount: order.lines.reduce((n, l) => n + l.orderedQty, 0),
     paymentStatus: order.paymentStatus,
     paymentMethod: order.payments[0]?.method ?? null,
+    finalTotalCents: order.finalTotalCents,
+    refundedCents: order.payments[0]?.refundedCents ?? 0,
     subtotalCents: order.subtotalCents,
     discountCents: order.discountCents,
     deliveryFeeCents: order.deliveryFeeCents,
