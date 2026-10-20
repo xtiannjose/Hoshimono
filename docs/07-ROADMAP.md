@@ -30,7 +30,7 @@ Resume here: read this section, then the batch named first under Next.
 
 **Waiting on the owner**
 
-- PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET`, and "Hold then Capture" enabled on the account by PayMongo support. Start PayMongo business verification now: it takes weeks and blocks live payments.
+- PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
 - A decision on one result convention for module errors (section 9).
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
