@@ -402,6 +402,47 @@ describe("cash on delivery limits", () => {
   });
 });
 
+describe("online payment", () => {
+  it("holds stock and the Slot while the Customer pays, without confirming yet", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const result = await placeOrder(
+      await checkout(ligaya, { paymentMethod: "gcash" })
+    );
+    if (!result.ok) throw new Error(result.reason);
+
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: result.orderId },
+      include: { payments: true, statusEvents: true },
+    });
+    expect(order).toMatchObject({
+      status: "pending_payment",
+      paymentStatus: "unpaid",
+    });
+    expect(order.payments).toEqual([
+      expect.objectContaining({
+        method: "gcash",
+        provider: "paymongo",
+        providerRef: null,
+        amountCents: order.totalCents,
+        status: "unpaid",
+      }),
+    ]);
+    expect(order.statusEvents.map((e) => e.to)).toEqual(["pending_payment"]);
+    // The confirmation goes out once PayMongo says paid, not now.
+    expect(await db.job.count()).toBe(0);
+    expect(
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).reserved
+    ).toBe(2);
+    expect(
+      (await db.slot.findUniqueOrThrow({ where: { id: slots[0] } })).booked
+    ).toBe(1);
+  });
+});
+
 describe("two buyers at once", () => {
   it("sell the last unit once", async () => {
     await db.stockLevel.updateMany({

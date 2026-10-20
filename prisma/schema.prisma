@@ -454,6 +454,8 @@ model Payment {
   provider      String?
   method        PaymentMethod
   providerRef   String?        @map("provider_ref")
+  // The hosted checkout the Customer was sent to; reused, never opened twice.
+  checkoutUrl   String?        @map("checkout_url")
   amountCents   Int            @map("amount_cents")
   capturedCents Int            @default(0) @map("captured_cents")
   refundedCents Int            @default(0) @map("refunded_cents")

@@ -1,7 +1,9 @@
+import type { Prisma } from "@/generated/prisma/client";
 import type { ActorType, OrderStatus } from "@/generated/prisma/enums";
-import { db } from "@/lib/db";
+import { db, inTransaction, type Client } from "@/lib/db";
 import { releaseSlot } from "@/modules/delivery";
 import { releaseStock } from "@/modules/inventory";
+import { enqueueJob } from "@/modules/jobs";
 import { voidCodPayment } from "@/modules/payments";
 
 /** The Order lifecycle (docs/03-ARCHITECTURE.md section 7). */
@@ -21,6 +23,9 @@ export const OPEN_STATUSES = (Object.keys(NEXT) as OrderStatus[]).filter(
   (status) => NEXT[status].length > 0
 );
 
+/** Job that sends the order confirmed email and SMS. */
+export const ORDER_CONFIRMED_JOB = "order.confirmed";
+
 export type Actor = { type: ActorType; id?: string | null };
 
 /**
@@ -33,9 +38,9 @@ export async function transitionOrder(
   to: OrderStatus,
   actor: Actor,
   reason?: string,
-  options: { from?: OrderStatus[] } = {}
+  options: { from?: OrderStatus[]; client?: Client } = {}
 ): Promise<boolean> {
-  return db.$transaction(async (tx) => {
+  return inTransaction(options.client ?? db, async (tx) => {
     const [order] = await tx.$queryRaw<
       { status: OrderStatus; hub_id: string; slot_id: string }[]
     >`SELECT status, hub_id, slot_id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
@@ -106,4 +111,30 @@ export async function cancelOrder(
     "Cancelled by the Customer",
     { from: ["pending_payment", "confirmed"] }
   );
+}
+
+/**
+ * The provider says an online Order is paid: confirm it and queue its
+ * notice, inside the webhook's transaction. "late" when the Order is no
+ * longer waiting (the 15-minute job cancelled it): the money arrived, so a
+ * refund is owed (Batch 3.3).
+ */
+export async function confirmPaidOrder(
+  tx: Prisma.TransactionClient,
+  { orderId }: { orderId: string }
+): Promise<"confirmed" | "late"> {
+  const moved = await transitionOrder(
+    orderId,
+    "confirmed",
+    { type: "system" },
+    "Paid online",
+    { from: ["pending_payment"], client: tx }
+  );
+  if (!moved) return "late";
+  await tx.order.update({
+    where: { id: orderId },
+    data: { paymentStatus: "paid" },
+  });
+  await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId });
+  return "confirmed";
 }

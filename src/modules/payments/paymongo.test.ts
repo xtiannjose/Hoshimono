@@ -98,6 +98,33 @@ describe("PayMongo adapter", () => {
     expect(body(sent[0])).toEqual({ data: { attributes: { amount: 61000 } } });
   });
 
+  it("expires a Checkout Session, and reports PayMongo's refusal as refused", async () => {
+    const ok = fakeFetch({ data: { id: "cs_abc123" } });
+    expect(
+      await createPaymongo({ ...config, fetch: ok.fetch }).expireCheckout(
+        "cs_abc123"
+      )
+    ).toBe("expired");
+    expect(ok.sent[0].url).toBe(
+      "https://api.paymongo.com/v1/checkout_sessions/cs_abc123/expire"
+    );
+
+    // 400: already paid, a payment still processing, or already expired.
+    const paid = fakeFetch(
+      {
+        errors: [
+          { code: "resource_failed_state", detail: "has a paid payment" },
+        ],
+      },
+      400
+    );
+    expect(
+      await createPaymongo({ ...config, fetch: paid.fetch }).expireCheckout(
+        "cs_abc123"
+      )
+    ).toBe("refused");
+  });
+
   it("fails with PayMongo's own reason when it refuses a request", async () => {
     const { fetch } = fakeFetch(
       {

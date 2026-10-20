@@ -17,9 +17,9 @@ import { getAddress } from "@/modules/customers";
 import { bookSlot, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
-import { createCodPayment } from "@/modules/payments";
+import { createCodPayment, createOnlinePayment } from "@/modules/payments";
 
-import { OPEN_STATUSES } from "./status";
+import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
 
 /**
  * Cash-on-delivery Orders hold stock and Slot places without payment, so
@@ -29,17 +29,14 @@ import { OPEN_STATUSES } from "./status";
 export const MAX_OPEN_COD_ORDERS = 3;
 export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
 
-/** Job that sends the order confirmed email and SMS. */
-export const ORDER_CONFIRMED_JOB = "order.confirmed";
-
 export type PlaceOrderInput = {
   customerId: string;
   addressId: string;
   slotId: string;
   contactPhone: string;
   riderNotes?: string | null;
-  /** Cash on delivery only until online payments (Phase 3). */
-  paymentMethod: "cod";
+  /** GCash and card Orders wait for the provider's paid webhook. */
+  paymentMethod: "cod" | "gcash" | "card";
   /** The total the Customer saw; a different server total stops the Order. */
   expectedTotalCents: number;
   /** From the Checkout form, so a double-click places one Order. */
@@ -74,7 +71,7 @@ const input = z.object({
   slotId: z.guid(),
   contactPhone: z.string(),
   riderNotes: z.string().trim().max(200).nullish(),
-  paymentMethod: z.literal("cod"),
+  paymentMethod: z.enum(["cod", "gcash", "card"]),
   expectedTotalCents: z.int().nonnegative(),
   idempotencyKey: z.string().min(16).max(100),
 });
@@ -147,6 +144,7 @@ export async function placeOrder(
   const now = raw.now ?? new Date();
   const phone = normalizePhone(order.contactPhone);
   if (!phone) return { ok: false, reason: "invalid_phone" };
+  const cod = order.paymentMethod === "cod";
 
   const earlier = await replay(order.customerId, order.idempotencyKey);
   if (earlier) return earlier;
@@ -178,7 +176,7 @@ export async function placeOrder(
       shortByCents: priced.belowMinimumByCents,
     };
   }
-  if (priced.totalCents > MAX_COD_TOTAL_CENTS) {
+  if (cod && priced.totalCents > MAX_COD_TOTAL_CENTS) {
     return {
       ok: false,
       reason: "over_cod_limit",
@@ -202,12 +200,15 @@ export async function placeOrder(
     if ((await readCartVersion(tx, cartId)) !== cart.version) {
       throw new Refused({ ok: false, reason: "cart_changed" });
     }
-    const open = await tx.order.count({
-      where: {
-        customerId: order.customerId,
-        status: { in: OPEN_STATUSES },
-      },
-    });
+    // Unpaid COD Orders hold stock for days; an online one for minutes.
+    const open = cod
+      ? await tx.order.count({
+          where: {
+            customerId: order.customerId,
+            status: { in: OPEN_STATUSES },
+          },
+        })
+      : 0;
     if (open >= MAX_OPEN_COD_ORDERS) {
       throw new Refused({ ok: false, reason: "too_many_open_orders" });
     }
@@ -227,8 +228,8 @@ export async function placeOrder(
         customerId: order.customerId,
         hubId: zone.hubId,
         slotId: order.slotId,
-        status: "confirmed",
-        paymentStatus: "cod_pending",
+        status: cod ? "confirmed" : "pending_payment",
+        paymentStatus: cod ? "cod_pending" : "unpaid",
         addressSnapshot: {
           label: address.label,
           line1: address.line1,
@@ -280,18 +281,27 @@ export async function placeOrder(
     await tx.orderStatusEvent.create({
       data: {
         orderId: created.id,
-        to: "confirmed",
+        to: cod ? "confirmed" : "pending_payment",
         actorType: "customer",
         actorId: order.customerId,
         at: now,
       },
     });
-    await createCodPayment(tx, {
-      orderId: created.id,
-      amountCents: priced.totalCents,
-    });
-    // In the same transaction, so a placed Order always gets its notice.
-    await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId: created.id });
+    if (order.paymentMethod === "cod") {
+      await createCodPayment(tx, {
+        orderId: created.id,
+        amountCents: priced.totalCents,
+      });
+      // In the same transaction, so a placed Order always gets its notice.
+      await enqueueJob(tx, ORDER_CONFIRMED_JOB, { orderId: created.id });
+    } else {
+      // Confirmed, with its notice, when the provider says paid.
+      await createOnlinePayment(tx, {
+        orderId: created.id,
+        method: order.paymentMethod,
+        amountCents: priced.totalCents,
+      });
+    }
     return created;
   };
 

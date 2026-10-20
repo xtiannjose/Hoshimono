@@ -5,7 +5,25 @@ import type { PaymentProvider } from "./provider";
 
 /** What happened to one delivery; every value but "rejected" is acknowledged. */
 export type WebhookResult =
-  "rejected" | "duplicate" | "unmatched" | "recorded" | "mismatch" | "applied";
+  | "rejected"
+  | "duplicate"
+  | "unmatched"
+  | "recorded"
+  | "mismatch"
+  | "late"
+  | "applied";
+
+export type WebhookOptions = {
+  /**
+   * Runs inside the webhook's transaction once a Payment is marked paid, so
+   * the Order and its Payment change together (the orders module confirms
+   * the Order). "late": the Order is no longer waiting for this money.
+   */
+  onPaid?: (
+    tx: Prisma.TransactionClient,
+    paid: { orderId: string }
+  ) => Promise<"confirmed" | "late">;
+};
 
 /**
  * Verify, record, then apply one provider webhook (docs/03 section 8).
@@ -14,7 +32,8 @@ export type WebhookResult =
 export async function handleWebhook(
   provider: PaymentProvider,
   rawBody: string,
-  headers: Headers
+  headers: Headers,
+  { onPaid }: WebhookOptions = {}
 ): Promise<WebhookResult> {
   if (!provider.verifyWebhook(rawBody, headers)) return "rejected";
   const event = provider.parseEvent(rawBody);
@@ -63,6 +82,12 @@ export async function handleWebhook(
       where: recorded,
       data: { processedAt: new Date() },
     });
+    if (onPaid && (await onPaid(tx, payment)) === "late") {
+      console.error(
+        `[payments] ${provider.name} event ${event.id} paid Payment ${payment.id} after its Order closed: refund owed`
+      );
+      return "late";
+    }
     return "applied";
   });
 }

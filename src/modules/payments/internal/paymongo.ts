@@ -7,6 +7,16 @@ import type { PaymentProvider, ProviderEvent } from "./provider";
 
 const API = "https://api.paymongo.com";
 
+/** A request PayMongo refused, with its HTTP status. */
+class PaymongoError extends Error {
+  constructor(
+    readonly status: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
 type Config = {
   /** sk_test_... or sk_live_...; the prefix also picks the webhook mode. */
   secretKey: string;
@@ -49,7 +59,8 @@ export function createPaymongo({
     };
     if (!res.ok) {
       const reason = json.errors?.map((e) => e.detail ?? e.code).join("; ");
-      throw new Error(
+      throw new PaymongoError(
+        res.status,
         `PayMongo ${res.status} on ${path}: ${reason ?? "no detail"}`
       );
     }
@@ -88,6 +99,21 @@ export function createPaymongo({
         providerRef: session.data.id,
         redirectUrl: session.data.attributes.checkout_url,
       };
+    },
+
+    async expireCheckout(providerRef) {
+      // PayMongo answers 400 when the session is paid, has a payment still
+      // processing, or is already expired (docs: Expire a Checkout Session).
+      // ponytail: path from the docs, unconfirmed until test keys exist (3.2).
+      try {
+        await post(`/v1/checkout_sessions/${providerRef}/expire`, {});
+        return "expired";
+      } catch (error) {
+        if (error instanceof PaymongoError && error.status === 400) {
+          return "refused";
+        }
+        throw error;
+      }
     },
 
     async capture(holdRef, amountCents) {
