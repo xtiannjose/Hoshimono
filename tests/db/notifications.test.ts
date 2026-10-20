@@ -4,7 +4,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { setLineQuantity } from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
-import { sendOrderConfirmed, type Sent } from "@/modules/notifications";
+import {
+  sendOrderConfirmed,
+  sendRefundIssued,
+  type Sent,
+} from "@/modules/notifications";
 import { placeOrder } from "@/modules/orders";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
@@ -110,5 +114,39 @@ describe("sendOrderConfirmed", () => {
     await sendOrderConfirmed({ ...notice(), estimated: true }, providers);
     expect(sent[1].text).toContain("about ₱164.00");
     expect(sent[1].text).toContain("follows the weight");
+  });
+});
+
+describe("sendRefundIssued", () => {
+  const refund = (reason: "cancelled" | "picked" | "late_payment") => ({
+    orderId,
+    orderNo: "SW-261002-TEST",
+    email: "ligaya@example.com",
+    phone: "+639171234567",
+    amount: "₱134.50",
+    method: "gcash" as const,
+    reason,
+    trackingUrl: "http://localhost:3000/orders/SW-261002-TEST",
+  });
+
+  it("tells the Customer how much went back and why, once per refund", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    await sendRefundIssued(refund("picked"), providers);
+    await sendRefundIssued(refund("picked"), providers);
+    await sendRefundIssued(refund("cancelled"), providers);
+
+    expect(sent.map((s) => s.channel)).toEqual([
+      "email",
+      "sms",
+      "email",
+      "sms",
+    ]);
+    expect(sent[1].text).toContain("₱134.50");
+    expect(sent[1].text).toContain("to your GCash");
+    expect(sent[1].text).toContain("came to less than you paid");
+    expect(sent[3].text).toContain("cancelled order SW-261002-TEST");
+    // No em-dashes in Customer copy (CLAUDE.md).
+    expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
   });
 });

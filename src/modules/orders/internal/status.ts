@@ -8,9 +8,11 @@ import { releaseStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import {
   closeOnlinePayment,
+  refundOrderPayment,
   voidCodPayment,
   type PaymentProvider,
 } from "@/modules/payments";
+import { priceFinal } from "@/modules/pricing";
 
 /** The Order lifecycle (docs/03-ARCHITECTURE.md section 7). */
 const NEXT: Record<OrderStatus, OrderStatus[]> = {
@@ -94,9 +96,58 @@ export async function transitionOrder(
           where: { id: orderId },
           data: { paymentStatus: "unpaid" },
         });
+      } else if ((await refundOrderPayment(tx, orderId, "cancelled")) > 0) {
+        // Paid online: everything still held goes back (ADR 0008).
+        await tx.order.update({
+          where: { id: orderId },
+          data: { paymentStatus: "refunded" },
+        });
       }
     }
+    if (to === "picked") await settlePicked(tx, orderId);
     return true;
+  });
+}
+
+/**
+ * Picking is done: the Final Total follows what was packed, never above
+ * the estimate (ADR 0008). Paid online, the difference is refunded in one
+ * go; cash on delivery, it is what the Rider collects.
+ */
+async function settlePicked(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<void> {
+  const order = await tx.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: {
+      totalCents: true,
+      deliveryFeeCents: true,
+      discountCents: true,
+      lines: {
+        select: {
+          lineTotalCents: true,
+          orderedQty: true,
+          fulfilledQty: true,
+          orderedWeightGrams: true,
+          finalWeightGrams: true,
+        },
+      },
+    },
+  });
+  const finalTotalCents = priceFinal(order.lines, order);
+  const refunded = await refundOrderPayment(
+    tx,
+    orderId,
+    "picked",
+    order.totalCents - finalTotalCents
+  );
+  await tx.order.update({
+    where: { id: orderId },
+    data: {
+      finalTotalCents,
+      ...(refunded > 0 ? { paymentStatus: "partially_refunded" } : {}),
+    },
   });
 }
 

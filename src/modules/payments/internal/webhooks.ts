@@ -2,6 +2,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 
 import type { PaymentProvider } from "./provider";
+import { requestRefund } from "./refunds";
 
 /** What happened to one delivery; every value but "rejected" is acknowledged. */
 export type WebhookResult =
@@ -76,15 +77,21 @@ export async function handleWebhook(
     }
     await tx.payment.update({
       where: { id: payment.id },
-      data: { status: "paid", capturedCents: event.amountCents },
+      data: {
+        status: "paid",
+        capturedCents: event.amountCents,
+        paymentRef: event.paymentRef,
+      },
     });
     await tx.paymentEvent.update({
       where: recorded,
       data: { processedAt: new Date() },
     });
     if (onPaid && (await onPaid(tx, payment)) === "late") {
+      // Money we no longer asked for goes straight back (ADR 0008).
+      await requestRefund(tx, payment.id, "late_payment");
       console.error(
-        `[payments] ${provider.name} event ${event.id} paid Payment ${payment.id} after its Order closed: refund owed`
+        `[payments] ${provider.name} event ${event.id} paid Payment ${payment.id} after its Order closed: refunding it`
       );
       return "late";
     }

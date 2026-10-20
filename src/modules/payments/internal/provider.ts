@@ -11,6 +11,8 @@ export type ProviderEvent = {
   kind: "paid" | "other";
   /** The checkout or payment reference stored on our Payment. */
   providerRef: string | null;
+  /** For a paid event: the provider's id of the payment itself, which refunds name. */
+  paymentRef: string | null;
   amountCents: number | null;
 };
 
@@ -43,12 +45,16 @@ export interface PaymentProvider {
   expireCheckout(providerRef: string): Promise<"expired" | "refused">;
   /** Take the final amount of a card hold (Weighed Products, Batch 3.3). */
   capture(holdRef: string, amountCents: number): Promise<void>;
-  /** Return part or all of a completed payment. */
+  /**
+   * Return part or all of a completed payment. ok false: the provider said
+   * no, nothing moved, and asking again later is safe. Throws when the
+   * outcome is unknown (no answer), so it must never be resent blindly.
+   */
   refund(
     paymentRef: string,
     amountCents: number,
-    reason: "requested_by_customer" | "others"
-  ): Promise<{ refundRef: string }>;
+    note: string
+  ): Promise<{ ok: true; refundRef: string } | { ok: false; reason: string }>;
   /** True only for a request the provider signed for this account and mode. */
   verifyWebhook(rawBody: string, headers: Headers): boolean;
   parseEvent(rawBody: string): ProviderEvent;

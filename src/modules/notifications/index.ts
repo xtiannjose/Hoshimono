@@ -2,6 +2,8 @@
 // section 3). Owns message templates, providers and the delivery log.
 export { sendOrderConfirmed } from "./internal/order-confirmed";
 export type { OrderConfirmedNotice } from "./internal/order-confirmed";
+export { sendRefundIssued } from "./internal/refund-issued";
+export type { RefundNotice } from "./internal/refund-issued";
 export { lastMessage } from "./internal/providers";
 export { sendSignInCode, sendSignInLink } from "./internal/sign-in";
 export type { EmailProvider, Sent, SmsProvider } from "./internal/providers";

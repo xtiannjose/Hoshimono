@@ -24,15 +24,20 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
 }) => {
   // 5 x Fresh Milk clears the Pasig minimum.
   await page.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
+  // One tap at a time, each saved: a busy dev server answers slowly.
+  const saved = (n: number) =>
+    expect(
+      page.getByRole("button", {
+        name: new RegExp(`^Cart: .* ${n} items?$`),
+      })
+    ).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
+  await saved(1);
   const stepper = page.getByRole("group", { name: "Quantity of Fresh Milk" });
-  for (let i = 1; i < 5; i++) {
+  for (let i = 2; i <= 5; i++) {
     await stepper.getByRole("button", { name: "Add one" }).click();
+    await saved(i);
   }
-  // Wait for the server's count before leaving the page.
-  await expect(
-    page.getByRole("button", { name: /^Cart: .* 5 items$/ })
-  ).toBeVisible();
   await page.goto("/checkout");
   await signIn(page, freshEmail("gcash"), "/checkout");
   await page
@@ -75,7 +80,10 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
   await expect(page).toHaveURL(/\/dev\/pay\/fake_cs_/);
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Pay", exact: true }).click();
-  await expect(page).toHaveURL(/\/checkout\/confirmed\/SW-\d{6}-[A-Z2-9]{4}$/);
+  // Pay posts the webhook, then returns: next dev compiles both on first use.
+  await expect(page).toHaveURL(/\/checkout\/confirmed\/SW-\d{6}-[A-Z2-9]{4}$/, {
+    timeout: 45_000,
+  });
   await expect(
     page.getByRole("heading", { name: "Salamat! Your order is in." })
   ).toBeVisible();
@@ -98,4 +106,18 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
   await expect(
     page.getByRole("link").filter({ hasText: "Cancelled" })
   ).toHaveCount(1);
+
+  // Cancelling the paid Order gives all of it back, and says so.
+  await page.goto(`/orders/${orderNo}`, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Cancel order" }).click();
+  await expect(page.getByText("This order was cancelled.")).toBeVisible();
+  await expect(page.getByText("Refund to your GCash")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const res = await page.request.get("/api/dev/mailbox?to=%2B639175550177");
+      return res.ok() ? ((await res.json()) as { text: string }).text : "";
+    })
+    .toContain(
+      `We refunded ₱624.00 to your GCash for your cancelled order ${orderNo}.`
+    );
 });

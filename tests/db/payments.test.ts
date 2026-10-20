@@ -6,6 +6,9 @@ import { confirmPaidOrder, ORDER_CONFIRMED_JOB } from "@/modules/orders";
 import {
   createPaymongo,
   handleWebhook,
+  REFUND_JOB,
+  refundOrderPayment,
+  sendRefund,
   startCheckout,
   type CheckoutRequest,
   type PaymentProvider,
@@ -125,9 +128,12 @@ describe("handleWebhook", () => {
 
     expect(await handleWebhook(paymongo, body, signed(body))).toBe("applied");
 
-    expect(
-      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
-    ).toMatchObject({ status: "paid", capturedCents: 69400 });
+    const payment = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    expect(payment).toMatchObject({ status: "paid", capturedCents: 69400 });
+    // PayMongo's id of the payment itself: refunds name it, not the session.
+    expect(payment.paymentRef).toMatch(/^pay_/);
     const events = await db.paymentEvent.findMany({ where: { paymentId } });
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
@@ -245,7 +251,7 @@ describe("a paid webhook and its Order", () => {
     ).toHaveLength(1);
   });
 
-  it("flags money that arrives after the Order was cancelled, and leaves it cancelled", async () => {
+  it("refunds money that arrives after the Order was cancelled, and leaves it cancelled", async () => {
     const { paymentId, sessionId } = await onlinePayment(28000);
     const { orderId } = await db.payment.findUniqueOrThrow({
       where: { id: paymentId },
@@ -267,10 +273,154 @@ describe("a paid webhook and its Order", () => {
     ).toMatchObject({
       status: "cancelled",
     });
-    // The money did arrive: the Payment says so, and a refund is owed.
+    // The money did arrive, and all of it goes back.
     expect(
       await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
-    ).toMatchObject({ status: "paid", capturedCents: 28000 });
+    ).toMatchObject({
+      status: "refunded",
+      capturedCents: 28000,
+      refundedCents: 28000,
+    });
+    const [refund] = await db.refund.findMany({ where: { paymentId } });
+    expect(refund).toMatchObject({
+      reason: "late_payment",
+      amountCents: 28000,
+      status: "pending",
+    });
+    expect(await queued(REFUND_JOB, "refundId", refund.id)).toBe(1);
+  });
+});
+
+/** Jobs of `kind` whose payload has `key` set to `value`. */
+async function queued(kind: string, key: string, value: string) {
+  const jobs = await db.job.findMany({ where: { kind } });
+  return jobs.filter(
+    (j) => (j.payload as Record<string, unknown>)[key] === value
+  ).length;
+}
+
+describe("refunds", () => {
+  /** An Order paid online through a real paid webhook. */
+  async function paid(amountCents = 69400) {
+    const { paymentId, sessionId } = await onlinePayment(amountCents);
+    const body = paidEvent({ sessionId, amount: amountCents });
+    await handleWebhook(paymongo, body, signed(body));
+    return db.payment.findUniqueOrThrow({ where: { id: paymentId } });
+  }
+
+  /** A provider whose refunds answer `reply`, recording each call. */
+  function refunder(
+    reply: () => Promise<
+      { ok: true; refundRef: string } | { ok: false; reason: string }
+    >
+  ) {
+    const calls: { paymentRef: string; amountCents: number }[] = [];
+    const provider = {
+      name: "paymongo",
+      refund: async (paymentRef: string, amountCents: number) => {
+        calls.push({ paymentRef, amountCents });
+        return reply();
+      },
+    } as unknown as PaymentProvider;
+    return { providerFor: () => provider, calls };
+  }
+
+  it("refunds what is left, once per reason, never more than was paid", async () => {
+    const payment = await paid(69400);
+    const refund = (reason: "picked" | "cancelled", amount?: number) =>
+      db.$transaction((tx) =>
+        refundOrderPayment(tx, payment.orderId, reason, amount)
+      );
+
+    expect(await refund("picked", 5000)).toBe(5000);
+    expect(await refund("picked", 5000)).toBe(0);
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: payment.id } })
+    ).toMatchObject({ status: "partially_refunded", refundedCents: 5000 });
+    // Cancelling after that gives back the rest, not the whole amount again.
+    expect(await refund("cancelled")).toBe(64400);
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: payment.id } })
+    ).toMatchObject({ status: "refunded", refundedCents: 69400 });
+    expect(await refund("cancelled")).toBe(0);
+    expect(await db.refund.count({ where: { paymentId: payment.id } })).toBe(2);
+  });
+
+  it("sends a refund once", async () => {
+    const payment = await paid(30000);
+    await db.$transaction((tx) =>
+      refundOrderPayment(tx, payment.orderId, "cancelled")
+    );
+    const { id } = await db.refund.findFirstOrThrow({
+      where: { paymentId: payment.id },
+    });
+    const { providerFor, calls } = refunder(async () => ({
+      ok: true,
+      refundRef: "ref_123",
+    }));
+
+    await sendRefund(id, providerFor);
+    await sendRefund(id, providerFor);
+
+    expect(calls).toEqual([
+      { paymentRef: payment.paymentRef, amountCents: 30000 },
+    ]);
+    const refund = await db.refund.findUniqueOrThrow({ where: { id } });
+    expect(refund).toMatchObject({ status: "sent", providerRef: "ref_123" });
+    expect(refund.sentAt).not.toBeNull();
+  });
+
+  it("tries again later when the provider says no", async () => {
+    const payment = await paid(30000);
+    await db.$transaction((tx) =>
+      refundOrderPayment(tx, payment.orderId, "cancelled")
+    );
+    const { id } = await db.refund.findFirstOrThrow({
+      where: { paymentId: payment.id },
+    });
+    const { providerFor } = refunder(async () => ({
+      ok: false,
+      reason: "PayMongo 400 on /v1/refunds: insufficient balance",
+    }));
+
+    await expect(sendRefund(id, providerFor)).rejects.toThrow(
+      "insufficient balance"
+    );
+
+    expect(await db.refund.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: "pending",
+      lastError: "PayMongo 400 on /v1/refunds: insufficient balance",
+    });
+  });
+
+  it("never sends again when it cannot tell whether a refund went through", async () => {
+    const payment = await paid(30000);
+    await db.$transaction((tx) =>
+      refundOrderPayment(tx, payment.orderId, "cancelled")
+    );
+    const { id } = await db.refund.findFirstOrThrow({
+      where: { paymentId: payment.id },
+    });
+    const { providerFor, calls } = refunder(async () => {
+      throw new TypeError("fetch failed");
+    });
+
+    await sendRefund(id, providerFor);
+    await sendRefund(id, providerFor);
+
+    expect(calls).toHaveLength(1);
+    expect(await db.refund.findUniqueOrThrow({ where: { id } })).toMatchObject({
+      status: "needs_review",
+      lastError: "TypeError: fetch failed",
+    });
+
+    // A run that stopped mid-call left it sending: same, a person checks.
+    await db.refund.update({ where: { id }, data: { status: "sending" } });
+    await sendRefund(id, providerFor);
+    expect(calls).toHaveLength(1);
+    expect((await db.refund.findUniqueOrThrow({ where: { id } })).status).toBe(
+      "needs_review"
+    );
   });
 });
 
@@ -296,7 +446,7 @@ describe("startCheckout", () => {
         return "expired";
       },
       capture: async () => {},
-      refund: async () => ({ refundRef: "ref_unused" }),
+      refund: async () => ({ ok: true, refundRef: "ref_unused" }),
       verifyWebhook: () => false,
       parseEvent: () => {
         throw new Error("unused");

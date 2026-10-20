@@ -73,17 +73,53 @@ describe("PayMongo adapter", () => {
     const { fetch, sent } = fakeFetch({ data: { id: "ref_789" } });
     const paymongo = createPaymongo({ ...config, fetch });
 
-    expect(await paymongo.refund("pay_456", 5000, "others")).toEqual({
-      refundRef: "ref_789",
-    });
+    expect(
+      await paymongo.refund("pay_456", 5000, "Order SW-201026-0042: picked")
+    ).toEqual({ ok: true, refundRef: "ref_789" });
 
     expect(sent[0].url).toBe("https://api.paymongo.com/v1/refunds");
     expect(new Headers(sent[0].init.headers).get("authorization")).toBe(AUTH);
+    // PayMongo takes only duplicate, fraudulent or others as the reason.
     expect(body(sent[0])).toEqual({
       data: {
-        attributes: { amount: 5000, payment_id: "pay_456", reason: "others" },
+        attributes: {
+          amount: 5000,
+          payment_id: "pay_456",
+          reason: "others",
+          notes: "Order SW-201026-0042: picked",
+        },
       },
     });
+  });
+
+  it("reports a refund PayMongo refuses, and throws when the answer is unknown", async () => {
+    const low = fakeFetch(
+      {
+        errors: [
+          { code: "insufficient_balance", detail: "Not enough balance." },
+        ],
+      },
+      400
+    );
+    expect(
+      await createPaymongo({ ...config, fetch: low.fetch }).refund(
+        "pay_456",
+        5000,
+        "note"
+      )
+    ).toEqual({
+      ok: false,
+      reason: "PayMongo 400 on /v1/refunds: Not enough balance.",
+    });
+
+    const down = fakeFetch({}, 502);
+    await expect(
+      createPaymongo({ ...config, fetch: down.fetch }).refund(
+        "pay_456",
+        5000,
+        "note"
+      )
+    ).rejects.toThrow("PayMongo 502");
   });
 
   it("captures the final amount of a card hold", async () => {
@@ -139,8 +175,8 @@ describe("PayMongo adapter", () => {
     );
     const paymongo = createPaymongo({ ...config, fetch });
 
-    await expect(paymongo.refund("pay_456", 100, "others")).rejects.toThrow(
-      "PayMongo 400 on /v1/refunds: amount cannot be less than 2000."
+    await expect(paymongo.capture("pi_123", 100)).rejects.toThrow(
+      "PayMongo 400 on /v1/payment_intents/pi_123/capture: amount cannot be less than 2000."
     );
   });
 });

@@ -1,10 +1,13 @@
 import { formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { JobHandlers } from "@/modules/jobs";
-import { sendOrderConfirmed } from "@/modules/notifications";
+import { sendOrderConfirmed, sendRefundIssued } from "@/modules/notifications";
 import { getOrderForNotice, ORDER_CONFIRMED_JOB } from "@/modules/orders";
+import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
 
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const trackingUrl = (orderNo: string) =>
+  new URL(`/orders/${orderNo}`, appUrl()).toString();
 
 // Wires job kinds to modules; modules stay unaware of each other here.
 export const jobHandlers: JobHandlers = {
@@ -19,13 +22,34 @@ export const jobHandlers: JobHandlers = {
       phone: order.contactPhone,
       slot: formatSlot(order.slot.startsAt, order.slot.endsAt),
       total: formatMoney(order.totalCents),
-      trackingUrl: new URL(`/orders/${order.orderNo}`, appUrl()).toString(),
+      trackingUrl: trackingUrl(order.orderNo),
       lines: order.lines.map((l) => ({
         name: l.nameSnapshot,
         quantity: l.orderedQty,
       })),
       cashOnDelivery: order.payments[0]?.method === "cod",
       estimated: order.lines.some((l) => l.orderedWeightGrams !== null),
+    });
+  },
+
+  // Send the refund, then tell the Customer. A retry after a failed notice
+  // sends nothing twice: the refund is already sent, each message once.
+  async [REFUND_JOB](payload) {
+    const refundId = String(payload.refundId);
+    await sendRefund(refundId);
+    const refund = await getRefundNotice(refundId);
+    if (!refund || refund.status !== "sent" || refund.method === "cod") return;
+    const order = await getOrderForNotice(refund.orderId);
+    if (!order) return;
+    await sendRefundIssued({
+      orderId: order.id,
+      orderNo: order.orderNo,
+      email: order.customer.email,
+      phone: order.contactPhone,
+      amount: formatMoney(refund.amountCents),
+      method: refund.method,
+      reason: refund.reason,
+      trackingUrl: trackingUrl(order.orderNo),
     });
   },
 };
