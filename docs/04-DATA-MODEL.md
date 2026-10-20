@@ -63,7 +63,7 @@ Only fields that carry meaning are listed. Standard columns are omitted.
 **`products`**: `id`, `slug`, `name`, `brand`, `description`, `category_id`, `pack_size_value`, `pack_size_unit` (`g`, `ml`, `pc`), `unit_price_basis` (per 100 g, per litre, per piece), `price_cents`, `compare_at_cents` (nullable, for strikethrough), `tax_class` (`vatable`, `vat_exempt`, `zero_rated`), `is_weighed`, `avg_unit_weight_grams` (for weighed items sold per piece), `barcode`, `allergens[]`, `dietary_tags[]`, `storage` (`ambient`, `chilled`, `frozen`), `status` (`draft`, `active`, `archived`), `search_vector`.
 Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN on `search_vector`, trigram on `name`.
 
-**`categories`**: `id`, `parent_id`, `slug`, `name`, `sort_order`, `image_url`. Tree depth is capped at 3.
+**`categories`**: `id`, `parent_id`, `slug`, `name`, `sort_order`, `image_url`, `search_words?` (words its Products also answer to in search, such as "meat" on Pork). Tree depth is capped at 3.
 
 **`product_images`**: `product_id`, `url`, `alt`, `sort_order`, `is_primary` (one primary per Product, enforced by partial unique index).
 

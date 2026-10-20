@@ -48,17 +48,20 @@ enum ProductStatus {
 }
 
 model Category {
-  id        String     @id @default(uuid(7)) @db.Uuid
-  parentId  String?    @map("parent_id") @db.Uuid
-  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
-  children  Category[] @relation("CategoryTree")
-  slug      String     @unique
-  name      String
-  sortOrder Int        @default(0) @map("sort_order")
-  imageUrl  String?    @map("image_url")
-  products  Product[]
-  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id          String     @id @default(uuid(7)) @db.Uuid
+  parentId    String?    @map("parent_id") @db.Uuid
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children    Category[] @relation("CategoryTree")
+  slug        String     @unique
+  name        String
+  sortOrder   Int        @default(0) @map("sort_order")
+  imageUrl    String?    @map("image_url")
+  // Words its Products also answer to in search, beyond the Category name,
+  // such as "meat" for Pork. Set by a Merchandiser; null for none.
+  searchWords String?    @map("search_words")
+  products    Product[]
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([parentId])
   @@map("categories")

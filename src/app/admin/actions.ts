@@ -322,6 +322,7 @@ export async function editCategory(
     name: text(fd, "name"),
     parentId: parent === "" ? null : parent,
     sortOrder: Number(text(fd, "sortOrder") || 0),
+    searchWords: text(fd, "searchWords"),
   };
   const before = await getCategoryForAdmin(id);
   const result = await adminWrite(

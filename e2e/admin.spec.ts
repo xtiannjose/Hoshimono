@@ -124,6 +124,25 @@ test("a Merchandiser adds a Category", async ({ page }) => {
   await expect(
     page.getByRole("textbox", { name: `Name of Baby Food ${RUN}` })
   ).toBeVisible();
+
+  // Its Products can answer to other words in search.
+  const words = page
+    .getByRole("textbox", { name: `Search words for Baby Food ${RUN}` })
+    .filter(visible);
+  await words.fill("cerelac");
+  await words
+    .locator("xpath=ancestor::form")
+    .getByRole("button", { name: "Save" })
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved." })
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page
+      .getByRole("textbox", { name: `Search words for Baby Food ${RUN}` })
+      .filter(visible)
+  ).toHaveValue("cerelac");
 });
 
 test("Customers cannot open the admin", async ({ page }) => {

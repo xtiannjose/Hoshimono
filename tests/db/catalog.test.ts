@@ -8,6 +8,7 @@ import {
   listRelatedProducts,
   searchProducts,
   suggestSearch,
+  updateCategory,
 } from "@/modules/catalog";
 
 import { productSlug, seedDatabase, seedId } from "../../prisma/seed-data";
@@ -384,6 +385,18 @@ describe("searchProducts: topics, phrases and typos", () => {
     const dairy = await names("dairy");
     expect(dairy).toHaveLength(13);
     expect(dairy).not.toContain("Large Eggs, 12 pack");
+  });
+
+  it("lends the words a Merchandiser sets on a Category to its Products", async () => {
+    const pork = seedId("category:pork");
+    try {
+      await updateCategory(pork, { searchWords: "lechon" });
+      expect(await names("lechon")).toContain("Pork Kasim");
+      expect(await names("meat")).not.toContain("Pork Kasim");
+    } finally {
+      await updateCategory(pork, { searchWords: "meat" });
+    }
+    expect(await names("meat")).toContain("Pork Kasim");
   });
 
   // An extra word must not bring the other topic back.
