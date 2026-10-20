@@ -16,16 +16,17 @@ Resume here: read this section, then the batch named first under Next.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
 - Batch 3.1 (PR #10): PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
 - Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
-- Batch 3.3 (PR #13, built on #12): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
+- Batch 3.3 (PR #13): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
+- Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked).
 
-**Open pull requests:** #12 (Batch 3.2), then #13 (Batch 3.3; it contains #12's commits until #12 merges, so merge #12 first).
+**Open pull requests:** #14 (carry-over).
 
 **Current phase:** 3, Online payments. Batches 3.1 to 3.3 are built; Phase 3 closes once the PayMongo sandbox run passes (its exit criteria need test mode).
 
 **Next, in order**
 
 1. When the PayMongo test keys exist: the sandbox run for Batches 3.2 and 3.3 (pay, fail, expire, refund full and partial), then tick the Phase 3 exit criteria.
-2. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
+2. The rest of the carry-over list (section 9): the result convention for module errors (owner decision, recommendation in the item), then the design pass.
 3. Phase 4, Operations (section 10).
 
 **Waiting on the owner**
