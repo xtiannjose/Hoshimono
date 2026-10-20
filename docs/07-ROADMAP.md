@@ -17,7 +17,7 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 3.1 (PR #10): PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
 - Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
 - Batch 3.3 (PR #13): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
-- Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked).
+- Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked); one rule for how a module says no ([ADR 0009](adr/0009-module-results-and-errors.md)).
 
 **Open pull requests:** #14 (carry-over).
 
@@ -26,13 +26,12 @@ Resume here: read this section, then the batch named first under Next.
 **Next, in order**
 
 1. When the PayMongo test keys exist: the sandbox run for Batches 3.2 and 3.3 (pay, fail, expire, refund full and partial), then tick the Phase 3 exit criteria.
-2. The rest of the carry-over list (section 9): the result convention for module errors (owner decision, recommendation in the item), then the design pass.
+2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy).
 3. Phase 4, Operations (section 10).
 
 **Waiting on the owner**
 
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
-- A decision on one result convention for module errors (section 9).
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
 - Business tracks in section 11; after PayMongo: SMS sender ID, BIR and VAT, Hub, Riders.
@@ -313,7 +312,7 @@ Engineering:
 - [x] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
 - [x] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
 - [x] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
-- [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code"). Logging done 19 Oct: sign-in tells an outage from a wrong code, and the health check and sign-in actions log what they catch. The result convention is still open
+- [x] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code"). Logging done 19 Oct: sign-in tells an outage from a wrong code, and the health check and sign-in actions log what they catch. The result convention is still open. 20 Oct: the owner chose to write the rule and fix the outliers ([ADR 0009](adr/0009-module-results-and-errors.md)); the catalogue admin and the profile now return field errors as a map
 - [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
 - [x] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
 - [x] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)

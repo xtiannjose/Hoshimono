@@ -267,9 +267,7 @@ describe("createProduct", () => {
       await createProduct({ ...base, name: "味の素", barcode: null })
     ).toEqual({
       ok: false,
-      errors: [
-        { field: "name", message: "Use letters or numbers in the name" },
-      ],
+      errors: { name: "Use letters or numbers in the name" },
     });
   });
 
@@ -286,12 +284,7 @@ describe("createProduct", () => {
       })
     ).toEqual({
       ok: false,
-      errors: [
-        {
-          field: "barcode",
-          message: "Another Product already has this barcode",
-        },
-      ],
+      errors: { barcode: "Another Product already has this barcode" },
     });
     expect(
       await updateProduct(seedId("product:alaska-full-cream-milk"), {
@@ -299,12 +292,7 @@ describe("createProduct", () => {
       })
     ).toEqual({
       ok: false,
-      errors: [
-        {
-          field: "barcode",
-          message: "Another Product already has this barcode",
-        },
-      ],
+      errors: { barcode: "Another Product already has this barcode" },
     });
   });
 });

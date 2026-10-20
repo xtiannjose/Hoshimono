@@ -18,10 +18,10 @@ export async function getProfile(customerId: string): Promise<Profile | null> {
 export async function updateName(
   customerId: string,
   name: string
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<{ ok: true } | { ok: false; errors: { name: string } }> {
   const clean = name.trim().replace(/\s+/g, " ");
   if (clean.length < 1 || clean.length > 80) {
-    return { ok: false, message: "Enter a name up to 80 characters." };
+    return { ok: false, errors: { name: "Enter a name up to 80 characters." } };
   }
   await db.customer.update({
     where: { id: customerId },

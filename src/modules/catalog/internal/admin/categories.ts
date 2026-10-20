@@ -2,7 +2,7 @@ import { db, type Client } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { isUuid } from "@/lib/uuid";
 
-import type { WriteResult } from "./products";
+import { fieldError, type WriteResult } from "./products";
 
 const MAX_DEPTH = 3; // docs/04-DATA-MODEL.md: tree depth is capped at 3
 
@@ -57,10 +57,7 @@ function isAncestorOrSelf(
   return false;
 }
 
-const error = (field: string, message: string) => ({
-  ok: false as const,
-  errors: [{ field, message }],
-});
+const error = fieldError;
 
 export async function createCategory(
   input: { name: string; parentSlug?: string | null },

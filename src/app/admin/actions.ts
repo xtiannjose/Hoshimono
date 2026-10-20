@@ -18,7 +18,6 @@ import {
   setPrimaryImage,
   updateCategory,
   updateProduct,
-  type FieldError,
   type ImportError,
 } from "@/modules/catalog";
 import {
@@ -83,8 +82,6 @@ const list = (fd: FormData, key: string) =>
     .split(/[;,]/)
     .map((s) => s.trim())
     .filter(Boolean);
-const toErrors = (errors: FieldError[]) =>
-  Object.fromEntries(errors.map((e) => [e.field || "form", e.message]));
 
 export async function saveProduct(
   _prev: FormState,
@@ -155,8 +152,7 @@ export async function saveProduct(
         },
       ]
     );
-    if (!result.ok)
-      return { errors: toErrors(result.errors), values: submitted };
+    if (!result.ok) return { errors: result.errors, values: submitted };
     updateTag(CATALOG_TAG);
     return { errors: {}, saved: true };
   }
@@ -167,7 +163,7 @@ export async function saveProduct(
       { action: "create", entity: "product", entityId: done.id, after: fields },
     ]
   );
-  if (!result.ok) return { errors: toErrors(result.errors), values: submitted };
+  if (!result.ok) return { errors: result.errors, values: submitted };
   updateTag(CATALOG_TAG);
   redirect(`/admin/products/${result.id}?created=1`);
 }
@@ -185,7 +181,7 @@ export async function uploadImage(
     bytes: Buffer.from(await file.arrayBuffer()),
     alt: text(fd, "alt"),
   });
-  if (!result.ok) return { errors: toErrors(result.errors) };
+  if (!result.ok) return { errors: result.errors };
   // ponytail: audited after the write, not with it; resizing and storing the
   // photo can outlast a transaction. Split prepare and save if it matters.
   await recordAudits([
@@ -306,7 +302,7 @@ export async function addCategory(
       },
     ]
   );
-  if (!result.ok) return { errors: toErrors(result.errors) };
+  if (!result.ok) return { errors: result.errors };
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
@@ -338,7 +334,7 @@ export async function editCategory(
       },
     ]
   );
-  if (!result.ok) return { errors: toErrors(result.errors) };
+  if (!result.ok) return { errors: result.errors };
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
@@ -354,7 +350,7 @@ export async function removeCategory(
     (tx) => deleteCategory(id, tx),
     () => [{ action: "delete", entity: "category", entityId: id, before }]
   );
-  if (!result.ok) return { errors: toErrors(result.errors) };
+  if (!result.ok) return { errors: result.errors };
   updateTag(CATALOG_TAG);
   return { errors: {}, saved: true };
 }
