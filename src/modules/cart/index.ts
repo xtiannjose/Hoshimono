@@ -1,5 +1,5 @@
 // Public interface of the cart module (docs/03-ARCHITECTURE.md section 3).
-// Owns Cart and CartLine. Totals come from pricing.priceCart.
+// Owns Cart, CartLine and Shopping Lists. Totals come from pricing.priceCart.
 export {
   CART_RETENTION_DAYS,
   checkOutCart,
@@ -25,3 +25,23 @@ export type {
   CartView,
   SetQuantityResult,
 } from "./internal/cart";
+export { addLines } from "./internal/add";
+export type { AddLinesResult } from "./internal/add";
+export {
+  createShoppingList,
+  deleteShoppingList,
+  getShoppingList,
+  listShoppingLists,
+  MAX_LIST_ITEMS,
+  MAX_LISTS,
+  removeFromList,
+  renameShoppingList,
+  saveToList,
+  shoppingListLines,
+} from "./internal/lists";
+export type { ShoppingListSummary, ShoppingListView } from "./internal/lists";
+export {
+  CART_REMINDER_JOB,
+  getCartReminder,
+  queueCartReminders,
+} from "./internal/reminders";

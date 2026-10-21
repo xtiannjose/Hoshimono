@@ -1,11 +1,6 @@
 import { productName } from "@/lib/product-name";
-import {
-  getCartQuantities,
-  setLineQuantity,
-  type CartOwner,
-} from "@/modules/cart";
+import { addLines, type CartOwner } from "@/modules/cart";
 import { getProductSummaries, listRelatedProducts } from "@/modules/catalog";
-import { MAX_LINE_QUANTITY } from "@/modules/pricing";
 
 import { getRecipe, ingredientCount } from "./recipes";
 
@@ -60,30 +55,24 @@ export async function addRecipeToCart(
     wanted.set(pick.productId, (wanted.get(pick.productId) ?? 0) + count);
   }
 
-  const inCart = await getCartQuantities(owner);
+  const result = await addLines(
+    owner,
+    [...wanted].map(([productId, quantity]) => ({ productId, quantity })),
+    hubId
+  );
   const names = new Map(
-    (await getProductSummaries([...wanted.keys()])).map((p) => [
-      p.id,
-      productName(p),
-    ])
+    (await getProductSummaries([...result.soldOut, ...result.capped])).map(
+      (p) => [p.id, productName(p)]
+    )
   );
   const nameOf = (id: string) =>
     names.get(id) ??
     recipe.ingredients.find((i) => i.productId === id)?.name ??
     "An item";
-  let added = 0;
-  const soldOut: string[] = [];
-  const capped: string[] = [];
-  for (const [productId, count] of wanted) {
-    const before = inCart[productId] ?? 0;
-    const target = Math.min(before + count, MAX_LINE_QUANTITY);
-    const result = await setLineQuantity(owner, productId, target, hubId);
-    if (!result.ok) {
-      soldOut.push(nameOf(productId));
-      continue;
-    }
-    added += Math.max(0, result.quantity - before);
-    if (result.capped) capped.push(nameOf(productId));
-  }
-  return { ok: true, added, soldOut, capped };
+  return {
+    ok: true,
+    added: result.added,
+    soldOut: result.soldOut.map(nameOf),
+    capped: result.capped.map(nameOf),
+  };
 }

@@ -100,6 +100,8 @@ model Product {
   preferredInOrders  OrderLine[]              @relation("OrderLinePreferred")
   substitutions      Substitution[]
   recipeIngredients  RecipeIngredient[]
+  shoppingListItems  ShoppingListItem[]
+  stockAlerts        StockAlert[]
   articleProducts    ArticleProduct[]
   createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -333,6 +335,20 @@ model StockLevel {
   @@map("stock_levels")
 }
 
+// "Tell me when it's back" on a sold-out Product; ends when sent (ADR 0014).
+model StockAlert {
+  id         String   @id @default(uuid(7)) @db.Uuid
+  customerId String   @map("customer_id") @db.Uuid
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String   @map("product_id") @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([customerId, productId])
+  @@index([productId])
+  @@map("stock_alerts")
+}
+
 // Append-only.
 model StockMovement {
   id        String              @id @default(uuid(7)) @db.Uuid
@@ -416,6 +432,8 @@ model Cart {
   voucherCode    String?    @map("voucher_code")
   // Set when Checkout turns the Cart into an Order; one open Cart per Customer.
   checkedOutAt   DateTime?  @map("checked_out_at") @db.Timestamptz(3)
+  // Set when its one Cart Reminder is queued (ADR 0014).
+  remindedAt     DateTime?  @map("reminded_at") @db.Timestamptz(3)
   lines          CartLine[]
   slotHold       SlotHold?
   createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
@@ -443,6 +461,32 @@ model CartLine {
 
   @@unique([cartId, productId])
   @@map("cart_lines")
+}
+
+// A Customer's named list of Products to buy again (ADR 0014).
+model ShoppingList {
+  id         String             @id @default(uuid(7)) @db.Uuid
+  customerId String             @map("customer_id") @db.Uuid
+  customer   Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  name       String
+  items      ShoppingListItem[]
+  createdAt  DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([customerId])
+  @@map("shopping_lists")
+}
+
+model ShoppingListItem {
+  listId    String       @map("list_id") @db.Uuid
+  list      ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  productId String       @map("product_id") @db.Uuid
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int          @default(1)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([listId, productId])
+  @@map("shopping_list_items")
 }
 
 model Order {
@@ -694,19 +738,21 @@ model PaymentEvent {
 // ---------- customers and staff ----------
 
 model Customer {
-  id             String    @id @default(uuid(7)) @db.Uuid
+  id             String         @id @default(uuid(7)) @db.Uuid
   // Linked on first sign-in (identity module).
-  authUserId     String?   @unique @map("auth_user_id")
-  authUser       AuthUser? @relation(fields: [authUserId], references: [id], onDelete: SetNull)
-  phone          String?   @unique
-  email          String?   @unique
+  authUserId     String?        @unique @map("auth_user_id")
+  authUser       AuthUser?      @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  phone          String?        @unique
+  email          String?        @unique
   name           String
-  marketingOptIn Boolean   @default(false) @map("marketing_opt_in")
+  marketingOptIn Boolean        @default(false) @map("marketing_opt_in")
   addresses      Address[]
+  shoppingLists  ShoppingList[]
+  stockAlerts    StockAlert[]
   carts          Cart[]
   orders         Order[]
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("customers")
 }
@@ -882,11 +928,14 @@ model Notification {
   recipient   String
   orderId     String?             @map("order_id") @db.Uuid
   order       Order?              @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// What a message not about an Order is about, such as "cart:<id>" (ADR 0014).
+  ref         String?
   provider    String
   providerRef String?             @map("provider_ref")
   createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@unique([template, channel, orderId])
+  @@unique([template, channel, ref])
   @@map("notifications")
 }
 

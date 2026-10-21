@@ -5,7 +5,8 @@ import { signInAs as as } from "./sign-in";
 
 // Batch 4.3 (ADR 0011): pick, dispatch with a Rider, deliver with the
 // Customer's PIN and the cash, then count the Rider's cash. The pick
-// sheet and the delivery receipt print along the way (ADR 0012).
+// sheet and the delivery receipt print along the way (ADR 0012); then the
+// Customer reorders and sees Buy again (ADR 0014).
 test.describe.configure({ timeout: 240_000 });
 
 test("an Order is picked, sent out with a Rider, delivered with the PIN, and the cash counted", async ({
@@ -135,4 +136,21 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
   await expect(
     shopper.getByRole("listitem").filter({ hasText: "Delivered" })
   ).toHaveAttribute("aria-current", "step");
+
+  // Reorder puts the same 5 milk back in the Cart (ADR 0014).
+  await shopper.getByRole("button", { name: "Reorder these items" }).click();
+  await expect(
+    shopper.getByText("Added 5 items to your cart.").first()
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+
+  // And Home offers it under Buy again.
+  await shopper.goto("/", { waitUntil: "networkidle" });
+  await expect(
+    shopper
+      .getByRole("region", { name: "Buy again" })
+      .getByRole("link", { name: /Fresh Milk/ })
+      .first()
+  ).toBeVisible({ timeout: 30_000 });
 });

@@ -87,7 +87,11 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 ### buying
 
-**`carts`**: `id`, `customer_id?`, `guest_token_hash?`, `voucher_code?`, `updated_at`. A Customer has at most one active Cart.
+**`carts`**: `id`, `customer_id?`, `guest_token_hash?`, `voucher_code?`, `checked_out_at?`, `reminded_at?` (its one Cart Reminder was queued, ADR 0014), `updated_at`. A Customer has at most one active Cart.
+
+**`shopping_lists`** (Batch 5.2): `customer_id`, `name` (1 to 60 characters). **`shopping_list_items`**: `(list_id, product_id)`, `quantity` (1 to 99). Up to 20 lists of 100 items each, enforced in the cart module.
+
+**`stock_alerts`**: `customer_id`, `product_id`, `created_at`. Unique: `(customer_id, product_id)`. Deleted when the message is queued or after 30 days.
 
 **`cart_lines`**: `cart_id`, `product_id`, `quantity`, `seen_price_cents` (the price when the line was last set, so the Cart can flag a change), `substitution_preference` (`allow`, `preferred`, `none`), `preferred_product_id?`, `note`. Unique: `(cart_id, product_id)`.
 

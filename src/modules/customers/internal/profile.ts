@@ -5,12 +5,20 @@ export type Profile = {
   name: string;
   email: string | null;
   phone: string | null;
+  /** Said yes to reminders and offers (ADR 0014). */
+  marketingOptIn: boolean;
 };
 
 export async function getProfile(customerId: string): Promise<Profile | null> {
   return db.customer.findUnique({
     where: { id: customerId },
-    select: { id: true, name: true, email: true, phone: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      marketingOptIn: true,
+    },
   });
 }
 
@@ -28,4 +36,19 @@ export async function updateName(
     data: { name: clean },
   });
   return { ok: true };
+}
+
+/**
+ * Reminders and offers: off until the Customer turns them on (Data Privacy
+ * Act; ADR 0014). Order and delivery messages need no consent.
+ */
+export async function setMarketingOptIn(
+  customerId: string,
+  on: boolean
+): Promise<void> {
+  // updateMany: a stop link for an account since deleted does nothing.
+  await db.customer.updateMany({
+    where: { id: customerId },
+    data: { marketingOptIn: on },
+  });
 }

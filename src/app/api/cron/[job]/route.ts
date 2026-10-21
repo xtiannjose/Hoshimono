@@ -3,8 +3,13 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { connection } from "next/server";
 
 import { purgeRateLimits } from "@/lib/rate-limit";
-import { ensureSlots, purgeExpiredHolds } from "@/modules/delivery";
-import { purgeIdleCarts } from "@/modules/cart";
+import {
+  ensureSlots,
+  getDefaultHubId,
+  purgeExpiredHolds,
+} from "@/modules/delivery";
+import { purgeIdleCarts, queueCartReminders } from "@/modules/cart";
+import { queueStockAlerts } from "@/modules/inventory";
 import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
 import { expireUnpaidOrders } from "@/modules/orders";
 import { paymentProvider } from "@/modules/payments";
@@ -24,7 +29,7 @@ function authorised(request: Request): boolean {
 /**
  * Called every minute by the host (docs/03-ARCHITECTURE.md section 11):
  * drops lapsed Slot holds, keeps 7 days of Slots made, cancels online Orders unpaid after 15 minutes,
- * runs due jobs, clears ended rate-limit windows and purges idle Carts and
+ * queues Cart Reminders and Stock Alerts, runs due jobs, clears ended rate-limit windows and purges idle Carts and
  * finished jobs.
  * Everything it does is idempotent, so an extra call is harmless.
  */
@@ -51,6 +56,15 @@ export async function GET(
       async () => {
         const provider = paymentProvider();
         return provider ? expireUnpaidOrders(provider, now) : 0;
+      },
+    ],
+    // Queued before the jobs run, so they go out on this same tick (ADR 0014).
+    ["reminders", () => queueCartReminders(now)],
+    [
+      "stockAlerts",
+      async () => {
+        const hubId = await getDefaultHubId();
+        return hubId ? queueStockAlerts(hubId, now) : 0;
       },
     ],
     ["jobs", () => runDueJobs(jobHandlers, { now })],

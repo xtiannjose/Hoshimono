@@ -3,9 +3,11 @@ import { Suspense } from "react";
 
 import { CartSync } from "@/components/cart/cart-button";
 import { CartPageBody } from "@/components/cart/cart-page-body";
-import { getCart } from "@/modules/cart";
+import { SaveToList } from "@/components/lists/save-to-list";
+import { getCart, listShoppingLists } from "@/modules/cart";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { saveCartAction } from "../account/lists/actions";
 import { cartContext, readCartOwner } from "./owner";
 
 export const metadata: Metadata = {
@@ -31,6 +33,19 @@ async function CurrentCart() {
     <>
       <CartSync view={view} />
       <CartPageBody initial={view} />
+      {owner && "customerId" in owner && view.lines.length > 0 && (
+        <div className="mt-8">
+          <SaveToList
+            action={saveCartAction}
+            lists={(await listShoppingLists(owner.customerId)).map((l) => ({
+              id: l.id,
+              name: l.name,
+            }))}
+            summary="Save this cart as a list"
+            done="Saved every item to the list."
+          />
+        </div>
+      )}
     </>
   );
 }

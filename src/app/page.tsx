@@ -7,6 +7,7 @@ import {
   CategoryMosaic,
   CategoryMosaicSkeleton,
 } from "@/components/home/category-mosaic";
+import { BuyAgain } from "@/components/home/buy-again";
 import {
   FeaturedRecipe,
   FeaturedRecipeSkeleton,
@@ -65,6 +66,11 @@ export default function Home() {
       <div className="wrap">
         <ServiceStrip />
       </div>
+
+      {/* Signed-in Customers only; nothing to hold space for otherwise. */}
+      <Suspense fallback={null}>
+        <BuyAgain />
+      </Suspense>
 
       <section aria-labelledby="cat-h" className="wrap pt-14">
         <h2 id="cat-h" className="type-h2 mb-5">
