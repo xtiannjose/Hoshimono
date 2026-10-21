@@ -12,7 +12,10 @@ import {
 } from "@/modules/inventory";
 import {
   MAX_LINE_QUANTITY,
+  checkVoucher,
   priceCart,
+  VOUCHER_REFUSAL,
+  type VoucherTerms,
   type PricedCart,
   type ZoneFees,
 } from "@/modules/pricing";
@@ -20,7 +23,12 @@ import {
 /** A signed-in Customer, or a guest holding the token from their cookie. */
 export type CartOwner = { customerId: string } | { guestToken: string };
 
-export type CartContext = { hubId: string | null; zone: ZoneFees | null };
+export type CartContext = {
+  hubId: string | null;
+  zone: ZoneFees | null;
+  /** When the Voucher is judged; now unless Checkout says otherwise. */
+  now?: Date;
+};
 
 export type CartLineView = {
   product: ProductSummary;
@@ -55,6 +63,11 @@ export type CartView = {
    * client keeps the newest.
    */
   readAt: number;
+  /**
+   * The Voucher kept on the Cart (ADR 0015) and, when it cannot be used,
+   * why. Whether it met its minimum spend is in priced.voucher.
+   */
+  voucher: { code: string; problem: string | null } | null;
 };
 
 export type SetQuantityResult =
@@ -219,6 +232,7 @@ export async function getCart(
     ? await db.cart.findFirst({
         where,
         select: {
+          voucherCode: true,
           lines: {
             orderBy: [{ createdAt: "asc" }, { id: "asc" }],
             select: {
@@ -266,6 +280,11 @@ export async function getCart(
     ];
   });
 
+  const voucher = await cartVoucher(
+    owner,
+    cart?.voucherCode ?? null,
+    context.now ?? new Date(readAt)
+  );
   const priced = priceCart(
     lines
       .filter((l) => l.stock !== "out")
@@ -276,7 +295,7 @@ export async function getCart(
         taxClass: l.product.taxClass,
         isWeighed: l.product.isWeighed,
       })),
-    { zone: context.zone }
+    { zone: context.zone, voucher: voucher?.terms ?? null }
   );
 
   return {
@@ -286,7 +305,54 @@ export async function getCart(
     itemCount: lines.reduce((sum, l) => sum + l.quantity, 0),
     version: cartVersion(rows),
     readAt,
+    voucher: voucher && { code: voucher.code, problem: voucher.problem },
   };
+}
+
+/** The Cart's Voucher, checked for this Customer now (ADR 0015). */
+async function cartVoucher(
+  owner: CartOwner | null,
+  code: string | null,
+  now: Date
+): Promise<{
+  code: string;
+  problem: string | null;
+  terms: VoucherTerms | null;
+} | null> {
+  if (!code) return null;
+  if (!owner || !("customerId" in owner))
+    return { code, problem: "Sign in to use a Voucher.", terms: null };
+  const check = await checkVoucher(code, owner.customerId, now);
+  return check.ok
+    ? { code, problem: null, terms: check.terms }
+    : { code, problem: VOUCHER_REFUSAL[check.reason], terms: null };
+}
+
+/**
+ * Keep a Voucher on the Customer's Cart, once it may be used now (ADR
+ * 0015). A refusal says why, in words for the Customer.
+ */
+export async function setCartVoucher(
+  owner: CartOwner,
+  code: string,
+  now = new Date()
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (!("customerId" in owner))
+    return { ok: false, message: "Sign in to use a Voucher." };
+  const check = await checkVoucher(code, owner.customerId, now);
+  if (!check.ok) return { ok: false, message: VOUCHER_REFUSAL[check.reason] };
+  const { count } = await db.cart.updateMany({
+    where: { customerId: owner.customerId, checkedOutAt: null },
+    data: { voucherCode: check.terms.code },
+  });
+  return count > 0
+    ? { ok: true }
+    : { ok: false, message: "Add something to your cart first." };
+}
+
+export async function clearCartVoucher(owner: CartOwner): Promise<void> {
+  const where = ownerWhere(owner);
+  if (where) await db.cart.updateMany({ where, data: { voucherCode: null } });
 }
 
 /** Product id to quantity, for the steppers on Product cards. */

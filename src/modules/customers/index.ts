@@ -19,3 +19,10 @@ export { getProfile, setMarketingOptIn, updateName } from "./internal/profile";
 export type { Profile } from "./internal/profile";
 export { customerForUser } from "./internal/link";
 export type { AuthUserInfo } from "./internal/link";
+export {
+  applyReferral,
+  getReferralCode,
+  listReferrals,
+  rewardReferral,
+} from "./internal/referrals";
+export type { ReferralRefusal } from "./internal/referrals";

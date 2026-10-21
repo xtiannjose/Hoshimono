@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { formatDateTime, formatSlot, manilaDate, slotParts } from "./dates";
+import {
+  formatDateTime,
+  formatSlot,
+  fromManilaInput,
+  manilaDate,
+  slotParts,
+  toManilaInput,
+} from "./dates";
 
 // 04:00 on 19 Oct in Manila.
 const NOW = new Date("2026-10-18T20:00:00Z");
@@ -35,5 +42,14 @@ describe("dates", () => {
     expect(formatDateTime(new Date("2026-10-19T08:05:00Z"))).toBe(
       "19 Oct 2026, 4:05 PM"
     );
+  });
+});
+
+describe("Manila datetime inputs", () => {
+  it("round-trips an instant through a datetime-local value", () => {
+    const at = new Date("2026-10-21T00:00:00Z");
+    expect(toManilaInput(at)).toBe("2026-10-21T08:00");
+    expect(fromManilaInput("2026-10-21T08:00").getTime()).toBe(at.getTime());
+    expect(Number.isNaN(fromManilaInput("tomorrow").getTime())).toBe(true);
   });
 });

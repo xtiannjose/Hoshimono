@@ -76,6 +76,18 @@ export const AREA_LINKS: Record<
       hint: "Products as CSV",
     },
   ],
+  promotions: [
+    {
+      href: "/admin/promotions",
+      label: "Promotions",
+      hint: "Sale prices on Products and Categories, for set dates",
+    },
+    {
+      href: "/admin/vouchers",
+      label: "Vouchers",
+      hint: "Codes for money off or free delivery, with limits",
+    },
+  ],
   content: [
     {
       href: "/admin/recipes",

@@ -18,6 +18,7 @@ import { bookSlot, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import { createCodPayment, createOnlinePayment } from "@/modules/payments";
+import { redeemVoucher, VOUCHER_REFUSAL } from "@/modules/pricing";
 
 import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
 
@@ -50,6 +51,8 @@ export type PlaceOrderResult =
   | { ok: false; reason: "below_minimum"; shortByCents: number }
   | { ok: false; reason: "out_of_stock"; productIds: string[] }
   | { ok: false; reason: "over_cod_limit"; limitCents: number }
+  /** The Cart's Voucher stopped applying, such as its last use going (ADR 0015). */
+  | { ok: false; reason: "voucher_unavailable"; message: string }
   | {
       ok: false;
       reason:
@@ -157,7 +160,7 @@ export async function placeOrder(
   const owner = { customerId: order.customerId };
   const [cartId, cart] = await Promise.all([
     getCartId(owner),
-    getCart(owner, { hubId: zone.hubId, zone: zone.fees }),
+    getCart(owner, { hubId: zone.hubId, zone: zone.fees, now }),
   ]);
   const { priced } = cart;
   // Out-of-stock lines were shown as "not in your total"; they stay out.
@@ -181,6 +184,13 @@ export async function placeOrder(
       ok: false,
       reason: "over_cod_limit",
       limitCents: MAX_COD_TOTAL_CENTS,
+    };
+  }
+  if (cart.voucher?.problem) {
+    return {
+      ok: false,
+      reason: "voucher_unavailable",
+      message: cart.voucher.problem,
     };
   }
   if (priced.totalCents !== order.expectedTotalCents) {
@@ -251,6 +261,27 @@ export async function placeOrder(
       },
       select: { id: true, orderNo: true },
     });
+    // Recorded under a lock: a Voucher's last use goes to one Order only.
+    if (priced.voucher?.applied) {
+      const redeemed = await redeemVoucher(tx, {
+        code: priced.voucher.code,
+        orderId: created.id,
+        customerId: order.customerId,
+        discountCents: priced.discountCents,
+        now,
+      });
+      if (!redeemed.ok) {
+        throw new Refused({
+          ok: false,
+          reason: "voucher_unavailable",
+          message: VOUCHER_REFUSAL[redeemed.reason],
+        });
+      }
+      await tx.order.update({
+        where: { id: created.id },
+        data: { voucherId: redeemed.voucherId },
+      });
+    }
     await reserveStock(tx, {
       hubId: zone.hubId,
       orderId: created.id,

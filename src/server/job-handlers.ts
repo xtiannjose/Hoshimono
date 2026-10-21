@@ -1,16 +1,17 @@
-import { formatSlot, formatTime } from "@/lib/dates";
+import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
 import { signValue } from "@/lib/signed";
 import { CART_REMINDER_JOB, getCartReminder } from "@/modules/cart";
 import { getProductSummaries } from "@/modules/catalog";
-import { getProfile } from "@/modules/customers";
+import { getProfile, rewardReferral } from "@/modules/customers";
 import { STOCK_ALERT_JOB } from "@/modules/inventory";
 import type { JobHandlers } from "@/modules/jobs";
 import {
   sendBackInStock,
   sendCartReminder,
+  sendReferralReward,
   sendDeliveryFailed,
   sendOrderConfirmed,
   sendOutForDelivery,
@@ -23,10 +24,12 @@ import {
   getOrderForNotice,
   getSubstitution,
   ORDER_CONFIRMED_JOB,
+  ORDER_DELIVERED_JOB,
   OUT_FOR_DELIVERY_JOB,
   SUBSTITUTION_ASKED_JOB,
 } from "@/modules/orders";
 import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
+import { createRewardVoucher, REFERRAL_REWARD_CENTS } from "@/modules/pricing";
 
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const trackingUrl = (orderNo: string) =>
@@ -35,6 +38,33 @@ const link = (path: string) => new URL(path, appUrl()).toString();
 
 // Wires job kinds to modules; modules stay unaware of each other here.
 export const jobHandlers: JobHandlers = {
+  // An invited friend's first Order arrived: a Voucher each (ADR 0015).
+  async [ORDER_DELIVERED_JOB](payload) {
+    const order = await getOrderForNotice(String(payload.orderId));
+    if (!order || order.status !== "delivered") return;
+    const reward = await rewardReferral(order.customerId, order.id, (tx, id) =>
+      createRewardVoucher(tx, id)
+    );
+    if (!reward) return;
+    const friend = reward.referee.name.split(" ")[0] || "A friend";
+    for (const role of ["referrer", "referee"] as const) {
+      const who = reward[role];
+      await sendReferralReward({
+        rewardId: reward.rewardId,
+        role,
+        email: who.email,
+        phone: who.phone,
+        name: who.name,
+        friend,
+        code: who.voucher.code,
+        amount: formatMoney(REFERRAL_REWARD_CENTS),
+        minSpend: formatMoney(who.voucher.minSpendCents),
+        until: formatDate(who.voucher.endsAt),
+        shopUrl: link("/"),
+      });
+    }
+  },
+
   // The one Cart Reminder (ADR 0014): skipped if they ordered, emptied the
   // Cart or said no to reminders since it was queued.
   async [CART_REMINDER_JOB](payload) {

@@ -1,14 +1,17 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { z } from "zod";
 
 import { formatSlot, formatTime } from "@/lib/dates";
 import { productName } from "@/lib/product-name";
 import {
+  clearCartVoucher,
   getCart,
   getCartId,
   MAX_NOTE_LENGTH,
   setLineNote,
+  setCartVoucher,
   setLineQuantity,
   setSubstitution,
   type CartView,
@@ -158,4 +161,25 @@ export async function listAlternatives(
     name: productName(p),
     priceCents: p.priceCents,
   }));
+}
+
+/** Keep a Voucher on the Cart (ADR 0015); the reply says why if it cannot. */
+export async function applyVoucherAction(code: string): Promise<CartResult> {
+  const owner = await readCartOwner();
+  const result = owner
+    ? await setCartVoucher(owner, String(code).slice(0, 40))
+    : { ok: false as const, message: "Add something to your cart first." };
+  // Checkout is server-rendered: show its new total too.
+  refresh();
+  return {
+    cart: await currentCart(),
+    ...(result.ok ? {} : { message: result.message }),
+  };
+}
+
+export async function removeVoucherAction(): Promise<CartResult> {
+  const owner = await readCartOwner();
+  if (owner) await clearCartVoucher(owner);
+  refresh();
+  return { cart: await currentCart() };
 }

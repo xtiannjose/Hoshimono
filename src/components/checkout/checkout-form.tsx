@@ -23,6 +23,7 @@ import {
   type CheckoutState,
 } from "@/app/checkout/actions";
 import { CartSummary } from "@/components/cart/cart-summary";
+import { VoucherForm } from "@/components/cart/voucher-form";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -446,6 +447,7 @@ export function CheckoutForm({
           })}
         </ul>
         <CartSummary priced={priced} size="page" />
+        <VoucherForm view={cart} />
         <p className="text-muted-foreground text-[13px]">VAT included.</p>
         {priced.belowMinimumByCents > 0 && (
           <p className="rounded-field bg-warn-soft text-warn px-4 py-3 text-sm font-semibold">

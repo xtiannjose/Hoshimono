@@ -60,6 +60,12 @@ async function Account() {
             Weekly groceries and more, added to your cart in one tap
           </span>
         </Link>
+        <Link href="/account/invite" className={LINK}>
+          <b>Invite friends</b>
+          <span className="text-muted-foreground text-sm">
+            ₱100 off for you and a friend, and your Vouchers
+          </span>
+        </Link>
       </nav>
       <section aria-labelledby="h-messages" className="grid gap-2">
         <h2 id="h-messages" className="type-h3">

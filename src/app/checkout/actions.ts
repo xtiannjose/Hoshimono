@@ -1,7 +1,7 @@
 "use server";
 
 import { refresh, updateTag } from "next/cache";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 
@@ -10,7 +10,7 @@ import { jobHandlers } from "@/server/job-handlers";
 import { formatMoney } from "@/lib/money";
 import { clientIp } from "@/lib/rate-limit";
 import { getCartId } from "@/modules/cart";
-import { getAddress } from "@/modules/customers";
+import { applyReferral, getAddress } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
@@ -26,6 +26,7 @@ import {
   type PaymentProvider,
 } from "@/modules/payments";
 
+import { REFERRAL_COOKIE } from "../r/referral-cookie";
 import { takeOrderAttempt } from "./order-limits";
 
 export type HoldState =
@@ -99,6 +100,8 @@ function explain(result: Exclude<PlaceOrderResult, { ok: true }>): string {
       return "This cart was already ordered. You can find it under your orders.";
     case "invalid":
       return "Please choose a delivery slot.";
+    case "voucher_unavailable":
+      return `${result.message} Remove the Voucher to place your order.`;
   }
 }
 
@@ -132,6 +135,14 @@ export async function placeOrderAction(
         "You have placed several orders just now. Please wait a while, or contact us for help.",
       values,
     };
+  }
+  // A friend's link opened before this first Order (ADR 0015): link them now.
+  // A refusal (already linked, not new, own code) changes nothing.
+  const jar = await cookies();
+  const referral = jar.get(REFERRAL_COOKIE)?.value;
+  if (referral) {
+    await applyReferral(customer.id, referral);
+    jar.delete(REFERRAL_COOKIE);
   }
   const result = await placeOrder({
     customerId: customer.id,

@@ -44,6 +44,9 @@ export const OPEN_STATUSES = (Object.keys(NEXT) as OrderStatus[]).filter(
 /** Job that sends the order confirmed email and SMS. */
 export const ORDER_CONFIRMED_JOB = "order.confirmed";
 
+/** Job run once an Order is delivered, such as a Referral reward (ADR 0015). */
+export const ORDER_DELIVERED_JOB = "order.delivered";
+
 export type Actor = { type: ActorType; id?: string | null };
 
 /**
@@ -129,6 +132,8 @@ export async function transitionOrder(
         }
       }
       if (to === "picked") await settlePicked(tx, orderId);
+      if (to === "delivered")
+        await enqueueJob(tx, ORDER_DELIVERED_JOB, { orderId });
       return true;
     },
     // Cancel and pick lock stock rows that checkouts also lock: placeOrder's

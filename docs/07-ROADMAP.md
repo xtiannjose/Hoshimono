@@ -21,17 +21,18 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
 - Batch 5.2 (PR #20): Reorder, Shopping Lists, "Buy again", Cart Reminders with consent and Stock Alerts ([ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4), #19 (Batch 5.1), #20 (Batch 5.2). Each is built on the one before: merge them in that order.
+**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4), #19 (Batch 5.1), #20 (Batch 5.2), #21 (Batch 5.3). Each is built on the one before: merge them in that order.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 5 (section 10), in order: Batch 5.3 promotions and Vouchers, 5.4 Freshness Claims, 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
+1. Phase 5 (section 10), in order: Batch 5.4 Freshness Claims, 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
 2. A general checkup of the app (asked for on 21 Oct), and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
 3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
@@ -390,8 +391,8 @@ Frontend:
 
 **Batch 5.3 Promotions, Vouchers and Referrals** (W16). Stack: `pricing`. Skills: `tdd`, `grilling`.
 
-- [ ] Promotions and Vouchers with eligibility rules and usage caps
-- [ ] Referral codes and rewards ledger
+- [x] Promotions and Vouchers with eligibility rules and usage caps. 21 Oct ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)): Promotions (percent or pesos off Products and Categories, for set dates) are the shelf price; Vouchers (percent with a cap, pesos off, or free delivery; minimum spend, total and per-Customer uses, first orders only) are one per Order on top, re-checked on every pricing and recorded under a lock at Checkout. Staff screens at `/admin/promotions` and `/admin/vouchers` for Merchandisers and Admins; "On sale this week" on Home
+- [x] Referral codes and rewards ledger. `/account/invite`: a share link and code; a friend's first delivered Order gives each a personal ₱100 Voucher (minimum ₱500, 60 days); the page lists friends and Vouchers
 
 **Batch 5.4 Freshness Claims** (W16 to W17). Stack: object storage for photos, `payments.refund`. Skills: `tdd`.
 

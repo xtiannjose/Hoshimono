@@ -161,6 +161,7 @@ export async function getOrderForNotice(orderId: string) {
       status: true,
       contactPhone: true,
       totalCents: true,
+      customerId: true,
       customer: { select: { email: true } },
       slot: { select: { startsAt: true, endsAt: true } },
       lines: {
