@@ -24,7 +24,7 @@ export type { SearchResult, SearchSuggestions } from "./internal/search";
 export type { SearchIndex } from "./internal/search/search-index";
 export { listRelatedProducts } from "./internal/related";
 
-// Admin (merchandiser) writes. Callers check requireStaff first.
+// Admin (merchandiser) writes. Callers check requireStaff("catalog") first.
 export {
   createProduct,
   getProductForAdmin,

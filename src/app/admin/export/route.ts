@@ -6,7 +6,7 @@ import { getStaff } from "@/modules/identity";
 // Every Product as CSV, in the import format (PRD ADM-1).
 export async function GET() {
   await connection();
-  const staff = await getStaff("merchandiser");
+  const staff = await getStaff("catalog");
   if (!staff) return new Response("Not found", { status: 404 });
   const date = new Date().toISOString().slice(0, 10);
   return new Response(await exportProductsCsv(), {

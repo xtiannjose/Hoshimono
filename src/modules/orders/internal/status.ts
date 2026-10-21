@@ -26,6 +26,11 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
+/** Where an Order may go next from `status` (the lifecycle above). */
+export function nextStatuses(status: OrderStatus): OrderStatus[] {
+  return [...NEXT[status]];
+}
+
 /** Statuses an Order can still leave, so it still holds stock or a Slot place. */
 export const OPEN_STATUSES = (Object.keys(NEXT) as OrderStatus[]).filter(
   (status) => NEXT[status].length > 0

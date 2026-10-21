@@ -175,3 +175,85 @@ export async function getRefundNotice(refundId: string): Promise<{
       }
     : null;
 }
+
+export type RefundToCheck = {
+  id: string;
+  amountCents: number;
+  reason: RefundReason;
+  status: RefundStatus;
+  lastError: string | null;
+  createdAt: Date;
+  method: PaymentMethod;
+  /** The provider's payment id, to find it in its dashboard. */
+  paymentRef: string | null;
+  orderNo: string;
+};
+
+/**
+ * Refunds a person must look at (ADR 0008): no clear answer from the
+ * provider (needs_review), or still refused after the job's tries.
+ */
+export async function listRefundsToCheck(): Promise<RefundToCheck[]> {
+  const rows = await db.refund.findMany({
+    where: {
+      OR: [
+        { status: "needs_review" },
+        { status: "pending", lastError: { not: null } },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    select: {
+      id: true,
+      amountCents: true,
+      reason: true,
+      status: true,
+      lastError: true,
+      createdAt: true,
+      // shortcut: the Order Number through the relation, as orders/read.ts does.
+      payment: {
+        select: {
+          method: true,
+          paymentRef: true,
+          order: { select: { orderNo: true } },
+        },
+      },
+    },
+  });
+  return rows.map(({ payment, ...r }) => ({
+    ...r,
+    method: payment.method,
+    paymentRef: payment.paymentRef,
+    orderNo: payment.order.orderNo,
+  }));
+}
+
+/**
+ * A person's answer for a refund to check. "sent": the provider shows it
+ * went through (the Customer is then told); "retry": it did not, send it
+ * again. False when the refund is not waiting for an answer.
+ */
+export async function settleRefund(
+  refundId: string,
+  outcome: "sent" | "retry",
+  providerRef?: string
+): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const { count } = await tx.refund.updateMany({
+      where: { id: refundId, status: { in: ["needs_review", "pending"] } },
+      data:
+        outcome === "sent"
+          ? {
+              status: "sent",
+              sentAt: new Date(),
+              providerRef: providerRef?.trim() || null,
+              lastError: null,
+            }
+          : { status: "pending", lastError: null },
+    });
+    if (count === 0) return false;
+    // Sent: the job only tells the Customer. Retry: the job sends it.
+    await enqueueJob(tx, REFUND_JOB, { refundId });
+    return true;
+  });
+}

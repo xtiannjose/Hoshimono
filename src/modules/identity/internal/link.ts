@@ -2,15 +2,28 @@ import type { PrismaClient } from "@/generated/prisma/client";
 import type { StaffRole } from "@/generated/prisma/enums";
 import type { AuthUserInfo } from "@/modules/customers";
 
+/** The parts of the staff screens a role can open (PRD ADM-11). */
+export type StaffArea = "catalog" | "orders" | "refunds" | "staff" | "audit";
+
+// Least privilege: each role gets only its own work. The Picker's view
+// arrives in Batch 4.2 and the Dispatcher's in 4.3.
+const AREAS: Record<StaffRole, readonly StaffArea[]> = {
+  admin: ["catalog", "orders", "refunds", "staff", "audit"],
+  merchandiser: ["catalog"],
+  dispatcher: ["orders"],
+  picker: [],
+};
+
+/** Every area a role can open, in the order the staff menu lists them. */
+export function staffAreas(role: StaffRole): readonly StaffArea[] {
+  return AREAS[role];
+}
+
 /**
- * The active Staff member with `role` (admins pass every role check), or null.
- * Staff rows are created by an admin; sign-in links them by verified email.
+ * The active Staff member linked to this sign-in, or null. Staff rows are
+ * created by an admin; sign-in links them by verified email.
  */
-export async function staffForUser(
-  db: PrismaClient,
-  user: AuthUserInfo,
-  role: StaffRole
-) {
+export async function activeStaff(db: PrismaClient, user: AuthUserInfo) {
   let staff = await db.staff.findUnique({ where: { authUserId: user.id } });
 
   if (!staff && user.emailVerified) {
@@ -24,8 +37,15 @@ export async function staffForUser(
       });
     }
   }
+  return staff?.isActive ? staff : null;
+}
 
-  if (!staff?.isActive) return null;
-  if (staff.role !== role && staff.role !== "admin") return null;
-  return staff;
+/** The active Staff member who may open `area`, or null. */
+export async function staffForUser(
+  db: PrismaClient,
+  user: AuthUserInfo,
+  area: StaffArea
+) {
+  const staff = await activeStaff(db, user);
+  return staff && AREAS[staff.role].includes(area) ? staff : null;
 }

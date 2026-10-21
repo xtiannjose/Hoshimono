@@ -17,4 +17,12 @@ export {
 } from "./internal/status";
 export type { Actor } from "./internal/status";
 export { getOrder, getOrderForNotice, listOrders } from "./internal/read";
+export {
+  addOrderNote,
+  getOrderForStaff,
+  listOrdersForStaff,
+  MAX_ORDER_NOTE_LENGTH,
+  staffMoves,
+} from "./internal/staff";
+export type { QueueRow, StaffOrderDetail } from "./internal/staff";
 export type { OrderDetail, OrderSummary } from "./internal/read";

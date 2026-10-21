@@ -6,9 +6,11 @@ import { confirmPaidOrder, ORDER_CONFIRMED_JOB } from "@/modules/orders";
 import {
   createPaymongo,
   handleWebhook,
+  listRefundsToCheck,
   REFUND_JOB,
   refundOrderPayment,
   sendRefund,
+  settleRefund,
   startCheckout,
   type CheckoutRequest,
   type PaymentProvider,
@@ -421,6 +423,83 @@ describe("refunds", () => {
     expect((await db.refund.findUniqueOrThrow({ where: { id } })).status).toBe(
       "needs_review"
     );
+  });
+});
+
+describe("refunds to check", () => {
+  /** A paid online Order whose refund is now in `status`. */
+  async function refundIn(
+    status: "pending" | "sending" | "sent" | "needs_review",
+    lastError: string | null = null
+  ) {
+    const { paymentId, sessionId } = await onlinePayment(30000);
+    const body = paidEvent({ sessionId, amount: 30000 });
+    await handleWebhook(paymongo, body, signed(body));
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    await db.$transaction((tx) => refundOrderPayment(tx, orderId, "cancelled"));
+    const refund = await db.refund.findFirstOrThrow({ where: { paymentId } });
+    return db.refund.update({
+      where: { id: refund.id },
+      data: { status, lastError },
+    });
+  }
+
+  it("lists the refunds a person must look at: unclear, or still failing", async () => {
+    const unclear = await refundIn("needs_review", "TypeError: fetch failed");
+    const failing = await refundIn("pending", "PayMongo 400: balance");
+    await refundIn("pending");
+    await refundIn("sent");
+
+    const listed = await listRefundsToCheck();
+    const ids = listed.map((r) => r.id);
+    expect(ids).toContain(unclear.id);
+    expect(ids).toContain(failing.id);
+    expect(listed.find((r) => r.id === unclear.id)).toMatchObject({
+      amountCents: 30000,
+      reason: "cancelled",
+      status: "needs_review",
+      lastError: "TypeError: fetch failed",
+      paymentRef: expect.stringMatching(/^pay_/),
+      orderNo: expect.stringMatching(/^SW-/),
+    });
+    expect(
+      listed.every((r) => r.status === "needs_review" || r.lastError !== null)
+    ).toBe(true);
+  });
+
+  it("marks a refund that went through as sent, and the Customer is told", async () => {
+    const refund = await refundIn("needs_review", "TypeError: fetch failed");
+
+    expect(await settleRefund(refund.id, "sent", "ref_from_dashboard")).toBe(
+      true
+    );
+    expect(await settleRefund(refund.id, "sent")).toBe(false);
+
+    expect(
+      await db.refund.findUniqueOrThrow({ where: { id: refund.id } })
+    ).toMatchObject({
+      status: "sent",
+      providerRef: "ref_from_dashboard",
+      lastError: null,
+    });
+    // The refund job sends nothing more for a sent refund, only the notice.
+    expect(await queued(REFUND_JOB, "refundId", refund.id)).toBe(2);
+  });
+
+  it("sends again a refund that did not go through", async () => {
+    const refund = await refundIn("needs_review", "TypeError: fetch failed");
+
+    expect(await settleRefund(refund.id, "retry")).toBe(true);
+
+    expect(
+      await db.refund.findUniqueOrThrow({ where: { id: refund.id } })
+    ).toMatchObject({ status: "pending", lastError: null });
+    expect(await queued(REFUND_JOB, "refundId", refund.id)).toBe(2);
+    // A sent refund is never sent again.
+    const sent = await refundIn("sent");
+    expect(await settleRefund(sent.id, "retry")).toBe(false);
   });
 });
 

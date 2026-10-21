@@ -8,11 +8,21 @@ import { auth } from "./internal/auth";
 export const authHandler = toNextJsHandler(auth);
 
 export { recordAudits, type AuditEntry } from "./internal/audit";
+export {
+  addStaff,
+  listAudits,
+  listStaff,
+  updateStaff,
+  type AuditRow,
+  type StaffRow,
+} from "./internal/staff";
 export { googleEnabled } from "./internal/auth";
-export { staffForUser } from "./internal/link";
+export { staffAreas, staffForUser, type StaffArea } from "./internal/link";
 export {
   currentCustomer,
+  currentStaff,
   getStaff,
+  requireAnyStaff,
   requireCustomer,
   requireStaff,
   signOut,
