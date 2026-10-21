@@ -136,11 +136,32 @@ async function settlePicked(
           fulfilledQty: true,
           orderedWeightGrams: true,
           finalWeightGrams: true,
+          substitutions: {
+            take: 1,
+            select: {
+              quantity: true,
+              priceCents: true,
+              customerResponse: true,
+            },
+          },
         },
       },
     },
   });
-  const finalTotalCents = priceFinal(order.lines, order);
+  const finalTotalCents = priceFinal(
+    order.lines.map(({ substitutions: [sub], ...l }) => ({
+      ...l,
+      // Refused costs nothing; anything else here was accepted (ADR 0010).
+      substitute: sub
+        ? {
+            quantity: sub.quantity,
+            unitPriceCents: sub.priceCents,
+            accepted: sub.customerResponse !== "rejected",
+          }
+        : null,
+    })),
+    order
+  );
   const refunded = await refundOrderPayment(
     tx,
     orderId,

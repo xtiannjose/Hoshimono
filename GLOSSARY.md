@@ -158,6 +158,14 @@ _Avoid_: Driver, courier, delivery guy
 A Product delivered in place of an ordered Product that was unavailable, recorded against the Order Line.
 _Avoid_: Replacement, swap
 
+**Substitution Window**:
+The 10 minutes a Customer has to refuse a Substitution the Picker chose for a "pick a similar item" line. Silence counts as a yes ([ADR 0010](docs/adr/0010-picking-and-substitutions.md)).
+_Avoid_: Approval timeout
+
+**Pick List**:
+An Order's lines in the order a Picker walks the Hub: by Category until the Hub has aisle codes.
+_Avoid_: Pick sheet (the printed one is Batch 4.4)
+
 **Freshness Claim**:
 A customer's report, within the claim window after delivery, that an Order Line was not fresh or was damaged, resolved by refund or credit.
 _Avoid_: Complaint, return, ticket

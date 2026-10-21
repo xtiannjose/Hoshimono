@@ -18,6 +18,21 @@ export {
 export type { Actor } from "./internal/status";
 export { getOrder, getOrderForNotice, listOrders } from "./internal/read";
 export {
+  answerSubstitution,
+  finishPicking,
+  getPickList,
+  getSubstitution,
+  proposeSubstitution,
+  recordPick,
+  SUBSTITUTION_ASKED_JOB,
+  SUBSTITUTION_WINDOW_MINUTES,
+} from "./internal/picking";
+export type {
+  PickLine,
+  ProposeResult,
+  SubstitutionAnswer,
+} from "./internal/picking";
+export {
   addOrderNote,
   getOrderForStaff,
   listOrdersForStaff,

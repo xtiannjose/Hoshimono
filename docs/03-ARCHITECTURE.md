@@ -112,6 +112,13 @@ As built (Batch 2.4, `src/modules/orders/internal/place-order.ts`):
 
 Order status and payment status are separate fields. Only `transitionOrder()` (orders module) changes Order status; each call writes a status-history row with actor and reason. Cancelling a COD Order sets its Payment to `unpaid`.
 
+Picking, as built (Batch 4.2, [ADR 0010](adr/0010-picking-and-substitutions.md)). The pick functions live in `orders`, which owns Order Lines and Substitutions; the `fulfilment` module in the map above starts with dispatch (Batch 4.3).
+
+- `getPickList` returns an Order's lines in Category order (top-level, then sub-Category, then name) with the Substitution Preference, the chosen alternative and the Picker Note.
+- `recordPick` saves what was found: pieces, or a weighed pack's grams (0 is short; more than 10% over is refused).
+- `proposeSubstitution` stands a Product in for the pieces not found, one per line, never on a weighed line or a "no substitute" line. "I'll choose" takes only the Customer's Product and is accepted at once. "Pick a similar item" stores a random token and a 10-minute Substitution Window and queues `order.substitution_asked`, an SMS and email with a link to `/s/[token]`, where the Customer says yes or no without signing in.
+- `finishPicking` refuses while a window is open, treats silence as a yes, then moves the Order to `picked`: the Final Total charges an accepted substitute at the lower of its price and the ordered price, a refused one not at all (ADR 0008 refunds any difference). The order queue's "Picked" goes through it too.
+
 ```mermaid
 stateDiagram-v2
     [*] --> pending_payment: online method chosen

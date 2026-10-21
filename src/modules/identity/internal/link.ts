@@ -3,15 +3,16 @@ import type { StaffRole } from "@/generated/prisma/enums";
 import type { AuthUserInfo } from "@/modules/customers";
 
 /** The parts of the staff screens a role can open (PRD ADM-11). */
-export type StaffArea = "catalog" | "orders" | "refunds" | "staff" | "audit";
+export type StaffArea =
+  "picking" | "catalog" | "orders" | "refunds" | "staff" | "audit";
 
-// Least privilege: each role gets only its own work. The Picker's view
-// arrives in Batch 4.2 and the Dispatcher's in 4.3.
+// Least privilege: each role gets only its own work. The Dispatcher's own
+// view arrives in Batch 4.3; until then they use the order queue.
 const AREAS: Record<StaffRole, readonly StaffArea[]> = {
-  admin: ["catalog", "orders", "refunds", "staff", "audit"],
+  admin: ["picking", "catalog", "orders", "refunds", "staff", "audit"],
   merchandiser: ["catalog"],
   dispatcher: ["orders"],
-  picker: [],
+  picker: ["picking"],
 };
 
 /** Every area a role can open, in the order the staff menu lists them. */

@@ -5,9 +5,15 @@ import { after } from "next/server";
 
 import { STOCK_TAG } from "@/app/_data/storefront";
 import type { OrderStatus } from "@/generated/prisma/enums";
-import { requireStaff } from "@/modules/identity";
+import { recordAudits, requireStaff } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
-import { addOrderNote, staffMoves, transitionOrder } from "@/modules/orders";
+import { formatTime } from "@/lib/dates";
+import {
+  addOrderNote,
+  finishPicking,
+  staffMoves,
+  transitionOrder,
+} from "@/modules/orders";
 
 import { jobHandlers } from "@/server/job-handlers";
 
@@ -40,6 +46,33 @@ export async function moveOrderAction(
   }
   if (NEEDS_REASON.includes(to) && !reason) {
     return { errors: { reason: "Say why: it goes in the Order's history." } };
+  }
+  if (to === "picked") {
+    // Waits for open Substitution Windows, then sets the Final Total (ADR 0010).
+    const done = await finishPicking(orderId, { type: "staff", id: staff.id });
+    if (!done.ok) {
+      return {
+        errors: {
+          form:
+            done.reason === "waiting_for_customer"
+              ? `Waiting for the Customer about a substitute until ${formatTime(done.until)}.`
+              : "This Order changed meanwhile. Reload to see where it is now.",
+        },
+      };
+    }
+    await recordAudits([
+      {
+        staffId: staff.id,
+        action: "status",
+        entity: "order",
+        entityId: orderId,
+        before: { status: from },
+        after: { status: to },
+      },
+    ]);
+    after(() => runDueJobs(jobHandlers).then(() => undefined));
+    refresh();
+    return { errors: {}, saved: true };
   }
   const result = await adminWrite(
     staff.id,

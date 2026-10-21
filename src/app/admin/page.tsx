@@ -24,10 +24,7 @@ async function Home() {
         Signed in as {staff.name} ({staff.role})
       </p>
       {links.length === 0 ? (
-        <p className="text-muted-foreground">
-          Nothing for your role here yet. The Picker&apos;s screen is on its
-          way.
-        </p>
+        <p className="text-muted-foreground">Nothing for your role here yet.</p>
       ) : (
         <ul className="grid gap-2">
           {links.map((l) => (
