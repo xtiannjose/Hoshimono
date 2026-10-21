@@ -1,8 +1,17 @@
-import { formatSlot } from "@/lib/dates";
+import { formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { JobHandlers } from "@/modules/jobs";
-import { sendOrderConfirmed, sendRefundIssued } from "@/modules/notifications";
-import { getOrderForNotice, ORDER_CONFIRMED_JOB } from "@/modules/orders";
+import {
+  sendOrderConfirmed,
+  sendRefundIssued,
+  sendSubstitutionAsked,
+} from "@/modules/notifications";
+import {
+  getOrderForNotice,
+  getSubstitution,
+  ORDER_CONFIRMED_JOB,
+  SUBSTITUTION_ASKED_JOB,
+} from "@/modules/orders";
 import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
 
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -29,6 +38,26 @@ export const jobHandlers: JobHandlers = {
       })),
       cashOnDelivery: order.payments[0]?.method === "cod",
       estimated: order.lines.some((l) => l.orderedWeightGrams !== null),
+    });
+  },
+
+  // Ask the Customer about a swap while its window is open (ADR 0010).
+  async [SUBSTITUTION_ASKED_JOB](payload) {
+    const sub = await getSubstitution({ id: String(payload.substitutionId) });
+    if (!sub?.token || !sub.windowEndsAt || sub.answer !== "waiting") return;
+    if (sub.windowEndsAt <= new Date()) return;
+    await sendSubstitutionAsked({
+      orderId: sub.orderId,
+      orderNo: sub.orderNo,
+      substitutionId: sub.id,
+      email: sub.email,
+      phone: sub.phone,
+      ordered: sub.ordered.name,
+      substitute: sub.substitute.name,
+      quantity: sub.substitute.quantity,
+      unitPrice: formatMoney(sub.substitute.unitPriceCents),
+      until: formatTime(sub.windowEndsAt),
+      link: new URL(`/s/${sub.token}`, appUrl()).toString(),
     });
   },
 

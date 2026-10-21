@@ -5,6 +5,13 @@ export const AREA_LINKS: Record<
   StaffArea,
   { href: string; label: string; hint: string }[]
 > = {
+  picking: [
+    {
+      href: "/admin/pick",
+      label: "Picking",
+      hint: "Orders to pick, each in aisle order",
+    },
+  ],
   orders: [
     {
       href: "/admin/orders",

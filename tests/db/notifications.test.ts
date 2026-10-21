@@ -7,6 +7,7 @@ import { getDefaultAddress } from "@/modules/customers";
 import {
   sendOrderConfirmed,
   sendRefundIssued,
+  sendSubstitutionAsked,
   type Sent,
 } from "@/modules/notifications";
 import { placeOrder } from "@/modules/orders";
@@ -147,6 +148,38 @@ describe("sendRefundIssued", () => {
     expect(sent[1].text).toContain("came to less than you paid");
     expect(sent[3].text).toContain("cancelled order SW-261002-TEST");
     // No em-dashes in Customer copy (CLAUDE.md).
+    expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
+  });
+});
+
+describe("sendSubstitutionAsked", () => {
+  const asked = {
+    orderId: "",
+    orderNo: "SW-261002-TEST",
+    substitutionId: "sub-1",
+    email: "ligaya@example.com",
+    phone: "+639171234567",
+    ordered: "Magnolia Fresh Milk",
+    substitute: "Nestle Low Fat Milk",
+    quantity: 2,
+    unitPrice: "₱98.00",
+    until: "3:42 PM",
+    link: "http://localhost:3000/s/abc123",
+  };
+
+  it("asks once per Substitution, with the link and what silence means", async () => {
+    const { sent, providers } = recorder();
+    const notice = { ...asked, orderId };
+    await sendSubstitutionAsked(notice, providers);
+    await sendSubstitutionAsked(notice, providers);
+
+    expect(sent.map((s) => s.channel)).toEqual(["email", "sms"]);
+    const sms = sent[1].text;
+    expect(sms).toContain("Magnolia Fresh Milk");
+    expect(sms).toContain("2 x Nestle Low Fat Milk at ₱98.00 each");
+    expect(sms).toContain("http://localhost:3000/s/abc123");
+    expect(sms).toContain("by 3:42 PM");
+    expect(sms).toContain("No reply means yes");
     expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
   });
 });

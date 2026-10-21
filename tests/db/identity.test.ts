@@ -213,7 +213,10 @@ describe("staffForUser", () => {
     expect(await staffForUser(db, merchandiser, "orders")).toBeNull();
     expect(await staffForUser(db, merchandiser, "staff")).toBeNull();
     expect(await staffForUser(db, picker, "orders")).toBeNull();
+    expect(await staffForUser(db, picker, "picking")).not.toBeNull();
+    expect(await staffForUser(db, dispatcher, "picking")).toBeNull();
     for (const area of [
+      "picking",
       "catalog",
       "orders",
       "refunds",

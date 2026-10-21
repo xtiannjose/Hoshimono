@@ -64,3 +64,46 @@ describe("priceFinal", () => {
     ).toBe(11500 - 1000);
   });
 });
+
+describe("priceFinal with Substitutions (ADR 0010)", () => {
+  const milk = (over: Partial<PickedLine> = {}): PickedLine =>
+    piece({ fulfilledQty: 0, ...over });
+
+  it("charges an accepted substitute at the lower of the two prices", () => {
+    const cheaper = { quantity: 2, unitPriceCents: 9800, accepted: true };
+    const dearer = { quantity: 2, unitPriceCents: 13000, accepted: true };
+    expect(priceFinal([milk({ substitute: cheaper })], fees)).toBe(
+      2 * 9800 + 4900
+    );
+    expect(priceFinal([milk({ substitute: dearer })], fees)).toBe(
+      2 * 11500 + 4900
+    );
+  });
+
+  it("charges nothing for a refused substitute", () => {
+    expect(
+      priceFinal(
+        [
+          milk({
+            substitute: { quantity: 2, unitPriceCents: 9800, accepted: false },
+          }),
+        ],
+        fees
+      )
+    ).toBe(4900);
+  });
+
+  it("adds what was found to the substitute for the rest", () => {
+    expect(
+      priceFinal(
+        [
+          milk({
+            fulfilledQty: 1,
+            substitute: { quantity: 1, unitPriceCents: 9800, accepted: true },
+          }),
+        ],
+        fees
+      )
+    ).toBe(11500 + 9800 + 4900);
+  });
+});

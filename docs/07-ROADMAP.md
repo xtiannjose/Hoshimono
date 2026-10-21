@@ -19,14 +19,15 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 3.3 (PR #13): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
 - Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked); one rule for how a module says no ([ADR 0009](adr/0009-module-results-and-errors.md)).
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
+- Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 
-**Open pull requests:** #14 (carry-over), then #15 (test accounts, Phase 3 closed, Batch 4.1; built on #14, so merge #14 first).
+**Open pull requests:** #14 (carry-over), then #15 (test accounts, Phase 3 closed, Batch 4.1), then #16 (Batch 4.2). Each is built on the one before: merge them in that order.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 4, Operations (section 10): Batch 4.2 next, the Picker view and Substitutions. Batch 4.1 (staff areas, order queue, refunds to check) is in #15.
+1. Phase 4, Operations (section 10): Batch 4.3 next, dispatch and cash on delivery. Batch 4.1 is in #15, Batch 4.2 (Picker view, Substitutions) in #16.
 2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
@@ -350,9 +351,9 @@ Frontend:
 
 **Batch 4.2 Picking and Substitutions** (W12 to W13). Stack: mobile-first web views, SMS. Skills: `design-taste-frontend` (Picker rules in [05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) section 9), `tdd`.
 
-- [ ] Picker view (mobile-first): aisle-ordered list, tick, mark short, propose Substitution, enter final weight. Saving `fulfilled_qty` and `final_weight_grams`, then moving the Order to `picked`, sets the Final Total and refunds the difference (ADR 0008); Substitution price differences are not in it yet
-- [ ] Customer-side Substitution response (SMS link or app notice) with auto-accept on timeout
-- [ ] Final amount recalculation and payment adjustment after picking
+- [x] Picker view (mobile-first): aisle-ordered list, tick, mark short, propose Substitution, enter final weight. Saving `fulfilled_qty` and `final_weight_grams`, then moving the Order to `picked`, sets the Final Total and refunds the difference (ADR 0008); Substitution price differences are not in it yet. 21 Oct: `/admin/pick` and `/admin/pick/[orderNo]` for Pickers and Admins: Category order until the Hub has aisle codes; Found all, Short, grams within 10% over, Offer substitute ([ADR 0010](adr/0010-picking-and-substitutions.md)); weighed lines are never substituted
+- [x] Customer-side Substitution response (SMS link or app notice) with auto-accept on timeout. SMS and email with a link to `/s/[token]` for "pick a similar item" lines; 10-minute Substitution Window, silence is a yes; their own chosen Product needs no answer
+- [x] Final amount recalculation and payment adjustment after picking. `finishPicking` sets the Final Total (an accepted substitute at the lower price, a refused one free) and ADR 0008 refunds the difference. Stock is not yet deducted for picked and substituted items: Batch 4.4
 
 **Batch 4.3 Dispatch and cash on delivery** (W13). Stack: object storage for proof photos. Skills: `tdd`.
 

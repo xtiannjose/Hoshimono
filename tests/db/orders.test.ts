@@ -16,9 +16,12 @@ import { jobHandlers } from "@/server/job-handlers";
 import {
   abandonPayment,
   addOrderNote,
+  answerSubstitution,
   cancelOrder,
   confirmPaidOrder,
   expireUnpaidOrders,
+  finishPicking,
+  getPickList,
   getOrder,
   getOrderForStaff,
   listOrders,
@@ -27,7 +30,10 @@ import {
   MAX_OPEN_COD_ORDERS,
   ORDER_CONFIRMED_JOB,
   placeOrder,
+  proposeSubstitution,
+  recordPick,
   staffMoves,
+  SUBSTITUTION_ASKED_JOB,
   transitionOrder,
   type PlaceOrderInput,
 } from "@/modules/orders";
@@ -856,6 +862,187 @@ describe("the staff order queue", () => {
       "delivery_failed",
     ]);
     expect(staffMoves("delivered")).toEqual([]);
+  });
+});
+
+describe("picking and Substitutions (ADR 0010)", () => {
+  const picker = seedId("staff:picker");
+  const asPicker = { type: "staff" as const, id: picker };
+
+  /** Liempo (weighed) and 2 milk, placed and picking; milk set as given. */
+  async function picking(
+    milk: {
+      preference: "allow" | "preferred" | "none";
+      preferredProductId?: string;
+    } = {
+      preference: "allow",
+    }
+  ) {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    await setSubstitution(owner(ligaya), MILK, {
+      preference: milk.preference,
+      preferredProductId: milk.preferredProductId ?? null,
+    });
+    const placed = await placeOrder(await checkout(ligaya));
+    if (!placed.ok) throw new Error(placed.reason);
+    await transitionOrder(placed.orderId, "picking", asPicker);
+    const list = await getPickList(placed.orderNo);
+    const line = (id: string) => list!.lines.find((l) => l.productId === id)!;
+    return { ...placed, milk: line(MILK), liempo: line(LIEMPO) };
+  }
+
+  it("lists the lines in Category order with what the Customer asked", async () => {
+    const order = await picking({
+      preference: "preferred",
+      preferredProductId: ALT_MILK,
+    });
+    const list = await getPickList(order.orderNo);
+    // Meat and fish comes before Dairy and eggs in the Category tree.
+    expect(list!.lines.map((l) => l.productId)).toEqual([LIEMPO, MILK]);
+    expect(order.milk).toMatchObject({
+      orderedQty: 2,
+      weighed: false,
+      preference: "preferred",
+      preferred: { id: ALT_MILK },
+    });
+    expect(order.liempo).toMatchObject({
+      weighed: true,
+      orderedWeightGrams: 500,
+    });
+  });
+
+  it("records what was found, and keeps a weighed pack within 10% over", async () => {
+    const order = await picking();
+    expect(await recordPick(order.milk.id, { found: 3 })).toEqual({
+      ok: false,
+      errors: { found: "Enter 0 to 2." },
+    });
+    expect(await recordPick(order.milk.id, { found: 1 })).toEqual({ ok: true });
+    expect(await recordPick(order.liempo.id, { grams: 560 })).toEqual({
+      ok: false,
+      errors: { grams: "More than 10% over: repack to about 500 g." },
+    });
+    expect(await recordPick(order.liempo.id, { grams: 540 })).toEqual({
+      ok: true,
+    });
+
+    const list = await getPickList(order.orderNo);
+    expect(list!.lines.find((l) => l.id === order.milk.id)).toMatchObject({
+      fulfilledQty: 1,
+      status: "short",
+    });
+    expect(list!.lines.find((l) => l.id === order.liempo.id)).toMatchObject({
+      finalWeightGrams: 540,
+      status: "picked",
+    });
+  });
+
+  it("asks before a similar-item swap; a refusal leaves the line unpaid", async () => {
+    const order = await picking({ preference: "allow" });
+    const now = new Date();
+    const result = await proposeSubstitution(
+      order.milk.id,
+      picker,
+      ALT_MILK,
+      now
+    );
+    expect(result).toMatchObject({ ok: true, asked: true });
+    const sub = await db.substitution.findFirstOrThrow({
+      where: { orderLineId: order.milk.id },
+    });
+    expect(sub).toMatchObject({ quantity: 2, customerResponse: null });
+    expect(sub.windowEndsAt!.getTime() - now.getTime()).toBe(10 * 60_000);
+    expect(
+      await db.job.count({ where: { kind: SUBSTITUTION_ASKED_JOB } })
+    ).toBe(1);
+
+    // Still open: the Order cannot be finished yet.
+    expect(await finishPicking(order.orderId, asPicker, now)).toMatchObject({
+      ok: false,
+      reason: "waiting_for_customer",
+    });
+    expect(await answerSubstitution(sub.token!, false, now)).toBe("refused");
+    expect(await answerSubstitution("not-a-token", true, now)).toBeNull();
+
+    await recordPick(order.liempo.id, { grams: 500 });
+    expect(await finishPicking(order.orderId, asPicker, now)).toEqual({
+      ok: true,
+    });
+    const done = await db.order.findUniqueOrThrow({
+      where: { id: order.orderId },
+    });
+    // 195.00 liempo + 49.00 delivery; the refused milk is not charged.
+    expect(done).toMatchObject({ status: "picked", finalTotalCents: 24400 });
+  });
+
+  it("swaps in the Customer's own choice without asking, at the lower price", async () => {
+    const order = await picking({
+      preference: "preferred",
+      preferredProductId: ALT_MILK,
+    });
+    expect(
+      await proposeSubstitution(
+        order.milk.id,
+        picker,
+        seedId("product:alaska-full-cream-milk")
+      )
+    ).toEqual({ ok: false, reason: "not_their_choice" });
+    expect(
+      await proposeSubstitution(order.milk.id, picker, ALT_MILK)
+    ).toMatchObject({
+      ok: true,
+      asked: false,
+    });
+    expect(
+      await db.substitution.findFirstOrThrow({
+        where: { orderLineId: order.milk.id },
+      })
+    ).toMatchObject({ customerResponse: "auto_accepted", token: null });
+
+    await recordPick(order.liempo.id, { grams: 500 });
+    expect(await finishPicking(order.orderId, asPicker)).toEqual({ ok: true });
+    const { priceCents: alt } = await db.product.findUniqueOrThrow({
+      where: { id: ALT_MILK },
+    });
+    const done = await db.order.findUniqueOrThrow({
+      where: { id: order.orderId },
+    });
+    expect(done.finalTotalCents).toBe(19500 + 2 * Math.min(alt, 11500) + 4900);
+  });
+
+  it("never swaps a no-substitute line or a weighed one", async () => {
+    const order = await picking({ preference: "none" });
+    expect(await proposeSubstitution(order.milk.id, picker, ALT_MILK)).toEqual({
+      ok: false,
+      reason: "no_substitute",
+    });
+    expect(
+      await proposeSubstitution(
+        order.liempo.id,
+        picker,
+        seedId("product:pork-kasim")
+      )
+    ).toEqual({ ok: false, reason: "weighed" });
+  });
+
+  it("takes silence as a yes once the window ends", async () => {
+    const order = await picking({ preference: "allow" });
+    const now = new Date();
+    await proposeSubstitution(order.milk.id, picker, ALT_MILK, now);
+    const later = addMinutes(now, 11);
+    const sub = await db.substitution.findFirstOrThrow({
+      where: { orderLineId: order.milk.id },
+    });
+    expect(await answerSubstitution(sub.token!, false, later)).toBe("too_late");
+
+    await recordPick(order.liempo.id, { grams: 500 });
+    expect(await finishPicking(order.orderId, asPicker, later)).toEqual({
+      ok: true,
+    });
+    expect(
+      await db.substitution.findUniqueOrThrow({ where: { id: sub.id } })
+    ).toMatchObject({ customerResponse: "auto_accepted" });
   });
 });
 

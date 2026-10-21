@@ -95,7 +95,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 **`order_lines`**: `order_id`, `product_id`, `name_snapshot`, `unit_price_cents`, `tax_class`, `vat_cents`, `ordered_qty`, `fulfilled_qty`, `ordered_weight_grams?`, `final_weight_grams?`, `line_total_cents`, `substitution_preference`, `preferred_product_id?` and `note?` (copied from the Cart Line for the Picker), `status` (`pending`, `picked`, `short`, `substituted`, `refunded`).
 
-**`substitutions`**: `order_line_id`, `substitute_product_id`, `price_cents`, `proposed_by`, `customer_response` (`auto_accepted`, `accepted`, `rejected`), `responded_at`.
+**`substitutions`**: `order_line_id` (**unique**: one per Order Line), `substitute_product_id`, `price_cents` (the substitute's unit price at pick; the Customer pays the lower of this and the ordered price), `quantity`, `token?` (**unique**, the Customer's answer link) and `window_ends_at?` (only when the Customer is asked), `proposed_by`, `customer_response?` (`auto_accepted`, `accepted`, `rejected`; null while waiting), `responded_at`. See [ADR 0010](adr/0010-picking-and-substitutions.md).
 
 **`order_status_events`**: append-only history: `order_id`, `from`, `to`, `actor_type` (`customer`, `staff`, `system`), `actor_id`, `reason`, `at`.
 

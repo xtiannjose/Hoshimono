@@ -427,7 +427,15 @@ model Substitution {
   orderLine           OrderLine             @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
   substituteProductId String                @map("substitute_product_id") @db.Uuid
   substituteProduct   Product               @relation(fields: [substituteProductId], references: [id], onDelete: Restrict)
+  // The substitute's unit price at pick; the Customer pays the lower of this
+  // and the ordered price (ADR 0010).
   priceCents          Int                   @map("price_cents")
+  // How many substitute units stand in for the pieces not found.
+  quantity            Int
+  // The Customer's answer link and its Substitution Window, only when asked
+  // ("pick a similar item"); null when they chose the Product themselves.
+  token               String?               @unique
+  windowEndsAt        DateTime?             @map("window_ends_at") @db.Timestamptz(3)
   proposedById        String                @map("proposed_by") @db.Uuid
   proposedBy          Staff                 @relation(fields: [proposedById], references: [id], onDelete: Restrict)
   customerResponse    SubstitutionResponse? @map("customer_response")
@@ -435,7 +443,8 @@ model Substitution {
   createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
 
-  @@index([orderLineId])
+  // One Substitution per Order Line (ADR 0010).
+  @@unique([orderLineId])
   @@map("substitutions")
 }
 
