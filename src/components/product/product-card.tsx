@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ProductSummary } from "@/modules/catalog";
 import type { StockState } from "@/modules/inventory";
 import { productHref } from "@/lib/routes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { AddToCart } from "./add-to-cart";
 import { CategoryIcon } from "./category-icon";
@@ -94,14 +95,14 @@ export function ProductCardSkeleton() {
       aria-hidden
       className="rounded-card border-border bg-card grid gap-3 border p-2.5 pb-3"
     >
-      <div className="rounded-field bg-muted aspect-square animate-pulse" />
+      <Skeleton className="rounded-field aspect-square" />
       <div className="grid gap-2 px-1">
-        <div className="rounded-pill bg-muted h-4 w-4/5 animate-pulse" />
-        <div className="rounded-pill bg-muted h-3 w-1/3 animate-pulse" />
+        <Skeleton className="rounded-pill h-4 w-4/5" />
+        <Skeleton className="rounded-pill h-3 w-1/3" />
       </div>
       <div className="grid gap-2.5 px-0.5">
-        <div className="rounded-pill bg-muted h-6 w-1/2 animate-pulse" />
-        <div className="rounded-pill bg-muted h-11 animate-pulse" />
+        <Skeleton className="rounded-pill h-6 w-1/2" />
+        <Skeleton className="rounded-pill h-11" />
       </div>
     </div>
   );

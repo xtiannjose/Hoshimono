@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { CartSync } from "@/components/cart/cart-button";
 import { CartPageBody } from "@/components/cart/cart-page-body";
 import { getCart } from "@/modules/cart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { cartContext, readCartOwner } from "./owner";
 
@@ -38,7 +39,7 @@ function CartPageSkeleton() {
   return (
     <div aria-hidden className="mt-6 grid gap-3 md:max-w-2xl">
       {[0, 1, 2].map((i) => (
-        <div key={i} className="bg-muted rounded-field h-24 animate-pulse" />
+        <Skeleton key={i} className="rounded-field h-24" />
       ))}
     </div>
   );

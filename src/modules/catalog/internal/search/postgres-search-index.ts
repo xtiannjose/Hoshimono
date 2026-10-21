@@ -13,11 +13,9 @@ const VOCABULARY_TTL_MS = 10 * 60 * 1000;
 /**
  * Active Products matching `query`, with the facts used to rank them.
  * A Product is matched on its own words (search_vector: name, brand,
- * description) plus the words its Category lends it: the Category's own
- * name, and its parent's name. A parent that joins two topics
- * ("Meat and fish") lends only the topic none of its children owns:
- * Pork, Chicken and Beef get "meat"; Fish and seafood gets nothing more.
- * So "fish" and "fresh fish" mean the fish aisle, not chicken, while
+ * description) plus the words its Category lends it: the Category's name
+ * and its search_words, which a Merchandiser sets ("meat" on Pork, nothing
+ * on Fish and seafood). So "fish" means the fish aisle, not chicken, while
  * "meat", "dairy" and "frozen chicken" still work.
  */
 function matches(query: string, exact: string, any: string) {
@@ -27,27 +25,12 @@ function matches(query: string, exact: string, any: string) {
              to_tsquery('simple', ${exact}) AS exact,
              to_tsquery('simple', ${any}) AS any
     ),
-    cat AS (
-      SELECT c.id, c.parent_id,
-             to_tsvector('simple', immutable_unaccent(c.name)) AS v,
-             lower(c.name) LIKE '% and %' AS joins_topics
-      FROM categories c
-    ),
     lent AS (
-      SELECT c.id, c.v AS own,
-             c.v || CASE
-               WHEN par.id IS NULL THEN ''::tsvector
-               WHEN NOT par.joins_topics THEN par.v
-               -- This child is one of the parent's topics: nothing more.
-               WHEN tsvector_to_array(c.v) && tsvector_to_array(ts_delete(par.v, ARRAY['and']))
-                 THEN ''::tsvector
-               -- Otherwise only the parent's words no sibling owns.
-               ELSE ts_delete(par.v, ARRAY['and'] || coalesce((
-                 SELECT array_agg(w) FROM cat ch, unnest(tsvector_to_array(ch.v)) AS w
-                 WHERE ch.parent_id = par.id
-               ), '{}'))
-             END AS v
-      FROM cat c LEFT JOIN cat par ON par.id = c.parent_id
+      SELECT c.id,
+             to_tsvector('simple', immutable_unaccent(c.name)) AS own,
+             to_tsvector('simple', immutable_unaccent(
+               c.name || ' ' || coalesce(c.search_words, ''))) AS v
+      FROM categories c
     ),
     matched AS (
       SELECT p.id, p.name,
@@ -143,7 +126,8 @@ async function loadVocabulary(): Promise<Map<string, number>> {
     SELECT word, ndoc::int FROM ts_stat($q$
       SELECT search_vector FROM products WHERE status = 'active'
       UNION ALL
-      SELECT to_tsvector('simple', immutable_unaccent(name)) FROM categories
+      SELECT to_tsvector('simple', immutable_unaccent(
+        name || ' ' || coalesce(search_words, ''))) FROM categories
     $q$)`;
   const words = new Map(rows.map((r) => [r.word, r.ndoc]));
   // A Filipino word counts as often as its English equivalent, so "manko"

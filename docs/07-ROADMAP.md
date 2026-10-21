@@ -16,22 +16,22 @@ Resume here: read this section, then the batch named first under Next.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
 - Batch 3.1 (PR #10): PayMongo chosen ([ADR 0003](adr/0003-payment-provider-interface.md)), adapter and idempotent webhook ledger at `/api/webhooks/[provider]`. Security review: no findings.
 - Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
-- Batch 3.3 (PR #13, built on #12): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
+- Batch 3.3 (PR #13): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
+- Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked); one rule for how a module says no ([ADR 0009](adr/0009-module-results-and-errors.md)).
 
-**Open pull requests:** #12 (Batch 3.2), then #13 (Batch 3.3; it contains #12's commits until #12 merges, so merge #12 first).
+**Open pull requests:** #14 (carry-over).
 
 **Current phase:** 3, Online payments. Batches 3.1 to 3.3 are built; Phase 3 closes once the PayMongo sandbox run passes (its exit criteria need test mode).
 
 **Next, in order**
 
 1. When the PayMongo test keys exist: the sandbox run for Batches 3.2 and 3.3 (pay, fail, expire, refund full and partial), then tick the Phase 3 exit criteria.
-2. The rest of the carry-over list (section 9): cart drawer spring and held Slot row, search topics as data, the accessibility remainder, the result convention, then the design pass.
+2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy).
 3. Phase 4, Operations (section 10).
 
 **Waiting on the owner**
 
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
-- A decision on one result convention for module errors (section 9).
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
 - Business tracks in section 11; after PayMongo: SMS sender ID, BIR and VAT, Hub, Riders.
@@ -287,8 +287,8 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [x] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5). No longer blocked: the CI `lighthouse` job measures a production build on a clean runner (`lighthouserc.json`; performance warns until it passes). First clean-runner run (19 Oct, PR #8): Category 93, 98, 98 and Product 94, 94, 98 meet the budget; Home 72, 74, 98 does not, with about 1.1 s of total blocking time. Local laptop medians were 79, 81 and 85; accessibility, best practices and SEO 100. Cause, measured on Phase 1: about 190 KB of JavaScript runs before the first paint and the simulated phone charges it to LCP; with JavaScript blocked the pages score 96 to 99, with fonts blocked only a few points better, so subset fonts alone cannot reach 90. Fix, Home first: the Add button arrives as server HTML and loads the stepper and Motion on first tap; header search loads on first use. Then switch the CI assertion from warn to error. 19 Oct: Motion moved out of the first load and the header renders one SearchBox; JavaScript fell from 192 to 157 KB (Home), 200 to 164 KB (Category, under the 170 KB budget) and 192 to 157 KB (Product). Open: confirm Home 90+ on the CI runner, then switch the assertion to error. Met on the CI runner 19 Oct (PR #9): Home 81, 98, 98; Category 97, 98, 98; Product 94, 95, 98. The CI assertion now fails below 90
 - [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
 - [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
-- [ ] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now)
-- [ ] Cart drawer delivery row shows the held Slot, not a generic line
+- [x] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now). Decided 20 Oct: vaul stays. The Cart has one height, so detents have nothing to snap to, and vaul already follows the finger, closes on a fling and handles focus; docs/05 records it
+- [x] Cart drawer delivery row shows the held Slot, not a generic line. The held Slot and when the hold ends, else the next open Slot for the address, with Change; fetched when the drawer opens
 - [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
 - [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
@@ -308,11 +308,11 @@ UI and UX:
 Engineering:
 
 - [x] Strip build-process comments: about 100 cite a Batch, Phase, PRD, ADR or "review finding"; also a migration named for review fixes and a test group "confirmed by a skeptic". Keep only the why
-- [ ] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`
+- [x] Search: category topics guessed from `LIKE '% and %'` on names, a four-stage fallback and a JS edit distance beside `pg_trgm`. Store topics as data and lean on `pg_trgm` and `unaccent`. Topics are data now: `categories.search_words`, edited in the admin ("Also found by"), seeded to give the same results. Kept on purpose: the edit-distance correction (`pg_trgm` similarity misses a swapped pair in a short word: "mlik" scores 0.11 against milk) and the fallbacks, each pinned by a test
 - [x] One guard per risk: `createProduct` pre-checks, catches P2002 and string-matches the error; `GREATEST(reserved - q, 0)` and `booked > 0` silently hide stock and Slot accounting bugs, so make them fail loudly
 - [x] One helper each: UUID checks (five versions), audit writes (two that treat `null` differently), the e2e mailbox (two), brand plus name (five), the test `TRUNCATE` (two); `addMinutes` and `addDays` in `lib/dates`
 - [x] Limits in one place: the cart action accepts `.max(999)` while `MAX_LINE_QUANTITY` is 99; `days ?? 7` beside `BOOKING_DAYS`; the 30-day retention written three times; "5 minutes" in the code text beside `expiresIn: 300`
-- [ ] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code"). Logging done 19 Oct: sign-in tells an outage from a wrong code, and the health check and sign-in actions log what they catch. The result convention is still open
+- [x] One result convention for module errors (six today); log every caught error (sign-in turns a database outage into "wrong code"). Logging done 19 Oct: sign-in tells an outage from a wrong code, and the health check and sign-in actions log what they catch. The result convention is still open. 20 Oct: the owner chose to write the rule and fix the outliers ([ADR 0009](adr/0009-module-results-and-errors.md)); the catalogue admin and the profile now return field errors as a map
 - [x] Code ahead of its feature: the cron step expiring `pending_payment` Orders that nothing creates, `PAYMENT_WINDOW_MINUTES`, `percentOf`, `getZone`. Delete until Phase 3
 - [x] `modules/identity/index.ts` holds logic: move it to `internal/`, keep the index as re-exports, rename one of the two `sendSignInCode`
 - [x] Admin writes and their audit row in one transaction (one `adminWrite` helper instead of seven copies)
@@ -328,7 +328,7 @@ Frontend:
 - [x] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop. Done 19 Oct for SearchBox (it hydrated twice) and CategoryNav (one nav, sticky from md up). The Filters form stays twice on purpose: it is server-only, so the copy costs bytes, not hydration, and one form would need `::details-content`, which iOS before 18.4 lacks
 - [x] Return structured parts instead of parsing formatted text (`size.replace("approx. ", "")`, the Slot label split at ", ", `splitMoney`); needed before the Filipino pass
 - [ ] Replace workarounds: the `CartSync` effect, the hidden `data-no-cart-bar` div (use a route-group layout), the WeakMap `formKey`. 19 Oct: the hidden `data-no-cart-bar` div is gone (the bar reads the path). `CartSync` and `formKey` stay: the header's Cart must reach Product cards outside its tree, which an effect into the shared store does plainly, and `formKey` is a 10-line helper where the alternative threads a counter through four actions
-- [ ] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category. 19 Oct: the stepper `<output>` no longer speaks over the Cart announcement
+- [x] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category. 19 Oct: the stepper `<output>` no longer speaks over the Cart announcement. 20 Oct: the rest is done. Placeholders are hidden from screen readers; one `Skeleton` (aria-hidden, 1.2 s pulse, still under reduced motion) replaces the hand-made pulse divs; filter rows and Category chips are 44 px; the header marks the current aisle with `aria-current`
 - [x] Category page: one Suspense boundary instead of three with filler fallbacks; no skeleton on the redirect and not-found branches (both added in the Lighthouse fix)
 - [ ] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff
 

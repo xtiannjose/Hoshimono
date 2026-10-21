@@ -205,7 +205,7 @@ Type utilities `type-display`, `type-h1` to `type-h3`, `type-lead`, `type-small`
 
 ### As built in Phase 2 (deviations to revisit)
 
-- `CartDrawer` is built on vaul: a bottom sheet on phones and a right sheet from `md`, both following the finger and closing on a fast or long drag. It uses vaul's own transition, not the Motion spring from section 7, and has no detents (the Cart has one height). Its delivery row says Slots are chosen at Checkout rather than showing a held Slot.
+- `CartDrawer` is built on vaul: a bottom sheet on phones and a right sheet from `md`, both following the finger and closing on a fast or long drag. It keeps vaul's own transition, not the Motion spring from section 7, and has no detents: decided 20 Oct, as the Cart has one height and vaul already gives drag, fling-to-close and focus handling; a Motion rebuild would add JavaScript for little visible change. Its delivery row shows the Slot held for the Cart ("Held for you until 8:50 AM"), else the next open Slot for the Customer's address, with Change to Checkout; a guest sees the general line. It is fetched when the drawer opens (`loadDelivery`), so pages load nothing extra.
 - `CartButton` shows the goods total, not the total with delivery: the fee depends on the address chosen at Checkout.
 - Customer copy says "delivery slot", never "delivery window" (GLOSSARY).
 - The selected Slot shows when its hold ends ("Held for you until 4:12 PM") and stops promising it once the hold lapses.

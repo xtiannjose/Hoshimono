@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { requireStaff } from "@/modules/identity";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Renders its children only for a Merchandiser or Admin; others are sent
@@ -20,8 +21,8 @@ export async function StaffGate({
 export function AdminSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading" className="grid gap-3">
-      <div className="rounded-pill bg-muted h-10 w-64 animate-pulse" />
-      <div className="rounded-card bg-muted h-64 animate-pulse" />
+      <Skeleton className="rounded-pill h-10 w-64" />
+      <Skeleton className="rounded-card h-64" />
     </div>
   );
 }

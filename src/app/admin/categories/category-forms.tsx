@@ -24,6 +24,7 @@ export function CategoryRow({
   name,
   parentId,
   sortOrder,
+  searchWords,
   productCount,
   depth,
   parents,
@@ -32,6 +33,8 @@ export function CategoryRow({
   name: string;
   parentId: string | null;
   sortOrder: number;
+  /** Words its Products also answer to in search, such as "meat" for Pork. */
+  searchWords: string;
   productCount: number;
   depth: number;
   parents: Option[];
@@ -47,6 +50,7 @@ export function CategoryRow({
   const message =
     saved.errors.name ??
     saved.errors.parent ??
+    saved.errors.searchWords ??
     saved.errors.form ??
     removed.errors.form;
   return (
@@ -95,6 +99,18 @@ export function CategoryRow({
             className={`${FIELD} w-20`}
           />
         </label>
+        <label className="grid gap-1 text-xs font-semibold">
+          Also found by
+          <input
+            name="searchWords"
+            defaultValue={searchWords}
+            maxLength={60}
+            placeholder="meat"
+            aria-label={`Search words for ${name}`}
+            aria-describedby={`search-words-${id}`}
+            className={FIELD}
+          />
+        </label>
         <Button type="submit" size="sm" variant="secondary" disabled={saving}>
           Save
         </Button>
@@ -102,6 +118,10 @@ export function CategoryRow({
           {productCount} Products
         </span>
       </form>
+      <p id={`search-words-${id}`} className="text-muted-foreground text-xs">
+        Words shoppers may type for this aisle besides its name, such as
+        &ldquo;meat&rdquo; for Pork.
+      </p>
       <form action={remove}>
         <Button type="submit" size="sm" variant="ghost" disabled={removing}>
           Delete {name}

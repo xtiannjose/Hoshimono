@@ -33,7 +33,7 @@ export {
 } from "./internal/admin/products";
 export type {
   AdminProductRow,
-  FieldError,
+  FieldErrors,
   WriteResult,
 } from "./internal/admin/products";
 export {

@@ -5,7 +5,7 @@ import sharp, { type Metadata } from "sharp";
 import { db, inTransaction, type Client } from "@/lib/db";
 import { mediaStore } from "@/lib/media";
 
-import type { WriteResult } from "./products";
+import { fieldError, type WriteResult } from "./products";
 
 const MIN_SIDE = 1000; // docs/03-ARCHITECTURE.md section 13
 const MASTER = 1200;
@@ -13,10 +13,7 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const MAX_IMAGES = 6; // one primary plus up to five more
 const FORMATS = new Set(["jpeg", "png", "webp", "avif"]);
 
-const error = (message: string) => ({
-  ok: false as const,
-  errors: [{ field: "image", message }],
-});
+const error = (message: string) => fieldError("image", message);
 
 /**
  * Checks an upload and stores one square 1200 px WebP master. A photo that

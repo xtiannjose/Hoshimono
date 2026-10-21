@@ -2,9 +2,11 @@
 
 import { z } from "zod";
 
+import { formatSlot, formatTime } from "@/lib/dates";
 import { productName } from "@/lib/product-name";
 import {
   getCart,
+  getCartId,
   MAX_NOTE_LENGTH,
   setLineNote,
   setLineQuantity,
@@ -12,6 +14,8 @@ import {
   type CartView,
 } from "@/modules/cart";
 import { listRelatedProducts } from "@/modules/catalog";
+import { getDefaultAddress } from "@/modules/customers";
+import { getSlotHold, listSlots, resolveZone } from "@/modules/delivery";
 import { MAX_LINE_QUANTITY } from "@/modules/pricing";
 
 import { cartContext, readCartOwner, writeCartOwner } from "./owner";
@@ -30,6 +34,42 @@ async function currentCart(): Promise<CartView> {
 
 export async function loadCart(): Promise<CartView> {
   return currentCart();
+}
+
+export type DeliveryRow = { slot: string; note: string };
+
+/**
+ * The cart drawer's delivery row (docs/05 CartDrawer): the Slot held for
+ * this Cart, else the next open one for the Customer's address. Null for a
+ * guest or an address we do not serve; the drawer then says it generally.
+ */
+export async function loadDelivery(): Promise<DeliveryRow | null> {
+  const owner = await readCartOwner();
+  if (!owner || !("customerId" in owner)) return null;
+  const address = await getDefaultAddress(owner.customerId);
+  const zone = address ? await resolveZone(address) : null;
+  if (!address || !zone) return null;
+  const now = new Date();
+  const cartId = await getCartId(owner);
+  const [slots, hold] = await Promise.all([
+    listSlots(zone.hubId, { cartId, now }),
+    cartId ? getSlotHold(cartId, now) : null,
+  ]);
+  // A hold made for another address's Hub is not in this list: show the next.
+  const held = hold && slots.find((s) => s.id === hold.slotId);
+  if (hold && held) {
+    return {
+      slot: formatSlot(held.startsAt, held.endsAt),
+      note: `Held for you until ${formatTime(hold.expiresAt)}`,
+    };
+  }
+  const next = slots.find((s) => s.state !== "full");
+  return next
+    ? {
+        slot: `Next: ${formatSlot(next.startsAt, next.endsAt)}`,
+        note: `To ${address.label}, ${address.barangay}`,
+      }
+    : null;
 }
 
 export async function setQuantity(

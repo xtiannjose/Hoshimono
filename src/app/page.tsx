@@ -51,8 +51,7 @@ export default function Home() {
         </div>
         {/* Phones skip the photo so Products appear above the fold (mockup decision 5). */}
         <div
-          role="img"
-          aria-label="Photo to come: produce basket on a market table"
+          aria-hidden
           className="rounded-card photo-slot relative hidden aspect-[5/4] lg:col-span-6 lg:grid"
         >
           <BasketIcon size={48} className="opacity-70" aria-hidden />

@@ -5,20 +5,25 @@ import { isUuid } from "@/lib/uuid";
 
 import { productFields, type ProductFields } from "./schema";
 
-export type FieldError = { field: string; message: string };
+/** A form's problems, field name to message; "form" for the whole form (ADR 0009). */
+export type FieldErrors = Record<string, string>;
 export type WriteResult<T = object> =
-  ({ ok: true } & T) | { ok: false; errors: FieldError[] };
+  ({ ok: true } & T) | { ok: false; errors: FieldErrors };
+
+/** A refusal naming one field ("" for the whole form). */
+export const fieldError = (field: string, message: string) => ({
+  ok: false as const,
+  errors: { [field || "form"]: message } as FieldErrors,
+});
 
 function validate(input: unknown): WriteResult<{ fields: ProductFields }> {
   const parsed = productFields.safeParse(input);
   if (parsed.success) return { ok: true, fields: parsed.data };
-  return {
-    ok: false,
-    errors: parsed.error.issues.map((i) => ({
-      field: String(i.path[0] ?? ""),
-      message: i.message,
-    })),
-  };
+  const errors: FieldErrors = {};
+  for (const issue of parsed.error.issues) {
+    errors[String(issue.path[0] ?? "") || "form"] ??= issue.message;
+  }
+  return { ok: false, errors };
 }
 
 const archivedAtFor = (status: string, current: Date | null) =>
@@ -32,28 +37,16 @@ export async function createProduct(
   const checked = validate(input);
   if (!checked.ok) return checked;
   const slug = productSlug(checked.fields.brand, checked.fields.name);
-  if (!slug) {
-    return {
-      ok: false,
-      errors: [
-        { field: "name", message: "Use letters or numbers in the name" },
-      ],
-    };
-  }
+  if (!slug) return fieldError("name", "Use letters or numbers in the name");
   const taken = await barcodeTaken(checked.fields.barcode, null, client);
   if (taken) return taken;
   if (
     await client.product.findUnique({ where: { slug }, select: { id: true } })
   ) {
-    return {
-      ok: false,
-      errors: [
-        {
-          field: "name",
-          message: "A Product with this brand and name already exists",
-        },
-      ],
-    };
+    return fieldError(
+      "name",
+      "A Product with this brand and name already exists"
+    );
   }
   // The unique indexes on slug and barcode still guard two saves at once.
   const created = await client.product.create({
@@ -67,12 +60,10 @@ export async function createProduct(
   return { ok: true, id: created.id };
 }
 
-const BARCODE_TAKEN = {
-  ok: false as const,
-  errors: [
-    { field: "barcode", message: "Another Product already has this barcode" },
-  ],
-};
+const BARCODE_TAKEN = fieldError(
+  "barcode",
+  "Another Product already has this barcode"
+);
 
 async function barcodeTaken(
   barcode: string | null,
@@ -94,11 +85,9 @@ export async function updateProduct(
   patch: { [K in keyof ProductFields]?: unknown },
   client: Client = db
 ): Promise<WriteResult> {
-  if (!isUuid(id))
-    return { ok: false, errors: [{ field: "", message: "No such Product" }] };
+  if (!isUuid(id)) return fieldError("", "No such Product");
   const current = await client.product.findUnique({ where: { id } });
-  if (!current)
-    return { ok: false, errors: [{ field: "", message: "No such Product" }] };
+  if (!current) return fieldError("", "No such Product");
   const checked = validate({ ...pick(current), ...patch });
   if (!checked.ok) return checked;
   const taken = await barcodeTaken(checked.fields.barcode, id, client);

@@ -62,6 +62,7 @@ async function Categories() {
             name={row.name}
             parentId={row.parentId}
             sortOrder={row.sortOrder}
+            searchWords={row.searchWords ?? ""}
             productCount={row.productCount}
             depth={depth}
             parents={parents}

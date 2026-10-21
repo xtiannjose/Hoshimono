@@ -418,6 +418,22 @@ function manilaToday(now: Date): { y: number; m: number; d: number } {
 
 export const productSlug = slugForProduct;
 
+// What a child aisle's Products also answer to (categories.search_words):
+// the parent's name, or for a two-topic parent the topic no child is named
+// after. "Fruit and vegetables" lends nothing: both topics are children.
+const PARENT_WORDS: Record<string, string> = {
+  "Meat and fish": "meat",
+  "Dairy and eggs": "dairy",
+  Bakery: "bakery",
+  Frozen: "frozen",
+  Pantry: "pantry",
+  Drinks: "drinks",
+  Snacks: "snacks",
+  Household: "household",
+};
+// Named for the parent's other topic, so the lent word would mislead.
+const OWN_TOPIC = new Set(["Fish and seafood", "Eggs"]);
+
 // ---------- Seed ----------
 
 export async function seedDatabase(db: PrismaClient, now = new Date()) {
@@ -445,6 +461,9 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
         name: childName,
         sortOrder: i,
         parentId: parent.id,
+        searchWords: OWN_TOPIC.has(childName)
+          ? null
+          : (PARENT_WORDS[parentName] ?? null),
       };
       await db.category.upsert({
         where: { id: child.id },

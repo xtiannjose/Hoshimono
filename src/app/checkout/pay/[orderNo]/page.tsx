@@ -21,6 +21,7 @@ import { addMinutes, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { requireCustomer } from "@/modules/identity";
 import { getOrder, PAYMENT_WINDOW_MINUTES } from "@/modules/orders";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
   title: "Payment",
@@ -36,9 +37,7 @@ export default function PayPage({
 }: PageProps<"/checkout/pay/[orderNo]">) {
   return (
     <section className="wrap max-w-3xl py-10 md:py-14">
-      <Suspense
-        fallback={<div className="bg-muted rounded-card h-96 animate-pulse" />}
-      >
+      <Suspense fallback={<Skeleton className="rounded-card h-96" />}>
         <Pay params={params} searchParams={searchParams} />
       </Suspense>
     </section>

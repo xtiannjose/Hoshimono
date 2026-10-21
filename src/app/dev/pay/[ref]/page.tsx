@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { PendingButton } from "@/components/checkout/payment-status";
 import { formatMoney } from "@/lib/money";
 import { paymentProvider } from "@/modules/payments";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { standInFailAction, standInPayAction } from "./actions";
 
@@ -19,9 +20,7 @@ export default function StandInPayPage({
 }: PageProps<"/dev/pay/[ref]">) {
   return (
     <section className="wrap max-w-xl py-10 md:py-14">
-      <Suspense
-        fallback={<div className="bg-muted rounded-card h-72 animate-pulse" />}
-      >
+      <Suspense fallback={<Skeleton className="rounded-card h-72" />}>
         <StandIn params={params} searchParams={searchParams} />
       </Suspense>
     </section>

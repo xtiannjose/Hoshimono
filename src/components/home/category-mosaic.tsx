@@ -10,6 +10,7 @@ import { CategoryIcon } from "@/components/product/category-icon";
 import { HOME_MOSAIC } from "@/config/home";
 import type { CategoryNode } from "@/modules/catalog";
 import { categoryHref } from "@/lib/routes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function find(tree: CategoryNode[], slug: string): CategoryNode | undefined {
   for (const node of tree) {
@@ -127,10 +128,10 @@ export function CategoryMosaicSkeleton() {
       aria-hidden
       className="grid auto-rows-[136px] grid-cols-2 gap-3 md:auto-rows-[168px] md:grid-cols-4 md:gap-4"
     >
-      <div className="rounded-card bg-muted col-span-2 animate-pulse md:row-span-2" />
-      <div className="rounded-card bg-muted col-span-2 animate-pulse" />
+      <Skeleton className="rounded-card col-span-2 md:row-span-2" />
+      <Skeleton className="rounded-card col-span-2" />
       {Array.from({ length: 6 }, (_, i) => (
-        <div key={i} className="rounded-card bg-muted animate-pulse" />
+        <Skeleton key={i} className="rounded-card" />
       ))}
     </div>
   );

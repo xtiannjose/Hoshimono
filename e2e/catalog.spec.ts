@@ -11,6 +11,12 @@ test("a Category page lists, filters and keeps one canonical URL", async ({
   await expect(
     page.getByText("6 products").filter({ visible: true })
   ).toBeVisible();
+  // The header marks the aisle the shopper is in.
+  const aisles = page.getByRole("navigation", { name: "Categories" });
+  await expect(
+    aisles.getByRole("link", { name: "Dairy and eggs" })
+  ).toHaveAttribute("aria-current", "page");
+  await expect(aisles.locator('[aria-current="page"]')).toHaveCount(1);
 
   await page.goto("/c/dairy-and-eggs/milk?brand=Alaska");
   await expect(

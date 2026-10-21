@@ -2,7 +2,7 @@ import { db, type Client } from "@/lib/db";
 import { slugify } from "@/lib/slug";
 import { isUuid } from "@/lib/uuid";
 
-import type { WriteResult } from "./products";
+import { fieldError, type WriteResult } from "./products";
 
 const MAX_DEPTH = 3; // docs/04-DATA-MODEL.md: tree depth is capped at 3
 
@@ -57,10 +57,7 @@ function isAncestorOrSelf(
   return false;
 }
 
-const error = (field: string, message: string) => ({
-  ok: false as const,
-  errors: [{ field, message }],
-});
+const error = fieldError;
 
 export async function createCategory(
   input: { name: string; parentSlug?: string | null },
@@ -92,16 +89,34 @@ export async function createCategory(
   return { ok: true, id: created.id };
 }
 
-/** Rename, reorder or move a Category. The slug (and URL) stays. */
+/**
+ * Rename, reorder or move a Category, or set the words its Products also
+ * answer to in search. The slug (and URL) stays.
+ */
 export async function updateCategory(
   id: string,
-  patch: { name?: string; parentId?: string | null; sortOrder?: number },
+  patch: {
+    name?: string;
+    parentId?: string | null;
+    sortOrder?: number;
+    searchWords?: string;
+  },
   client: Client = db
 ): Promise<WriteResult> {
   const all = await nodes(client);
   if (!all.has(id)) return error("", "No such Category");
-  const data: { name?: string; parentId?: string | null; sortOrder?: number } =
-    {};
+  const data: {
+    name?: string;
+    parentId?: string | null;
+    sortOrder?: number;
+    searchWords?: string | null;
+  } = {};
+  if (patch.searchWords !== undefined) {
+    const words = patch.searchWords.trim().replace(/\s+/g, " ");
+    if (words.length > 60)
+      return error("searchWords", "Keep search words under 60 letters");
+    data.searchWords = words || null;
+  }
   if (patch.name !== undefined) {
     const name = patch.name.trim();
     if (name.length < 2 || name.length > 60)
@@ -156,6 +171,7 @@ export async function listCategoriesForAdmin() {
       slug: true,
       name: true,
       sortOrder: true,
+      searchWords: true,
       _count: { select: { products: true } },
     },
   });
@@ -176,6 +192,7 @@ export async function getCategoryForAdmin(id: string) {
       name: true,
       parentId: true,
       sortOrder: true,
+      searchWords: true,
     },
   });
 }

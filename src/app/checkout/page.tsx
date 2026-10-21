@@ -20,6 +20,7 @@ import {
 } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
 import { paymentProvider } from "@/modules/payments";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -144,10 +145,10 @@ function CheckoutSkeleton() {
     >
       <div className="grid gap-6">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="bg-muted rounded-card h-48 animate-pulse" />
+          <Skeleton key={i} className="rounded-card h-48" />
         ))}
       </div>
-      <div className="bg-muted rounded-card h-96 animate-pulse" />
+      <Skeleton className="rounded-card h-96" />
     </div>
   );
 }

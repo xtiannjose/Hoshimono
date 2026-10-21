@@ -23,7 +23,7 @@ const tagLabel = (tag: string) =>
 
 const GROUP = "grid gap-1";
 const HEADING = "mb-1.5 text-sm font-bold";
-const OPTION = "flex min-h-10 cursor-pointer items-center gap-3";
+const OPTION = "flex min-h-11 cursor-pointer items-center gap-3";
 const BOX = "size-5 accent-[var(--ink)]";
 
 /** A plain GET form, so filters work without JavaScript (PRD CAT-2). */
@@ -45,7 +45,7 @@ export function Filters({
             <Link
               key={node.slug}
               href={href}
-              className="flex min-h-10 items-center hover:underline"
+              className="flex min-h-11 items-center hover:underline"
             >
               {node.name}
             </Link>

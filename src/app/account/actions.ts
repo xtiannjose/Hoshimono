@@ -19,5 +19,7 @@ export async function saveNameAction(
   const customer = await requireCustomer("/account");
   const name = String(fd.get("name") ?? "");
   const result = await updateName(customer.id, name);
-  return result.ok ? { saved: true, name } : { message: result.message, name };
+  return result.ok
+    ? { saved: true, name }
+    : { message: result.errors.name, name };
 }
