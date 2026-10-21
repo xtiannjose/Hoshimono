@@ -11,13 +11,12 @@ test.describe.configure({ timeout: 180_000 });
 test("a Picker offers a substitute, the Customer refuses it, and pays only for what was found", async ({
   browser,
 }) => {
-  // The Client orders 5 Fresh Milk, cash on delivery.
+  // Ligaya orders 5 Fresh Milk, cash on delivery. Each spec shops as its
+  // own Customer: parallel specs on one account would share one Cart.
   const shopper = await (
     await browser.newContext({ ...devices["Pixel 7"] })
   ).newPage();
-  await shopper.goto("/dev/sign-in", { waitUntil: "networkidle" });
-  await shopper.getByRole("link", { name: "Sign in as Client" }).click();
-  await expect(shopper).toHaveURL(/localhost:\d+\/$/, { timeout: 30_000 });
+  await signIn(shopper, "ligaya@example.com", "/");
   await shopper.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
   await shopper.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
   const stepper = shopper.getByRole("group", {
@@ -72,7 +71,7 @@ test("a Picker offers a substitute, the Customer refuses it, and pays only for w
   await expect
     .poll(async () => {
       const res = await shopper.request.get(
-        "/api/dev/mailbox?to=%2B639171234504"
+        "/api/dev/mailbox?to=%2B639171234501"
       );
       const text = res.ok()
         ? ((await res.json()) as { text: string }).text

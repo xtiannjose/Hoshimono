@@ -218,10 +218,16 @@ describe("staffForUser", () => {
     expect(await staffForUser(db, dispatcher, "picking")).toBeNull();
     expect(await staffForUser(db, dispatcher, "dispatch")).not.toBeNull();
     expect(await staffForUser(db, dispatcher, "delivery")).toBeNull();
+    expect(await staffForUser(db, dispatcher, "stock")).not.toBeNull();
+    expect(await staffForUser(db, dispatcher, "setup")).toBeNull();
+    expect(await staffForUser(db, merchandiser, "stock")).toBeNull();
     for (const area of [
       "picking",
       "dispatch",
       "delivery",
+      "stock",
+      "reports",
+      "setup",
       "catalog",
       "orders",
       "refunds",

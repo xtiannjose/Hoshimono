@@ -95,3 +95,14 @@ export function formatDateTime(date: Date): string {
   const p = parts(date, { day: "numeric", month: "short", year: "numeric" });
   return `${p.day} ${p.month} ${p.year}, ${clock(date)}`;
 }
+
+/** Day names by JavaScript weekday number (0 is Sunday), as Slot templates store them. */
+export const WEEKDAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const;

@@ -7,7 +7,7 @@ import { signIn } from "./sign-in";
 // Batch 3.2 through the stand-in provider (PAYMENT_PROVIDER=fake): a failed
 // payment brings the Customer back with the Cart intact, and only the
 // signed webhook confirms the Order.
-test.describe.configure({ timeout: 120_000 });
+test.describe.configure({ timeout: 180_000 });
 
 async function chooseSlotAndPhone(page: Page) {
   await page
@@ -55,7 +55,7 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
   await chooseSlotAndPhone(page);
   await page.getByRole("radio", { name: /GCash/ }).check();
   await page.getByRole("button", { name: "Place order, ₱624.00" }).click();
-  await expect(page).toHaveURL(/\/dev\/pay\/fake_cs_/);
+  await expect(page).toHaveURL(/\/dev\/pay\/fake_cs_/, { timeout: 30_000 });
   // Hydrated before clicking: next dev compiles the page on first visit.
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Fail payment" }).click();
@@ -68,7 +68,7 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
 
   // Back to cart: the Order is cancelled and its items are back.
   await page.getByRole("button", { name: "Back to cart" }).click();
-  await expect(page).toHaveURL(/\/cart$/);
+  await expect(page).toHaveURL(/\/cart$/, { timeout: 30_000 });
   await page.goto("/checkout", { waitUntil: "networkidle" });
   const place = page.getByRole("button", { name: "Place order, ₱624.00" });
   await expect(place).toBeVisible();
@@ -77,7 +77,7 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
   await chooseSlotAndPhone(page);
   await page.getByRole("radio", { name: /GCash/ }).check();
   await place.click();
-  await expect(page).toHaveURL(/\/dev\/pay\/fake_cs_/);
+  await expect(page).toHaveURL(/\/dev\/pay\/fake_cs_/, { timeout: 30_000 });
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Pay", exact: true }).click();
   // Pay posts the webhook, then returns: next dev compiles both on first use.

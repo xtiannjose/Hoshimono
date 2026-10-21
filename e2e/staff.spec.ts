@@ -9,17 +9,16 @@ test.describe.configure({ timeout: 150_000 });
 test("a Dispatcher moves an Order along with a note, and the Customer sees it", async ({
   browser,
 }) => {
-  // The Client places a cash-on-delivery Order.
+  // Paolo places a cash-on-delivery Order (his own Cart: see picking.spec).
   const shopper = await (await browser.newContext()).newPage();
-  await shopper.goto("/dev/sign-in", { waitUntil: "networkidle" });
-  await shopper.getByRole("link", { name: "Sign in as Client" }).click();
-  await expect(shopper).toHaveURL(/localhost:\d+\/$/, { timeout: 30_000 });
+  await signIn(shopper, "paolo@example.com", "/");
   await shopper.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
   await shopper.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
   const stepper = shopper.getByRole("group", {
     name: "Quantity of Fresh Milk",
   });
-  for (let i = 2; i <= 5; i++) {
+  // 7, as Makati and Taguig's minimum Order is ₱700.
+  for (let i = 2; i <= 7; i++) {
     await stepper.getByRole("button", { name: "Add one" }).click();
     await expect(
       shopper.getByRole("button", { name: new RegExp(`^Cart: .* ${i} items$`) })

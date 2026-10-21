@@ -19,3 +19,14 @@ export {
   SLOT_HOLD_MINUTES,
 } from "./internal/slots";
 export type { HoldResult, SlotOption, SlotState } from "./internal/slots";
+export {
+  addSlotTemplate,
+  ensureSlots,
+  listSlotTemplates,
+  listUpcomingSlots,
+  listZonesForAdmin,
+  removeSlotTemplate,
+  setSlotCapacity,
+  setTemplateCapacity,
+  updateZoneFees,
+} from "./internal/schedule";

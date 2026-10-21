@@ -18,6 +18,8 @@ import {
   addOrderNote,
   answerSubstitution,
   completeDelivery,
+  dailyReport,
+  getReceipt,
   DELIVERY_FAILED_JOB,
   deliverWithoutPin,
   dispatchOrder,
@@ -1057,6 +1059,147 @@ describe("picking and Substitutions (ADR 0010)", () => {
     expect(
       await db.substitution.findUniqueOrThrow({ where: { id: sub.id } })
     ).toMatchObject({ customerResponse: "auto_accepted" });
+  });
+});
+
+describe("stock at picking (ADR 0012)", () => {
+  const asPicker = { type: "staff" as const, id: seedId("staff:picker") };
+  const level = (productId: string) =>
+    db.stockLevel.findFirstOrThrow({ where: { productId, hubId: HUB } });
+
+  it("takes what was packed off the shelf, and puts it back if cancelled after", async () => {
+    const altBefore = (await level(ALT_MILK)).onHand;
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    await setSubstitution(owner(ligaya), MILK, {
+      preference: "preferred",
+      preferredProductId: ALT_MILK,
+    });
+    const placed = await placeOrder(await checkout(ligaya));
+    if (!placed.ok) throw new Error(placed.reason);
+    await transitionOrder(placed.orderId, "picking", asPicker);
+    const list = await getPickList(placed.orderNo);
+    const milk = list!.lines.find((l) => l.productId === MILK)!;
+    const liempo = list!.lines.find((l) => l.productId === LIEMPO)!;
+    await recordPick(milk.id, { found: 1 });
+    await proposeSubstitution(milk.id, asPicker.id, ALT_MILK);
+    await recordPick(liempo.id, { grams: 450 });
+    expect(await finishPicking(placed.orderId, asPicker)).toEqual({ ok: true });
+
+    // Reservations released; 1 milk, 1 pack of liempo, 1 substitute taken.
+    expect(await level(MILK)).toMatchObject({ onHand: 39, reserved: 0 });
+    expect(await level(LIEMPO)).toMatchObject({ onHand: 39, reserved: 0 });
+    expect((await level(ALT_MILK)).onHand).toBe(altBefore - 1);
+    expect(
+      await db.stockMovement.count({
+        where: { orderId: placed.orderId, reason: "pick" },
+      })
+    ).toBe(3);
+
+    // Missed, then cancelled: the items go back on the shelf.
+    const rider = seedId("staff:rider");
+    await dispatchOrder(placed.orderId, rider, asPicker);
+    await failDelivery(placed.orderId, rider, "No one home");
+    expect(
+      await transitionOrder(
+        placed.orderId,
+        "cancelled",
+        asPicker,
+        "Customer cancelled"
+      )
+    ).toBe(true);
+    expect(await level(MILK)).toMatchObject({ onHand: 40, reserved: 0 });
+    expect(await level(LIEMPO)).toMatchObject({ onHand: 40, reserved: 0 });
+    expect((await level(ALT_MILK)).onHand).toBe(altBefore);
+    expect(
+      await db.stockMovement.count({
+        where: { orderId: placed.orderId, reason: "return" },
+      })
+    ).toBe(3);
+  });
+});
+
+describe("receipts and the daily report (ADR 0012)", () => {
+  const staff = { type: "staff" as const, id: seedId("staff:picker") };
+
+  /** Milk 2 (1 found, 1 of their choice) and liempo 450 of 500 g, picked. */
+  async function pickedOrder(slot = slots[0]) {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 1, HUB);
+    await setSubstitution(owner(ligaya), MILK, {
+      preference: "preferred",
+      preferredProductId: ALT_MILK,
+    });
+    const placed = await placeOrder(await checkout(ligaya, { slotId: slot }));
+    if (!placed.ok) throw new Error(placed.reason);
+    await transitionOrder(placed.orderId, "picking", staff);
+    const list = await getPickList(placed.orderNo);
+    const milk = list!.lines.find((l) => l.productId === MILK)!;
+    const liempo = list!.lines.find((l) => l.productId === LIEMPO)!;
+    await recordPick(milk.id, { found: 1 });
+    await proposeSubstitution(milk.id, staff.id, ALT_MILK);
+    await recordPick(liempo.id, { grams: 450 });
+    await finishPicking(placed.orderId, staff);
+    return placed;
+  }
+
+  it("prints what was charged, the substitute and the VAT breakdown", async () => {
+    const { orderNo, orderId } = await pickedOrder();
+    const receipt = await getReceipt(orderNo);
+    const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+
+    expect(receipt!.totalCents).toBe(order.finalTotalCents);
+    expect(receipt!.final).toBe(true);
+    const milk = receipt!.lines.find((l) => l.name.includes("Fresh Milk"))!;
+    expect(milk).toMatchObject({ amountCents: 11500 });
+    expect(milk.substitute).toMatchObject({ quantity: 1 });
+    const liempo = receipt!.lines.find((l) => l.name.includes("Liempo"))!;
+    expect(liempo).toMatchObject({ amountCents: 17550, detail: "450 g" });
+    const b = receipt!.breakdown;
+    expect(b.totalCents).toBe(order.finalTotalCents);
+    expect(
+      b.vatableSalesCents + b.vatExemptSalesCents + b.zeroRatedSalesCents
+    ).toBe(order.finalTotalCents);
+    expect(await getReceipt("SW-000000-XXXX")).toBeNull();
+  });
+
+  it("reports a day: Orders, revenue, fill rate, Substitutions and late deliveries", async () => {
+    const onTime = await pickedOrder(slots[0]);
+    const late = await pickedOrder(slots[0]);
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    const cancelled = await placeOrder(await checkout(ligaya));
+    if (!cancelled.ok) throw new Error(cancelled.reason);
+    const slot = await db.slot.findUniqueOrThrow({ where: { id: slots[0] } });
+    const minutes = (n: number) => new Date(slot.endsAt.getTime() + n * 60_000);
+    await db.order.update({
+      where: { id: onTime.orderId },
+      data: { status: "delivered", deliveredAt: minutes(-30) },
+    });
+    await db.order.update({
+      where: { id: late.orderId },
+      data: { status: "delivered", deliveredAt: minutes(30) },
+    });
+    await db.order.update({
+      where: { id: cancelled.orderId },
+      data: { status: "cancelled", cancelledAt: minutes(0) },
+    });
+    const finals = await db.order.findMany({
+      where: { id: { in: [onTime.orderId, late.orderId] } },
+      select: { finalTotalCents: true },
+    });
+
+    const report = await dailyReport(manilaDate(slot.startsAt));
+    expect(report).toMatchObject({
+      placed: 3,
+      delivered: 2,
+      cancelled: 1,
+      revenueCents: finals[0].finalTotalCents! + finals[1].finalTotalCents!,
+      lateDeliveries: 1,
+    });
+    // 4 lines delivered: both milk lines were filled with their own choice.
+    expect(report.fillRate).toBe(1);
+    expect(report.substitutionRate).toBe(0.5);
+    expect(report.averageBasketCents).toBe(Math.round(report.revenueCents / 2));
   });
 });
 

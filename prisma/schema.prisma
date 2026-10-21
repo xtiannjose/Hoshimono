@@ -135,6 +135,7 @@ model Hub {
   isActive       Boolean         @default(true) @map("is_active")
   zones          Zone[]
   slots          Slot[]
+  slotTemplates  SlotTemplate[]
   stockLevels    StockLevel[]
   stockMovements StockMovement[]
   orders         Order[]
@@ -160,6 +161,25 @@ model Zone {
 
   @@index([hubId])
   @@map("zones")
+}
+
+// The weekly delivery schedule a Hub's Slots are made from, in Manila
+// local time; the cron tick keeps 7 days generated (ADR 0012).
+model SlotTemplate {
+  id          String   @id @default(uuid(7)) @db.Uuid
+  hubId       String   @map("hub_id") @db.Uuid
+  hub         Hub      @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  // 0 is Sunday, 6 Saturday.
+  weekday     Int
+  // Minutes after Manila midnight, such as 480 for 8:00 AM.
+  startMinute Int      @map("start_minute")
+  endMinute   Int      @map("end_minute")
+  capacity    Int
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([hubId, weekday, startMinute])
+  @@map("slot_templates")
 }
 
 model Slot {
@@ -205,6 +225,8 @@ enum StockMovementReason {
   pick
   shrink
   adjustment
+  // Back on the shelf from an Order cancelled after picking (ADR 0012).
+  return
 }
 
 model StockLevel {

@@ -19,7 +19,7 @@ export function Header() {
     <>
       <header
         style={{ zIndex: z.header }}
-        className="border-border bg-bg/90 sticky top-0 border-b backdrop-blur-md backdrop-saturate-150 motion-reduce:backdrop-blur-none md:border-b-0"
+        className="border-border bg-bg/90 sticky top-0 border-b backdrop-blur-md backdrop-saturate-150 motion-reduce:backdrop-blur-none md:border-b-0 print:hidden"
       >
         {/* One SearchBox: its own row on phones, between logo and actions
             on wider screens, so it hydrates once. */}
@@ -52,7 +52,7 @@ export function Header() {
       {/* Below the header (z.header), so search suggestions open over it. */}
       <div
         style={{ zIndex: z.sticky }}
-        className="md:border-border md:bg-bg/90 md:sticky md:top-18 md:border-b md:backdrop-blur-md md:backdrop-saturate-150 md:motion-reduce:backdrop-blur-none"
+        className="md:border-border md:bg-bg/90 md:sticky md:top-18 md:border-b md:backdrop-blur-md md:backdrop-saturate-150 md:motion-reduce:backdrop-blur-none print:hidden"
       >
         <Suspense fallback={<div className="h-16 md:h-12" />}>
           <CategoryNav />

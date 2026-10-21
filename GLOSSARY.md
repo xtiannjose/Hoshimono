@@ -134,6 +134,10 @@ _Avoid_: Minimum spend, minimum order value, MOV
 A bookable delivery window at a Hub for a date, with a capacity of Orders. Customer copy says "delivery slot".
 _Avoid_: Timeslot, delivery window, appointment
 
+**Slot Schedule**:
+A Hub's weekly pattern of delivery times (weekday, start, end, capacity) from which each date's Slots are made 7 days ahead. Admin copy calls one entry a "window" ([ADR 0012](docs/adr/0012-stock-slots-reports-receipts.md)).
+_Avoid_: Calling a schedule entry a Slot (a Slot is one date's window)
+
 **Slot Hold**:
 A place in a Slot kept for one Cart for 10 minutes while the Customer checks out. A Cart holds one Slot at a time.
 _Avoid_: Reservation (that word is for stock), booking
@@ -172,7 +176,19 @@ _Avoid_: Approval timeout
 
 **Pick List**:
 An Order's lines in the order a Picker walks the Hub: by Category until the Hub has aisle codes.
-_Avoid_: Pick sheet (the printed one is Batch 4.4)
+_Avoid_: Pick sheet (that is the printed copy)
+
+**Pick Sheet**:
+A Pick List printed on paper, with a box to tick per line. What was found is still recorded on the Pick List.
+_Avoid_: Picking slip
+
+**Delivery Receipt**:
+The printed page packed with an Order: what each line was charged, the total and its VAT breakdown. Not an official receipt until BIR registration (ADR 0012).
+_Avoid_: Invoice, official receipt, OR
+
+**Shrink**:
+Stock taken off the shelf because it spoiled, broke or went missing, always with a note saying what happened.
+_Avoid_: Wastage, loss (as a stock reason)
 
 **Freshness Claim**:
 A customer's report, within the claim window after delivery, that an Order Line was not fresh or was damaged, resolved by refund or credit.

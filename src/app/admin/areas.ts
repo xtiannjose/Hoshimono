@@ -31,6 +31,27 @@ export const AREA_LINKS: Record<
       hint: "The Orders you are carrying",
     },
   ],
+  stock: [
+    {
+      href: "/admin/stock",
+      label: "Stock",
+      hint: "Receive deliveries, record shrink and counts, see what is low",
+    },
+  ],
+  reports: [
+    {
+      href: "/admin/report",
+      label: "Daily report",
+      hint: "Orders, revenue, fill rate, late deliveries",
+    },
+  ],
+  setup: [
+    {
+      href: "/admin/setup",
+      label: "Zones and Slots",
+      hint: "Delivery fees, the weekly Slot schedule, one Slot at a time",
+    },
+  ],
   orders: [
     {
       href: "/admin/orders",

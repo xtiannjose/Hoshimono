@@ -18,11 +18,23 @@ export interface SmsProvider {
 
 // For the e2e mailbox the last message per recipient is kept in memory
 // (src/lib/test-mode.ts). On globalThis: Next dev loads modules per route.
-const store = globalThis as unknown as { devOutbox?: Map<string, string> };
+const store = globalThis as unknown as {
+  devOutbox?: Map<string, string>;
+  devSignInLinks?: Map<string, string>;
+};
 
 function remember(to: string, text: string) {
   if (!testMailboxEnabled()) return;
   (store.devOutbox ??= new Map()).set(to.toLowerCase(), text);
+  // Kept apart: an Order notice to the same address must not hide it.
+  const link = /https?:\/\/\S*\/magic-link\/verify\S*/.exec(text)?.[0];
+  if (link) (store.devSignInLinks ??= new Map()).set(to.toLowerCase(), link);
+}
+
+/** The last sign-in link emailed to a recipient, for the e2e mailbox only. */
+export function lastSignInLink(to: string): string | null {
+  if (!testMailboxEnabled()) return null;
+  return store.devSignInLinks?.get(to.toLowerCase()) ?? null;
 }
 
 /** The last console message to a recipient, for the e2e mailbox only. */

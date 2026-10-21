@@ -5,10 +5,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getDefaultHubId } from "@/modules/delivery";
 import { db as appDb } from "@/lib/db";
 import {
+  countStock,
   getStockStates,
+  listStockForAdmin,
   OutOfStockError,
+  receiveStock,
+  recordShrink,
   releaseStock,
   reserveStock,
+  setLowStockThreshold,
+  stockHistory,
 } from "@/modules/inventory";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
@@ -121,5 +127,83 @@ describe("releaseStock", () => {
       where: { productId: bread, hubId },
     });
     expect(level.reserved).toBe(1);
+  });
+});
+
+describe("keeping stock (ADR 0012)", () => {
+  const staff = seedId("staff:dispatcher");
+  const eggs = product("large-eggs-12-pack");
+
+  it("receives, shrinks and counts stock, each with its movement and who did it", async () => {
+    const hubId = (await getDefaultHubId())!;
+    await db.stockLevel.update({
+      where: { productId_hubId: { productId: eggs, hubId } },
+      data: { onHand: 10, reserved: 2 },
+    });
+
+    expect(await receiveStock(hubId, eggs, 0, staff)).toEqual({
+      ok: false,
+      errors: { quantity: "Enter how many came in." },
+    });
+    expect(
+      await receiveStock(hubId, eggs, 24, staff, "Supplier DR 1182")
+    ).toEqual({
+      ok: true,
+    });
+    expect(await recordShrink(hubId, eggs, 3, staff, "")).toEqual({
+      ok: false,
+      errors: { note: "Say what happened to them." },
+    });
+    // 34 on the shelf, 2 reserved: at most 32 can go.
+    expect(await recordShrink(hubId, eggs, 33, staff, "Cracked")).toEqual({
+      ok: false,
+      errors: { quantity: "Only 32 are not reserved for Orders." },
+    });
+    expect(
+      await recordShrink(hubId, eggs, 3, staff, "Cracked in delivery")
+    ).toEqual({
+      ok: true,
+    });
+    expect(await countStock(hubId, eggs, 1, staff)).toEqual({
+      ok: false,
+      errors: { counted: "2 are reserved for Orders: count at least 2." },
+    });
+    expect(await countStock(hubId, eggs, 30, staff, "Weekly count")).toEqual({
+      ok: true,
+    });
+
+    expect(
+      await db.stockLevel.findUniqueOrThrow({
+        where: { productId_hubId: { productId: eggs, hubId } },
+      })
+    ).toMatchObject({ onHand: 30, reserved: 2 });
+    const history = await stockHistory(hubId, eggs);
+    expect(
+      history.slice(0, 3).map((m) => [m.reason, m.delta, m.note, m.staffName])
+    ).toEqual([
+      ["adjustment", -1, "Weekly count", "Marites Aquino"],
+      ["shrink", -3, "Cracked in delivery", "Marites Aquino"],
+      ["receipt", 24, "Supplier DR 1182", "Marites Aquino"],
+    ]);
+  });
+
+  it("lists what is low, at or under its threshold", async () => {
+    const hubId = (await getDefaultHubId())!;
+    await db.stockLevel.update({
+      where: { productId_hubId: { productId: eggs, hubId } },
+      data: { onHand: 6, reserved: 2 },
+    });
+    expect(await setLowStockThreshold(hubId, eggs, 4)).toEqual({ ok: true });
+    const low = await listStockForAdmin(hubId, { low: true });
+    expect(low.find((r) => r.productId === eggs)).toMatchObject({
+      onHand: 6,
+      reserved: 2,
+      free: 4,
+      lowStockThreshold: 4,
+      low: true,
+    });
+    expect(low.every((r) => r.low)).toBe(true);
+    const found = await listStockForAdmin(hubId, { q: "large eggs" });
+    expect(found.map((r) => r.productId)).toContain(eggs);
   });
 });
