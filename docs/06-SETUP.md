@@ -151,6 +151,17 @@ docker exec hoshimono-db psql -U postgres -c "CREATE DATABASE hoshimono_e2e;"
 
 Point `DATABASE_URL` and `DIRECT_URL` at `postgresql://postgres:dev@localhost:5433/hoshimono`, and the Vitest URL in `.env.test` at `postgresql://postgres:dev@localhost:5433/hoshimono_test`. `npm run test:e2e` starts its own dev server on port 3100 against `hoshimono_e2e`, which it migrates, empties and re-seeds on every run (stop any other `next dev` first: two dev servers cannot share `.next`). Uploaded Product photos land in `public/media/` (git-ignored) until the R2 store exists.
 
+**Test accounts.** The seed creates these, in every database (dev, test and e2e):
+
+| Account   | Email                                                                                                | What it is                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Admin     | `admin@hoshimono.test`                                                                               | Staff, `admin`: every staff screen (Rafael Cruz)                            |
+| Technical | `tech@hoshimono.test`                                                                                | Staff, `admin`: for checking the system, refunds to review and jobs         |
+| Client    | `client@hoshimono.test`                                                                              | Customer with a saved Pasig address and phone, ready to order (Mara Santos) |
+| Others    | `merchandiser@`, `picker@`, `dispatcher@hoshimono.test`; `ligaya@`, `paolo@`, `teresita@example.com` | One staff member per role; three more Customers                             |
+
+Sign-in is by magic link or text code, and no email or SMS account exists yet, so links and codes go to the server log (`[email]`, `[sms]`). With `E2E_MAILBOX=1` in `.env.local`, `/dev/sign-in` signs in as Admin, Technical or Client in one click. It runs only in development and the local e2e build, never on a real domain. For online payment locally, start with `PAYMENT_PROVIDER=fake` (a stand-in pay page; ADR 0003).
+
 ## 7. Scripts to define in `package.json`
 
 | Script       | Command                                         | Purpose                               |

@@ -36,9 +36,9 @@ describe("seed", () => {
       zones: 3,
       categories: 41,
       slots: 42,
-      staff: 4,
-      customers: 3,
-      addresses: 3,
+      staff: 5,
+      customers: 4,
+      addresses: 4,
     });
     expect(counts.products).toBeGreaterThanOrEqual(150);
     expect(counts.stockLevels).toBe(counts.products);
@@ -53,12 +53,19 @@ describe("seed", () => {
     ).toBeGreaterThan(0);
     expect(await db.stockLevel.count({ where: { onHand: 0 } })).toBe(1);
     const roles = (await db.staff.findMany()).map((s) => s.role).sort();
-    expect(roles).toEqual(["admin", "dispatcher", "merchandiser", "picker"]);
+    // Two admins: Rafael Cruz and the technical test account.
+    expect(roles).toEqual([
+      "admin",
+      "admin",
+      "dispatcher",
+      "merchandiser",
+      "picker",
+    ]);
     expect(
       await db.address.count({
         where: { isDefault: true, zoneId: { not: null } },
       })
-    ).toBe(3);
+    ).toBe(4);
   });
 
   it("creates Slots from the Manila calendar day, not the UTC one", async () => {

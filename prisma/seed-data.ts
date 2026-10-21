@@ -330,14 +330,32 @@ const MANILA_OFFSET_HOURS = 8;
 
 // ---------- People ----------
 
-const STAFF: { role: StaffRole; name: string }[] = [
-  { role: "admin", name: "Rafael Cruz" },
-  { role: "merchandiser", name: "Joanna Lim" },
-  { role: "picker", name: "Arnel Bautista" },
-  { role: "dispatcher", name: "Marites Aquino" },
+// Signed in as <key>@hoshimono.test. "tech" is the technical test account:
+// an admin, so it sees every staff screen (docs/06 section 6).
+const STAFF: { key: string; role: StaffRole; name: string }[] = [
+  { key: "admin", role: "admin", name: "Rafael Cruz" },
+  { key: "merchandiser", role: "merchandiser", name: "Joanna Lim" },
+  { key: "picker", role: "picker", name: "Arnel Bautista" },
+  { key: "dispatcher", role: "dispatcher", name: "Marites Aquino" },
+  { key: "tech", role: "admin", name: "Hoshimono Tech" },
 ];
 
 const CUSTOMERS = [
+  // The client test account: a Customer ready to order (docs/06 section 6).
+  {
+    key: "client",
+    name: "Mara Santos",
+    email: "client@hoshimono.test",
+    phone: "+639171234504",
+    zone: "pasig-mandaluyong",
+    address: {
+      label: "Home",
+      line1: "8 Camia Street",
+      barangay: "Kapitolyo",
+      city: "Pasig",
+      landmark: "Yellow house beside the chapel",
+    },
+  },
   {
     key: "ligaya",
     name: "Ligaya Dimaculangan",
@@ -558,10 +576,10 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
   }
 
   // Staff
-  for (const { role, name } of STAFF) {
+  for (const { key, role, name } of STAFF) {
     const staff = {
-      id: seedId(`staff:${role}`),
-      email: `${role}@hoshimono.test`,
+      id: seedId(`staff:${key}`),
+      email: `${key}@hoshimono.test`,
       name,
       role,
     };

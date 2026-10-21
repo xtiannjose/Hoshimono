@@ -21,13 +21,13 @@ Resume here: read this section, then the batch named first under Next.
 
 **Open pull requests:** #14 (carry-over).
 
-**Current phase:** 3, Online payments. Batches 3.1 to 3.3 are built; Phase 3 closes once the PayMongo sandbox run passes (its exit criteria need test mode).
+**Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. When the PayMongo test keys exist: the sandbox run for Batches 3.2 and 3.3 (pay, fail, expire, refund full and partial), then tick the Phase 3 exit criteria.
-2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy).
-3. Phase 4, Operations (section 10).
+1. Phase 4, Operations (section 10), Batch 4.1 first: staff roles and permissions, the order queue, refunds to review.
+2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
+3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
 **Waiting on the owner**
 
@@ -274,7 +274,9 @@ Refuted during verification, so not changed: weighed items sold per piece (unrea
 
 - [x] Weighed-item handling per [03-ARCHITECTURE.md](03-ARCHITECTURE.md) section 8 (decision closed and documented). [ADR 0008](adr/0008-weighed-items-online-and-refunds.md): every online method charges the estimate, no card holds; on `picked` the Final Total follows what was packed, never above the estimate, and the difference is refunded in one go. The Picker screen that enters weights is Batch 4.2
 - [x] Refund flow (full, partial) with Customer notification. `refunds` ledger, one per Payment and reason; sent at most once (`needs_review` when the outcome is unknown); email and SMS per refund. Triggers: cancel of a paid Order, money after cancellation, `picked`. Checked with the stand-in provider in `e2e/online-payment.spec.ts` (cancel a paid Order, refund shown and texted)
-- [ ] Sandbox end-to-end tests for GCash and card. Blocked: PayMongo test keys. Also confirms the expire and refund paths and the event shapes the adapter reads
+- [x] Sandbox end-to-end tests for GCash and card. Moved to Batch 6.3 on 21 Oct: the owner cannot reach PayMongo yet and chose to go on. The same journeys pass against the stand-in provider (`e2e/online-payment.spec.ts`); the PayMongo run still confirms the expire and refund paths and the event shapes the adapter reads
+
+**Phase 3 closed on 21 Oct against the stand-in provider** (owner's call, no PayMongo access yet). Met: an Order confirms only on a verified, signed webhook (`e2e/online-payment.spec.ts`, `tests/db/payments.test.ts`); the same webhook delivered ten times is applied once (`payments.test.ts`); a failed payment returns the Customer with the Cart intact (e2e); a partial refund updates the ledger and the Order (`tests/db/orders.test.ts`, "final total and refunds"). Still owed: the same in PayMongo test mode (Batch 6.3).
 
 **Exit criteria:** in sandbox, a paid order moves to confirmed only after a verified webhook; replaying the same webhook ten times changes nothing; a declined payment returns the Customer to Checkout with the Cart intact; a partial refund updates the ledger and the Order.
 
@@ -413,6 +415,7 @@ Frontend:
 **Batch 6.3 Legal and go-live setup** (W19). Skills: `anthropic-skills:docx` or the docs skill for policies.
 
 - [ ] Privacy policy, terms, refund policy, Tax and Business Compliance page, cookie consent
+- [ ] PayMongo test-mode run (moved from Batch 3.3 on 21 Oct): GCash and card paid, failed and expired; full and partial refunds; the webhook endpoint registered for `checkout_session.payment.paid` and `payment.refunded`. Needs `PAYMONGO_SECRET_KEY` and `PAYMONGO_WEBHOOK_SECRET`
 - [ ] Runbook: how to handle a stuck payment, a wrong refund, a Hub shutdown, a provider outage
 - [ ] Owner study guide (asked 20 Oct): the whole app explained in depth for the owner to study. How the business runs (Hubs, Slots, Pickers, Riders, payments, refunds), every module and what it owns, how a request travels from the page to the database, each flow end to end (browse, Cart, Checkout, COD and online payment, picking, delivery, refunds, cron and jobs), how the pieces connect, and why each design choice was made (the ADRs). Written when most of the app is built, kept up to date until launch
 - [ ] Production domain, email DNS (SPF, DKIM, DMARC), SMS sender
