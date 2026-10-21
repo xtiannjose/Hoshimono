@@ -77,8 +77,16 @@ export async function getOrder(
   customerId: string,
   orderNo: string
 ): Promise<OrderDetail | null> {
+  return getOrderByNumber({ orderNo, customerId });
+}
+
+/** One Order by its number, limited to a Customer when given; or null. */
+export async function getOrderByNumber(where: {
+  orderNo: string;
+  customerId?: string;
+}): Promise<OrderDetail | null> {
   const order = await db.order.findFirst({
-    where: { orderNo, customerId },
+    where,
     include: {
       slot: { select: { startsAt: true, endsAt: true } },
       lines: { orderBy: { createdAt: "asc" } },

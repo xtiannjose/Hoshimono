@@ -367,6 +367,7 @@ model Order {
   payments         Payment[]
   stockMovements   StockMovement[]
   notifications    Notification[]
+  notes            OrderNote[]
   createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -404,6 +405,20 @@ model OrderLine {
 
   @@index([orderId])
   @@map("order_lines")
+}
+
+// Staff notes on an Order, for each other; the Customer never sees them.
+model OrderNote {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  staffId   String   @map("staff_id") @db.Uuid
+  staff     Staff    @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  text      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([orderId])
+  @@map("order_notes")
 }
 
 model Substitution {
@@ -588,6 +603,7 @@ model Staff {
   substitutions  Substitution[]
   stockMovements StockMovement[]
   auditLog       AuditLog[]
+  orderNotes     OrderNote[]
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 

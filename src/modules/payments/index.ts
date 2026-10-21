@@ -15,9 +15,12 @@ export type {
 export { paymentProvider } from "./internal/active";
 export {
   getRefundNotice,
+  listRefundsToCheck,
   REFUND_JOB,
   refundOrderPayment,
   sendRefund,
+  settleRefund,
+  type RefundToCheck,
 } from "./internal/refunds";
 export {
   handleWebhook,

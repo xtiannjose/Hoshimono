@@ -3,7 +3,15 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
 import { customerForUser } from "@/modules/customers";
-import { safeNext, staffForUser } from "@/modules/identity";
+import {
+  addStaff,
+  listAudits,
+  listStaff,
+  recordAudits,
+  safeNext,
+  staffForUser,
+  updateStaff,
+} from "@/modules/identity";
 
 import { createTestDb, resetDb } from "./helpers";
 
@@ -161,7 +169,7 @@ describe("customerForUser with a mobile number", () => {
 
 describe("staffForUser", () => {
   async function staff(
-    role: "admin" | "picker" | "merchandiser",
+    role: "admin" | "dispatcher" | "merchandiser" | "picker",
     isActive = true
   ) {
     return db.staff.create({
@@ -174,36 +182,164 @@ describe("staffForUser", () => {
     });
   }
 
-  it("links Staff by verified email and allows their role", async () => {
-    const picker = await staff("picker");
-    const user = await authUser("picker@hoshimono.test");
-    const found = await staffForUser(db, user, "picker");
-    expect(found?.id).toBe(picker.id);
+  it("links Staff by verified email and lets them into their area", async () => {
+    const dispatcher = await staff("dispatcher");
+    const user = await authUser("dispatcher@hoshimono.test");
+    const found = await staffForUser(db, user, "orders");
+    expect(found?.id).toBe(dispatcher.id);
     expect(found?.authUserId).toBe(user.id);
   });
 
   it("refuses an unverified email and does not link it", async () => {
-    const picker = await staff("picker");
-    const user = await authUser("picker@hoshimono.test", false);
-    expect(await staffForUser(db, user, "picker")).toBeNull();
-    const row = await db.staff.findUniqueOrThrow({ where: { id: picker.id } });
+    const dispatcher = await staff("dispatcher");
+    const user = await authUser("dispatcher@hoshimono.test", false);
+    expect(await staffForUser(db, user, "orders")).toBeNull();
+    const row = await db.staff.findUniqueOrThrow({
+      where: { id: dispatcher.id },
+    });
     expect(row.authUserId).toBeNull();
   });
 
-  it("refuses the wrong role, but admins pass every role", async () => {
+  it("keeps each role to its areas; admins use every area", async () => {
+    await staff("dispatcher");
+    await staff("merchandiser");
     await staff("picker");
     await staff("admin");
+    const dispatcher = await authUser("dispatcher@hoshimono.test");
+    const merchandiser = await authUser("merchandiser@hoshimono.test");
     const picker = await authUser("picker@hoshimono.test");
     const admin = await authUser("admin@hoshimono.test");
-    expect(await staffForUser(db, picker, "merchandiser")).toBeNull();
-    expect(await staffForUser(db, admin, "picker")).not.toBeNull();
+    expect(await staffForUser(db, dispatcher, "catalog")).toBeNull();
+    expect(await staffForUser(db, merchandiser, "orders")).toBeNull();
+    expect(await staffForUser(db, merchandiser, "staff")).toBeNull();
+    expect(await staffForUser(db, picker, "orders")).toBeNull();
+    for (const area of [
+      "catalog",
+      "orders",
+      "refunds",
+      "staff",
+      "audit",
+    ] as const) {
+      expect(await staffForUser(db, admin, area), area).not.toBeNull();
+    }
   });
 
   it("refuses inactive Staff and people who are not Staff", async () => {
     await staff("merchandiser", false);
     const inactive = await authUser("merchandiser@hoshimono.test");
     const shopper = await authUser("ligaya@example.com");
-    expect(await staffForUser(db, inactive, "merchandiser")).toBeNull();
-    expect(await staffForUser(db, shopper, "picker")).toBeNull();
+    expect(await staffForUser(db, inactive, "catalog")).toBeNull();
+    expect(await staffForUser(db, shopper, "orders")).toBeNull();
+  });
+});
+
+describe("managing Staff", () => {
+  const admin = () =>
+    db.staff.create({
+      data: {
+        email: "admin@hoshimono.test",
+        name: "Rafael Cruz",
+        role: "admin",
+      },
+    });
+
+  it("adds Staff with a role, refusing a bad email or one already used", async () => {
+    await admin();
+    expect(
+      await addStaff({
+        name: " Arnel Bautista ",
+        email: "Arnel@Hoshimono.test ",
+        role: "picker",
+      })
+    ).toEqual({ ok: true, id: expect.any(String) });
+    expect(await addStaff({ name: "", email: "nope", role: "picker" })).toEqual(
+      {
+        ok: false,
+        errors: { name: "Enter a name.", email: "Enter an email address." },
+      }
+    );
+    expect(
+      await addStaff({
+        name: "Arnel",
+        email: "arnel@hoshimono.test",
+        role: "picker",
+      })
+    ).toEqual({
+      ok: false,
+      errors: { email: "This email already belongs to a staff member." },
+    });
+    expect(
+      await addStaff({
+        name: "Joanna Lim",
+        email: "joanna@hoshimono.test",
+        role: "owner",
+      })
+    ).toEqual({ ok: false, errors: { role: "Choose a role." } });
+
+    expect(
+      (await listStaff()).map((s) => [s.name, s.email, s.role, s.isActive])
+    ).toEqual([
+      ["Arnel Bautista", "arnel@hoshimono.test", "picker", true],
+      ["Rafael Cruz", "admin@hoshimono.test", "admin", true],
+    ]);
+  });
+
+  it("changes roles and switches accounts off, but never your own", async () => {
+    const boss = await admin();
+    const marites = await db.staff.create({
+      data: {
+        email: "marites@hoshimono.test",
+        name: "Marites Aquino",
+        role: "dispatcher",
+      },
+    });
+
+    expect(
+      await updateStaff(marites.id, { role: "merchandiser" }, boss.id)
+    ).toEqual({
+      ok: true,
+    });
+    expect(await updateStaff(marites.id, { isActive: false }, boss.id)).toEqual(
+      {
+        ok: true,
+      }
+    );
+    // The acting admin stays an active admin, so an admin always remains.
+    expect(await updateStaff(boss.id, { role: "picker" }, boss.id)).toEqual({
+      ok: false,
+      errors: { role: "You cannot change your own role." },
+    });
+    expect(await updateStaff(boss.id, { isActive: false }, boss.id)).toEqual({
+      ok: false,
+      errors: { isActive: "You cannot switch your own account off." },
+    });
+
+    const listed = await listStaff();
+    expect(listed.find((s) => s.id === marites.id)).toMatchObject({
+      role: "merchandiser",
+      isActive: false,
+    });
+    // Switched off: sign-in no longer opens anything.
+    const user = await authUser("marites@hoshimono.test");
+    expect(await staffForUser(db, user, "catalog")).toBeNull();
+  });
+
+  it("lists the audit log newest first, with who did it", async () => {
+    const boss = await admin();
+    await recordAudits([
+      { staffId: boss.id, action: "create", entity: "staff", entityId: "a" },
+    ]);
+    await recordAudits([
+      { staffId: boss.id, action: "update", entity: "order", entityId: "b" },
+    ]);
+
+    const all = await listAudits({});
+    expect(all.map((a) => [a.action, a.entity, a.staffName])).toEqual([
+      ["update", "order", "Rafael Cruz"],
+      ["create", "staff", "Rafael Cruz"],
+    ]);
+    expect(
+      (await listAudits({ entity: "staff" })).map((a) => a.entityId)
+    ).toEqual(["a"]);
   });
 });

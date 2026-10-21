@@ -2,26 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { ORDER_STATUS_LABEL } from "@/components/order/status-labels";
 import { Tag } from "@/components/product/tag";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateTime, formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { requireCustomer } from "@/modules/identity";
-import { listOrders, type OrderSummary } from "@/modules/orders";
+import { listOrders } from "@/modules/orders";
 
 export const metadata: Metadata = { title: "Your orders" };
-
-const STATUS: Record<OrderSummary["status"], string> = {
-  pending_payment: "Waiting for payment",
-  confirmed: "Confirmed",
-  picking: "Picking",
-  picked: "Ready for the Rider",
-  out_for_delivery: "On the way",
-  delivered: "Delivered",
-  delivery_failed: "Delivery failed",
-  cancelled: "Cancelled",
-};
 
 export default function OrdersPage() {
   return (
@@ -62,7 +52,7 @@ async function Orders() {
             <span className="flex flex-wrap items-center justify-between gap-2">
               <b className="tabular-nums">{order.orderNo}</b>
               <Tag tone={order.status === "cancelled" ? "quiet" : "soft"}>
-                {STATUS[order.status]}
+                {ORDER_STATUS_LABEL[order.status]}
               </Tag>
             </span>
             <span className="text-muted-foreground text-sm">

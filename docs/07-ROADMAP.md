@@ -18,14 +18,15 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 3.2 (PR #12): online Checkout through the hosted checkout, a return page that waits for the webhook, the 15-minute Payment Window, Back to cart with the Cart restored, and a stand-in provider (`PAYMENT_PROVIDER=fake`) for development and e2e.
 - Batch 3.3 (PR #13): weighed items and refunds ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). Sandbox tests wait for the PayMongo keys.
 - Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked); one rule for how a module says no ([ADR 0009](adr/0009-module-results-and-errors.md)).
+- Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 
-**Open pull requests:** #14 (carry-over).
+**Open pull requests:** #14 (carry-over), then #15 (test accounts, Phase 3 closed, Batch 4.1; built on #14, so merge #14 first).
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 4, Operations (section 10), Batch 4.1 first: staff roles and permissions, the order queue, refunds to review.
+1. Phase 4, Operations (section 10): Batch 4.2 next, the Picker view and Substitutions. Batch 4.1 (staff areas, order queue, refunds to check) is in #15.
 2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
@@ -287,6 +288,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 **Carried over from the Phase 1 and 2 review** (18 Oct):
 
 - [x] Lighthouse 90+ on mobile for Home, Category and Product (Batch 1.5). No longer blocked: the CI `lighthouse` job measures a production build on a clean runner (`lighthouserc.json`; performance warns until it passes). First clean-runner run (19 Oct, PR #8): Category 93, 98, 98 and Product 94, 94, 98 meet the budget; Home 72, 74, 98 does not, with about 1.1 s of total blocking time. Local laptop medians were 79, 81 and 85; accessibility, best practices and SEO 100. Cause, measured on Phase 1: about 190 KB of JavaScript runs before the first paint and the simulated phone charges it to LCP; with JavaScript blocked the pages score 96 to 99, with fonts blocked only a few points better, so subset fonts alone cannot reach 90. Fix, Home first: the Add button arrives as server HTML and loads the stepper and Motion on first tap; header search loads on first use. Then switch the CI assertion from warn to error. 19 Oct: Motion moved out of the first load and the header renders one SearchBox; JavaScript fell from 192 to 157 KB (Home), 200 to 164 KB (Category, under the 170 KB budget) and 192 to 157 KB (Product). Open: confirm Home 90+ on the CI runner, then switch the assertion to error. Met on the CI runner 19 Oct (PR #9): Home 81, 98, 98; Category 97, 98, 98; Product 94, 95, 98. The CI assertion now fails below 90
+- [ ] Flaky locally, not in CI: with the whole e2e suite on `next dev` (4 workers), a page now and then shows Next's "Runtime SyntaxError: Unexpected end of JSON input" overlay (stack in Next's own code) and the test times out; it passes alone. Seen 20 and 21 Oct (catalog, staff). CI tests a production build, which has no dev overlay. Investigate if it reaches CI or real browsing
 - [ ] Real 404 status for a missing Product or Category. Today the page streams a noindex not-found page with status 200, because Next 16 cannot call `notFound()` in the shell for on-demand params; recheck on each Next upgrade
 - [ ] R2 `MediaStore`: uploaded photos show only in development, because `next start` serves `public/` as it was at start. Blocked: Cloudflare account
 - [x] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now). Decided 20 Oct: vaul stays. The Cart has one height, so detents have nothing to snap to, and vaul already follows the finger, closes on a fling and handles focus; docs/05 records it
@@ -342,9 +344,9 @@ Frontend:
 
 **Batch 4.1 Staff and order queue** (W12). Stack: Better Auth roles, TanStack Table. Skills: `security-review`.
 
-- [ ] Staff roles and permissions (admin, merchandiser, picker, dispatcher); audit log
-- [ ] Order queue with filters, search, status changes, notes
-- [ ] Refunds that need review (ADR 0008, `refunds.status = needs_review`) listed for staff, with the PayMongo refund lookup and a way to mark them settled
+- [x] Staff roles and permissions (admin, merchandiser, picker, dispatcher); audit log. Each role opens only its areas (docs/03 section 12); admins manage Staff (add, change role, switch off; never their own) and read the audit log at `/admin/audit`
+- [x] Order queue with filters, search, status changes, notes. `/admin/orders`: by Slot time, filtered by status and day, searched by number, name, email or mobile; each Order shows its history with who and why, refunds and Order Notes; staff move it along the lifecycle, with a reason to cancel or fail a delivery
+- [x] Refunds that need review (ADR 0008, `refunds.status = needs_review`) listed for staff, with the PayMongo refund lookup and a way to mark them settled. `/admin/refunds` lists them with the PayMongo payment id to look up in the dashboard; "It went through" marks it sent and tells the Customer, "send again" queues it once more
 
 **Batch 4.2 Picking and Substitutions** (W12 to W13). Stack: mobile-first web views, SMS. Skills: `design-taste-frontend` (Picker rules in [05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) section 9), `tdd`.
 

@@ -15,15 +15,19 @@ import { holdSlot, resolveZone } from "@/modules/delivery";
 import { jobHandlers } from "@/server/job-handlers";
 import {
   abandonPayment,
+  addOrderNote,
   cancelOrder,
   confirmPaidOrder,
   expireUnpaidOrders,
   getOrder,
+  getOrderForStaff,
   listOrders,
+  listOrdersForStaff,
   MAX_COD_TOTAL_CENTS,
   MAX_OPEN_COD_ORDERS,
   ORDER_CONFIRMED_JOB,
   placeOrder,
+  staffMoves,
   transitionOrder,
   type PlaceOrderInput,
 } from "@/modules/orders";
@@ -749,6 +753,109 @@ describe("final total and refunds", () => {
       paymentStatus: "cod_pending",
     });
     expect(await db.refund.count()).toBe(0);
+  });
+});
+
+describe("the staff order queue", () => {
+  const dispatcher = seedId("staff:dispatcher");
+
+  async function placed(customerId: string, slot = slots[0]) {
+    await setLineQuantity(owner(customerId), MILK, 1, HUB);
+    const result = await placeOrder(
+      await checkout(customerId, { slotId: slot })
+    );
+    if (!result.ok) throw new Error(result.reason);
+    return result;
+  }
+
+  it("lists Orders by Slot time, filtered by status and found by number, phone or name", async () => {
+    const late = await placed(ligaya, slots[1]);
+    const early = await placed(paolo, slots[0]);
+    await transitionOrder(late.orderId, "picking", {
+      type: "staff",
+      id: dispatcher,
+    });
+
+    const all = await listOrdersForStaff({});
+    expect(all.map((o) => o.orderNo)).toEqual([early.orderNo, late.orderNo]);
+    expect(all[0]).toMatchObject({
+      customerName: "Paolo Villanueva",
+      status: "confirmed",
+      paymentMethod: "cod",
+    });
+
+    const picking = await listOrdersForStaff({ status: "picking" });
+    expect(picking.map((o) => o.orderNo)).toEqual([late.orderNo]);
+    for (const q of [late.orderNo.slice(-4), "ligaya", "Dimaculangan"]) {
+      expect(
+        (await listOrdersForStaff({ q })).map((o) => o.orderNo),
+        q
+      ).toEqual([late.orderNo]);
+    }
+    // The contact number as typed, in any of its forms.
+    expect(
+      (await listOrdersForStaff({ q: "0917 123 4567" })).length
+    ).toBeGreaterThan(0);
+  });
+
+  it("keeps staff notes on an Order, with who wrote them", async () => {
+    const { orderId, orderNo } = await placed(ligaya);
+
+    expect(await addOrderNote(orderId, dispatcher, "   ")).toEqual({
+      ok: false,
+      errors: { text: "Write a note first." },
+    });
+    expect(await addOrderNote(orderId, dispatcher, "Gate code 4421")).toEqual({
+      ok: true,
+    });
+    await addOrderNote(orderId, dispatcher, "Customer asked for 3 PM");
+
+    const order = await getOrderForStaff(orderNo);
+    expect(order?.notes).toEqual([
+      expect.objectContaining({
+        text: "Gate code 4421",
+        staffName: "Marites Aquino",
+      }),
+      expect.objectContaining({ text: "Customer asked for 3 PM" }),
+    ]);
+  });
+
+  it("shows the whole history with who moved the Order and why", async () => {
+    const { orderId, orderNo } = await placed(ligaya);
+    await transitionOrder(
+      orderId,
+      "cancelled",
+      { type: "staff", id: dispatcher },
+      "Customer called to cancel"
+    );
+
+    const order = await getOrderForStaff(orderNo);
+    expect(order).toMatchObject({
+      status: "cancelled",
+      customer: { name: "Ligaya Dimaculangan", email: "ligaya@example.com" },
+    });
+    expect(order?.history.at(-1)).toMatchObject({
+      from: "confirmed",
+      to: "cancelled",
+      actor: "Marites Aquino",
+      reason: "Customer called to cancel",
+    });
+    expect(order?.history[0]).toMatchObject({
+      to: "confirmed",
+      actor: "Customer",
+    });
+    expect(await getOrderForStaff("SW-000000-XXXX")).toBeNull();
+  });
+
+  it("offers staff only the moves the lifecycle allows", () => {
+    // Unpaid online Orders are settled by the webhook or the Payment Window.
+    expect(staffMoves("pending_payment")).toEqual([]);
+    expect(staffMoves("confirmed")).toEqual(["picking", "cancelled"]);
+    expect(staffMoves("out_for_delivery")).toEqual([
+      "delivered",
+      "delivery_failed",
+    ]);
+    expect(staffMoves("delivered")).toEqual([]);
   });
 });
 

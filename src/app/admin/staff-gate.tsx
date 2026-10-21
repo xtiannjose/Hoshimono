@@ -1,20 +1,23 @@
 import type { ReactNode } from "react";
 
-import { requireStaff } from "@/modules/identity";
+import { requireStaff, type StaffArea } from "@/modules/identity";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Renders its children only for a Merchandiser or Admin; others are sent
- * to sign in, or get a 404. Place inside <Suspense>: it reads the session.
+ * Renders its children only for Staff who may open `area` (the catalogue
+ * by default); others are sent to sign in, or get a 404. Place inside
+ * <Suspense>: it reads the session.
  */
 export async function StaffGate({
   next,
+  area = "catalog",
   children,
 }: {
   next: string;
+  area?: StaffArea;
   children: ReactNode;
 }) {
-  await requireStaff("merchandiser", next);
+  await requireStaff(area, next);
   return <>{children}</>;
 }
 

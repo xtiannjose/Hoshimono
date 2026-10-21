@@ -72,6 +72,10 @@ _Avoid_: Purchase, transaction, booking
 One Product on an Order, with the price, name and tax snapshotted at placement, an ordered quantity, and a fulfilled quantity.
 _Avoid_: Line item, order item
 
+**Order Note**:
+A note staff add to an Order for each other, such as "Gate code 4421". The Customer never sees it.
+_Avoid_: Comment, remark (and do not confuse it with the Rider note or the Picker Note, which come from the Customer)
+
 **Order Number**:
 The human-facing reference of an Order, `SW-YYMMDD-XXXX` (Manila date and four characters without 0, O, 1 or I), used in messages and tracking links.
 _Avoid_: Order ID (the internal UUID), reference code

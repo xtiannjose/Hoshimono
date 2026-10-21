@@ -2,12 +2,11 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 
-import type { StaffRole } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { customerForUser } from "@/modules/customers";
 
 import { auth } from "./auth";
-import { staffForUser } from "./link";
+import { activeStaff, staffForUser, type StaffArea } from "./link";
 
 // Not memoised with React cache: a promise shared between two parts of a
 // page is attributed to the prerender and trips Next. Better Auth's session
@@ -36,19 +35,34 @@ export async function currentCustomer() {
   return user ? customerForUser(db, user) : null;
 }
 
-/** The signed-in Staff member with `role`. Others get a 404, not a hint. */
-export async function requireStaff(role: StaffRole, next = "/admin") {
+/** The signed-in Staff member who may open `area`. Others get a 404, not a hint. */
+export async function requireStaff(area: StaffArea, next = "/admin") {
   const user = await currentUser();
   if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
-  const staff = await staffForUser(db, user, role);
+  const staff = await staffForUser(db, user, area);
   if (!staff) notFound();
   return staff;
 }
 
-/** The signed-in Staff member with `role`, or null. For route handlers. */
-export async function getStaff(role: StaffRole) {
+/** The signed-in Staff member who may open `area`, or null. For route handlers. */
+export async function getStaff(area: StaffArea) {
   const user = await currentUser();
-  return user ? staffForUser(db, user, role) : null;
+  return user ? staffForUser(db, user, area) : null;
+}
+
+/** The signed-in active Staff member, any role. Others get a 404. */
+export async function requireAnyStaff(next = "/admin") {
+  const user = await currentUser();
+  if (!user) redirect(`/sign-in?next=${encodeURIComponent(next)}`);
+  const staff = await activeStaff(db, user);
+  if (!staff) notFound();
+  return staff;
+}
+
+/** The signed-in active Staff member, any role, or null (the staff menu). */
+export async function currentStaff() {
+  const user = await currentUser();
+  return user ? activeStaff(db, user) : null;
 }
 
 export async function signOut() {
