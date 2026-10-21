@@ -42,6 +42,7 @@ describe("priceCart", () => {
         quantity: 2,
         unitPriceCents: 5900,
         lineTotalCents: 11800,
+        discountCents: 0,
         vatCents: 0,
       },
       // 11500 x 12/112 = 1232.14
@@ -50,6 +51,7 @@ describe("priceCart", () => {
         quantity: 1,
         unitPriceCents: 11500,
         lineTotalCents: 11500,
+        discountCents: 0,
         vatCents: 1232,
       },
     ]);

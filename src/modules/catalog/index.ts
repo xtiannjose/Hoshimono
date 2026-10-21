@@ -62,3 +62,4 @@ export {
 export { basisFor, productFields } from "./internal/admin/schema";
 export type { ProductFields } from "./internal/admin/schema";
 export { listSitemapEntries } from "./internal/sitemap";
+export { listPromotedProducts } from "./internal/on-sale";

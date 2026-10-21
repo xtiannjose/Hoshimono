@@ -12,6 +12,7 @@ export {
   confirmPaidOrder,
   expireUnpaidOrders,
   ORDER_CONFIRMED_JOB,
+  ORDER_DELIVERED_JOB,
   PAYMENT_WINDOW_MINUTES,
   transitionOrder,
 } from "./internal/status";

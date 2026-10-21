@@ -233,6 +233,9 @@ describe("staffForUser", () => {
     expect(await staffForUser(db, merchandiser, "stock")).toBeNull();
     // Recipes and Articles are the Content Editor's, not the catalogue's (ADR 0013).
     expect(await staffForUser(db, merchandiser, "content")).toBeNull();
+    // Merchandisers run Promotions and Vouchers (ADR 0015); Dispatchers do not.
+    expect(await staffForUser(db, merchandiser, "promotions")).not.toBeNull();
+    expect(await staffForUser(db, dispatcher, "promotions")).toBeNull();
     for (const area of [
       "picking",
       "dispatch",
@@ -241,6 +244,7 @@ describe("staffForUser", () => {
       "reports",
       "setup",
       "content",
+      "promotions",
       "catalog",
       "orders",
       "refunds",

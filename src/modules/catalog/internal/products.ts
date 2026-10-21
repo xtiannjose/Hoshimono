@@ -7,6 +7,7 @@ import type {
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { prorate } from "@/lib/money";
+import { activePromotions, promotedPrice } from "@/modules/pricing";
 import { isUuid } from "@/lib/uuid";
 
 import { getCategory } from "./categories";
@@ -29,6 +30,8 @@ export type ProductSummary = {
   storage: Storage;
   primaryImage: ProductImageView | null;
   category: { id: string; slug: string; name: string };
+  /** The running Promotion's name; priceCents is then the promoted price. */
+  promotion: string | null;
 };
 
 /** What the Product page needs. */
@@ -78,7 +81,7 @@ const summarySelect = {
   isWeighed: true,
   taxClass: true,
   storage: true,
-  category: { select: { id: true, slug: true, name: true } },
+  category: { select: { id: true, slug: true, name: true, parentId: true } },
   // Cards and Carts show one image; getProduct asks for the whole gallery.
   images: {
     select: { url: true, alt: true },
@@ -108,8 +111,50 @@ function toSummary(row: SummaryRow): ProductSummary {
     taxClass: row.taxClass,
     storage: row.storage,
     primaryImage: row.images[0] ?? null,
-    category: row.category,
+    category: {
+      id: row.category.id,
+      slug: row.category.slug,
+      name: row.category.name,
+    },
+    promotion: null,
   };
+}
+
+/**
+ * Summaries at today's shelf price: a running Promotion lowers the price,
+ * and the regular price becomes the struck-through one (ADR 0015).
+ * shortcut: Categories are two levels deep, so a Product's Category and its
+ * parent are all a Promotion can name.
+ */
+async function promoted(rows: SummaryRow[]): Promise<ProductSummary[]> {
+  const promotions = rows.length > 0 ? await activePromotions() : [];
+  return rows.map((row) => {
+    const summary = toSummary(row);
+    const promo = promotedPrice(
+      {
+        id: row.id,
+        categoryIds: [row.category.id, row.category.parentId].filter(
+          (id): id is string => id !== null
+        ),
+      },
+      row.priceCents,
+      promotions
+    );
+    return promo
+      ? {
+          ...summary,
+          priceCents: promo.priceCents,
+          compareAtCents: row.priceCents,
+          unitPrice: unitPrice(
+            row.unitPriceBasis,
+            row.packSizeUnit,
+            promo.priceCents,
+            row.packSizeValue
+          ),
+          promotion: promo.name,
+        }
+      : summary;
+  });
 }
 
 /** Active Products by id, in the order given. Unknown or hidden ids are skipped. */
@@ -120,7 +165,7 @@ export async function loadSummaries(ids: string[]): Promise<ProductSummary[]> {
     where: { id: { in: valid }, status: "active" },
     select: summarySelect,
   });
-  const byId = new Map(rows.map((r) => [r.id, toSummary(r)]));
+  const byId = new Map((await promoted(rows)).map((s) => [s.id, s]));
   return valid.flatMap((id) => byId.get(id) ?? []);
 }
 
@@ -143,7 +188,7 @@ export async function getProduct(id: string): Promise<ProductDetail | null> {
   if (!row) return null;
   const category = await getCategory(row.category.slug);
   return {
-    ...toSummary(row),
+    ...(await promoted([row]))[0],
     description: row.description,
     allergens: row.allergens,
     dietaryTags: row.dietaryTags,

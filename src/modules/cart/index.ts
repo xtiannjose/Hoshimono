@@ -3,6 +3,7 @@
 export {
   CART_RETENTION_DAYS,
   checkOutCart,
+  clearCartVoucher,
   getCart,
   getCartId,
   getCartQuantities,
@@ -15,6 +16,7 @@ export {
   readCartVersion,
   returnLinesToCart,
   setLineNote,
+  setCartVoucher,
   setLineQuantity,
   setSubstitution,
 } from "./internal/cart";

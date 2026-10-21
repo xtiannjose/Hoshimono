@@ -27,7 +27,7 @@ How VAT applies to a Product: vatable (12% included in the price), VAT-exempt (f
 _Avoid_: Tax code, tax type, VAT flag
 
 **Promotion**:
-A time-boxed price reduction or offer attached to Products or a Cart.
+A time-boxed price reduction on chosen Products or Categories: a percent or a peso amount off each unit. While it runs it is the shelf price ([ADR 0015](docs/adr/0015-promotions-vouchers-referrals.md)).
 _Avoid_: Sale, deal, discount (use Voucher for code-based reductions)
 
 **Search Synonym**:
@@ -35,7 +35,7 @@ Words Customers use for the same thing, often Filipino and English ("gatas" and 
 _Avoid_: Alias, keyword, tag
 
 **Voucher**:
-A code a customer enters to reduce an Order total, with its own eligibility rules and usage limits.
+A code a customer enters to reduce an Order total (a percent or peso off the goods) or to make delivery free, with its own eligibility rules and usage limits. One per Order, on top of Promotions.
 _Avoid_: Coupon, promo code
 
 ### Buying
@@ -233,5 +233,9 @@ A saved delivery location for a Customer, including landmark and delivery notes,
 _Avoid_: Location, delivery point
 
 **Referral**:
-A reward granted to a Customer when someone they invited completes a first Order.
+A reward granted to a Customer when someone they invited completes a first Order: a ₱100 Voucher for each of them.
+
+**Referral Code**:
+A Customer's own code, shared as a link (`/r/<code>`), that links a new Customer to them.
+_Avoid_: Invite code, promo code
 _Avoid_: Invite bonus, affiliate

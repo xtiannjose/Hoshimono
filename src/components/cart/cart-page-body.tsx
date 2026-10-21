@@ -9,6 +9,7 @@ import type { CartView } from "@/modules/cart";
 import { CartLines, EmptyCart } from "./cart-contents";
 import { useCart } from "./cart-store";
 import { CartNotes, CartSummary } from "./cart-summary";
+import { VoucherForm } from "./voucher-form";
 
 /** The full Cart page: lines on the left, totals beside them from lg up. */
 export function CartPageBody({ initial }: { initial: CartView }) {
@@ -27,6 +28,7 @@ export function CartPageBody({ initial }: { initial: CartView }) {
       >
         <CartSummary priced={view.priced} size="page" />
         <CartNotes priced={view.priced} />
+        <VoucherForm view={view} />
         <Link
           href="/checkout"
           aria-disabled={!canCheckout}

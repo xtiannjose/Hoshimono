@@ -9,9 +9,14 @@ export { sendDeliveryFailed, sendOutForDelivery } from "./internal/delivery";
 export type { OutForDeliveryNotice } from "./internal/delivery";
 export type { SubstitutionNotice } from "./internal/substitution-asked";
 export { lastMessage, lastSignInLink } from "./internal/providers";
-export { sendBackInStock, sendCartReminder } from "./internal/retention";
+export {
+  sendBackInStock,
+  sendCartReminder,
+  sendReferralReward,
+} from "./internal/retention";
 export type {
   CartReminderNotice,
+  ReferralRewardNotice,
   StockAlertNotice,
 } from "./internal/retention";
 export { sendSignInCode, sendSignInLink } from "./internal/sign-in";

@@ -138,3 +138,40 @@ describe("receiptBreakdown (ADR 0012)", () => {
     expect(chargedLine({ ...weighed(), finalWeightGrams: 930 })).toBe(26505);
   });
 });
+
+describe("discounts after picking (ADR 0007, ADR 0015)", () => {
+  it("spreads the discount over the lines before VAT on the receipt", () => {
+    // 10% Voucher: 23.00 off the milk, 11.80 off the rice.
+    expect(
+      receiptBreakdown(
+        [
+          { amountCents: 23000, taxClass: "vatable" },
+          { amountCents: 11800, taxClass: "vat_exempt" },
+        ],
+        { deliveryFeeCents: 4900, discountCents: 3480 }
+      )
+    ).toEqual({
+      vatableSalesCents: 20700 + 4900,
+      vatExemptSalesCents: 10620,
+      zeroRatedSalesCents: 0,
+      // 12/112 of 207.00 (22.18) plus of 49.00 (5.25)
+      vatCents: 2218 + 525,
+      totalCents: 23000 + 11800 + 4900 - 3480,
+    });
+  });
+
+  it("never takes off more than what was picked", () => {
+    expect(
+      priceFinal([piece({ fulfilledQty: 0 })], {
+        deliveryFeeCents: 4900,
+        discountCents: 10000,
+      })
+    ).toBe(4900);
+    expect(
+      receiptBreakdown([{ amountCents: 0, taxClass: "vatable" }], {
+        deliveryFeeCents: 4900,
+        discountCents: 10000,
+      }).totalCents
+    ).toBe(4900);
+  });
+});

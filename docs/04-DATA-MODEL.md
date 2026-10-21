@@ -2,7 +2,7 @@
 
 Status: v0.2, 2026-10-17. `prisma/schema.prisma` is now the source of truth for tables and fields; this document keeps the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
-**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`). Vouchers, Promotions, Freshness Claims and the Referral fields on `customers` arrive later in Phase 5; `orders.voucher_id` comes with them. Differences from the field lists below:
+**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`); Promotions, Vouchers and Referrals with Batch 5.3 (`promotions_vouchers`). Freshness Claims arrive later in Phase 5. Differences from the field lists below:
 
 - `carts.checked_out_at` marks a Cart that became an Order. "Active Cart" (invariant 9) means `checked_out_at IS NULL`.
 - Append-only tables (`stock_movements`, `order_status_events`, `payment_events`, `audit_log`) have `created_at` (or `at`, `received_at`) but no `updated_at`.
@@ -119,7 +119,7 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 ### customers and content
 
-**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `referral_code`, `referred_by?`.
+**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `referral_code?` (unique, made when first shown), `referred_by_id?` (never itself).
 
 **`addresses`**: `customer_id`, `label`, `line1`, `barangay`, `city`, `landmark`, `lat`, `lng`, `zone_id?`, `notes`, `is_default`.
 
@@ -129,7 +129,11 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 **`articles`**: `slug`, `title`, `intro`, `photo_url`, `photo_alt`, `sections jsonb` (`[{heading, text}]`), `status`, `published_at`. **`article_products`**: `(article_id, product_id)`, `position`.
 
-**`vouchers`**, **`promotions`**: eligibility JSON (categories, products, minimum spend, first order only), `starts_at`, `ends_at`, `usage_limit`, `per_customer_limit`.
+**`promotions`** (Batch 5.3, ADR 0015): `name`, `kind` (`percent`, `amount`), `value` (1 to 90 percent, or centavos off each unit), `product_ids uuid[]`, `category_ids uuid[]` (at least one between them), `starts_at < ends_at`, `is_active`.
+
+**`vouchers`**: `code` (unique, upper case, 3 to 24 of A-Z 0-9 -), `kind` (`percent`, `amount`, `free_delivery`), `value`, `max_discount_cents?`, `min_spend_cents`, `starts_at < ends_at`, `usage_limit?`, `per_customer_limit`, `first_order_only`, `is_active`, `customer_id?` (a Referral reward for one Customer). **`voucher_redemptions`**: one per Order (`order_id` unique), `voucher_id`, `customer_id`, `discount_cents`. **`orders.voucher_id?`**.
+
+**`referral_rewards`**: the ledger, one row per invited friend (`referee_id` and `order_id` unique), `referrer_id`, both Vouchers.
 
 **`freshness_claims`**: `order_line_id`, `reason`, `photo_urls[]`, `status`, `resolution` (`refund`, `credit`, `rejected`), `resolved_by`.
 

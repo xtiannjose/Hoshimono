@@ -95,3 +95,56 @@ export async function sendBackInStock(
     );
   }
 }
+
+export type ReferralRewardNotice = {
+  rewardId: string;
+  /** Who this message is for: the one who invited, or the friend. */
+  role: "referrer" | "referee";
+  email: string | null;
+  phone: string | null;
+  name: string;
+  /** The friend's first name, for the referrer's message. */
+  friend: string;
+  code: string;
+  /** Formatted, such as "₱100.00". */
+  amount: string;
+  minSpend: string;
+  until: string;
+  shopUrl: string;
+};
+
+/** "You earned a ₱100 Voucher" after a Referral (ADR 0015): email, or SMS without one. */
+export async function sendReferralReward(
+  notice: ReferralRewardNotice,
+  providers: { email?: EmailProvider; sms?: SmsProvider } = {}
+): Promise<void> {
+  const first = notice.name.split(" ")[0] || "there";
+  const why =
+    notice.role === "referrer"
+      ? `${notice.friend} got their first Hoshimono order, thanks to you.`
+      : "Your first Hoshimono order arrived. Welcome!";
+  const what = `Here is ${notice.amount} off your next order: use code ${notice.code} on orders of ${notice.minSpend} or more, until ${notice.until}.`;
+  const ref = `referral:${notice.rewardId}:${notice.role}`;
+  if (notice.email) {
+    const email = notice.email;
+    await sendOnce(
+      { template: "referral_reward", channel: "email", ref, recipient: email },
+      () =>
+        (providers.email ?? emailProvider()).send({
+          to: email,
+          subject: `${notice.amount} off your next order`,
+          text: [`Hi ${first},`, why, what, "", notice.shopUrl].join("\n"),
+        })
+    );
+  } else if (notice.phone) {
+    const phone = notice.phone;
+    await sendOnce(
+      { template: "referral_reward", channel: "sms", ref, recipient: phone },
+      () =>
+        (providers.sms ?? smsProvider()).send({
+          to: phone,
+          text: `Hoshimono: ${why} ${what}`,
+        })
+    );
+  }
+}

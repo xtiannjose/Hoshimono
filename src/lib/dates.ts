@@ -91,6 +91,12 @@ export function formatSlot(
 }
 
 /** "19 Oct 2026, 4:05 PM" in Manila. */
+/** "21 Oct 2026", in Manila. */
+export function formatDate(date: Date): string {
+  const p = parts(date, { day: "numeric", month: "short", year: "numeric" });
+  return `${p.day} ${p.month} ${p.year}`;
+}
+
 export function formatDateTime(date: Date): string {
   const p = parts(date, { day: "numeric", month: "short", year: "numeric" });
   return `${p.day} ${p.month} ${p.year}, ${clock(date)}`;
@@ -106,3 +112,17 @@ export const WEEKDAYS = [
   "Friday",
   "Saturday",
 ] as const;
+
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/** "2026-10-21T08:00" in Manila, for an <input type="datetime-local">. */
+export function toManilaInput(date: Date): string {
+  return new Date(date.getTime() + MANILA_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+/** The instant a datetime-local value means in Manila; Invalid Date if it is not one. */
+export function fromManilaInput(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
+    ? new Date(`${value}:00+08:00`)
+    : new Date(Number.NaN);
+}

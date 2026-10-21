@@ -8,6 +8,7 @@ import {
   getCategoryTree,
   getProduct,
   listProducts,
+  listPromotedProducts,
   listRelatedProducts,
   searchProducts,
   suggestSearch,
@@ -55,6 +56,13 @@ export async function product(id: string) {
   "use cache";
   catalogCache();
   return getProduct(id);
+}
+
+/** Products on a running Promotion, for Home (ADR 0015). */
+export async function onSaleProducts(limit: number) {
+  "use cache";
+  catalogCache();
+  return listPromotedProducts(limit);
 }
 
 export async function relatedProducts(id: string, limit: number) {

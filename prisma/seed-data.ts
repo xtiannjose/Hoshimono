@@ -825,6 +825,41 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
     });
   }
 
+  // A running Promotion and a first-order Voucher to try (ADR 0015).
+  const DAY = 24 * 60 * 60 * 1000;
+  const promotion = {
+    id: seedId("promotion:coffee-week"),
+    name: "Coffee week",
+    kind: "percent" as const,
+    value: 15,
+    productIds: [],
+    categoryIds: [seedId("category:coffee-and-tea")],
+    startsAt: new Date(now.getTime() - DAY),
+    endsAt: new Date(now.getTime() + 60 * DAY),
+    isActive: true,
+  };
+  await db.promotion.upsert({
+    where: { id: promotion.id },
+    create: promotion,
+    update: promotion,
+  });
+  const welcome = {
+    id: seedId("voucher:welcome100"),
+    code: "WELCOME100",
+    kind: "amount" as const,
+    value: 10000,
+    minSpendCents: 80000,
+    startsAt: new Date(now.getTime() - DAY),
+    endsAt: new Date(now.getTime() + 365 * DAY),
+    firstOrderOnly: true,
+    perCustomerLimit: 1,
+  };
+  await db.voucher.upsert({
+    where: { id: welcome.id },
+    create: welcome,
+    update: welcome,
+  });
+
   // Customers with one Address each
   for (const c of CUSTOMERS) {
     const customer = {

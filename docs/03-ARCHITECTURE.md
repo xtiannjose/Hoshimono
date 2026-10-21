@@ -35,7 +35,7 @@ Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/`
 | Module          | Owns                                            | Public interface (examples)                                          |
 | --------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
 | `catalog`       | Product, Category, ProductImage, search index   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`    |
-| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `validateVoucher`                |
+| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `checkVoucher`, `redeemVoucher`  |
 | `inventory`     | StockLevel, reservations                        | `reserve(orderId, lines)`, `release`, `adjust`, `availability`       |
 | `cart`          | Cart, CartLine, Shopping List                   | `getCart`, `addLines`, `setQuantity`, `mergeGuestCart`, `saveToList` |
 | `delivery`      | Hub, Zone, Slot, Address resolution             | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot`       |
@@ -161,6 +161,16 @@ As built (Batch 5.2, [ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md
 - Shopping Lists belong to the `cart` module and are read and written only with the owning Customer's id.
 - The cron tick queues Cart Reminders (`cart.queueCartReminders`: opted-in Customer with an email, Cart idle 3 hours to 2 days, not checked out, not reminded) and Stock Alerts (`inventory.queueStockAlerts`: ends alerts older than 30 days, queues the rest whose Product has free stock) before it runs jobs. Each marks its Cart or ends its alert in the transaction that queues the job.
 - `notifications.sendOnce` dedupes messages not tied to an Order by `ref` ("cart:<id>", "stock-alert:<id>"). The reminder's stop link carries the Customer id signed with HMAC (`lib/signed.ts`); `/stop/[token]` turns consent off on a button press, never on the link alone.
+
+## 7c. Promotions, Vouchers and Referrals
+
+As built (Batch 5.3, [ADR 0015](adr/0015-promotions-vouchers-referrals.md)).
+
+- **Promotions are the shelf price.** `catalog` builds Product summaries with `pricing.promotedPrice` over `activePromotions()`: the lowest promoted price wins, the regular price becomes `compareAtCents` (struck through) and `promotion` names the offer. Everything that prices from summaries (Cart, Checkout, Order Line snapshots, Recipes, lists) gets the same price. Sorting and price filters still use the regular price. Staff edits call `updateTag("catalog")`.
+- **A Voucher** is kept on the Cart (`carts.voucher_code`). `getCart` re-checks it each time (`checkVoucher`: dates, switched off, one Customer only, first order only, total and per-Customer uses by Orders not cancelled) and passes its terms to `priceCart`, which spreads a percent or peso discount over the lines before VAT (`spreadDiscount`) or zeroes the Delivery Fee. `placeOrder` refuses a Voucher the Cart could not use, and records the use with `redeemVoucher` under a row lock inside the Order transaction.
+- After picking, `priceFinal` and `receiptBreakdown` keep the checkout discount but never more than what was picked, spread the same way.
+- **Referrals**: `/r/<code>` keeps the code in a cookie for 30 days; the first Checkout links the Customer (`customers.applyReferral`). `transitionOrder` queues `order.delivered`; its job calls `customers.rewardReferral` with `pricing.createRewardVoucher`, so the two Vouchers and the ledger row commit together, once per friend, then emails both.
+- `MAX_LINE_QUANTITY` lives in `lib/cart-limits.ts` so the browser stepper never imports a module index that reaches the database.
 
 ## 8. Payments
 

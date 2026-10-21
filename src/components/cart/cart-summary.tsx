@@ -19,7 +19,9 @@ export function CartSummary({
       </div>
       {priced.discountCents > 0 && (
         <div className="flex justify-between gap-3 font-semibold">
-          <dt>Discount</dt>
+          <dt>
+            {priced.voucher ? `Voucher ${priced.voucher.code}` : "Discount"}
+          </dt>
           <dd>-{formatMoney(priced.discountCents)}</dd>
         </div>
       )}

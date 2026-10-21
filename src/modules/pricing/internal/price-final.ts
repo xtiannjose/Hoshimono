@@ -1,6 +1,8 @@
 import type { TaxClass } from "@/generated/prisma/enums";
 import { addMoney, prorate } from "@/lib/money";
 
+import { spreadDiscount } from "./discounts";
+
 /** An Order Line as picked: its checkout amount and what was packed. */
 export type PickedLine = {
   /** The amount charged at checkout (the estimate for a Weighed Product). */
@@ -47,7 +49,8 @@ export function chargedLine(line: PickedLine): number {
 
 /**
  * The Final Total of a picked Order: each line as charged, with the
- * delivery fee and discount as charged at checkout.
+ * delivery fee and discount as charged at checkout. The discount never
+ * takes off more than what was picked (ADR 0015).
  */
 export function priceFinal(
   lines: PickedLine[],
@@ -56,7 +59,8 @@ export function priceFinal(
     discountCents,
   }: { deliveryFeeCents: number; discountCents: number }
 ): number {
-  return addMoney(deliveryFeeCents, ...lines.map(chargedLine)) - discountCents;
+  const goods = addMoney(0, ...lines.map(chargedLine));
+  return addMoney(deliveryFeeCents, goods - Math.min(discountCents, goods));
 }
 
 // Prices include 12% VAT, so the VAT inside a vatable amount is 12/112 of it.
@@ -66,9 +70,8 @@ const vatIn = (cents: number, taxClass: TaxClass) =>
 /**
  * A Philippine receipt's split of what was charged (ADR 0012): sales by
  * tax class and the VAT inside, per line then summed (ADR 0002). The
- * delivery fee is vatable, as in priceCart.
- * ponytail: no discount is spread over the lines yet (Vouchers are Phase 5);
- * spread it as ADR 0007 says when they arrive.
+ * delivery fee is vatable, as in priceCart. A Voucher discount is spread
+ * over the lines before VAT (ADR 0007), never more than they come to.
  */
 export function receiptBreakdown(
   items: { amountCents: number; taxClass: TaxClass }[],
@@ -77,10 +80,18 @@ export function receiptBreakdown(
     discountCents,
   }: { deliveryFeeCents: number; discountCents: number }
 ) {
+  const amounts = items.map((i) => i.amountCents);
+  const goods = addMoney(0, ...amounts);
+  const discount = Math.min(discountCents, goods);
+  const shares = spreadDiscount(amounts, discount);
+  const net = items.map((i, n) => ({
+    taxClass: i.taxClass,
+    amountCents: i.amountCents - shares[n],
+  }));
   const salesOf = (taxClass: TaxClass) =>
     addMoney(
       0,
-      ...items.filter((i) => i.taxClass === taxClass).map((i) => i.amountCents)
+      ...net.filter((i) => i.taxClass === taxClass).map((i) => i.amountCents)
     );
   return {
     vatableSalesCents: addMoney(salesOf("vatable"), deliveryFeeCents),
@@ -88,10 +99,8 @@ export function receiptBreakdown(
     zeroRatedSalesCents: salesOf("zero_rated"),
     vatCents: addMoney(
       vatIn(deliveryFeeCents, "vatable"),
-      ...items.map((i) => vatIn(i.amountCents, i.taxClass))
+      ...net.map((i) => vatIn(i.amountCents, i.taxClass))
     ),
-    totalCents:
-      addMoney(deliveryFeeCents, ...items.map((i) => i.amountCents)) -
-      discountCents,
+    totalCents: addMoney(deliveryFeeCents, goods - discount),
   };
 }

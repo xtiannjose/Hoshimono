@@ -214,6 +214,103 @@ model ArticleProduct {
   @@map("article_products")
 }
 
+// ---------- pricing: Promotions and Vouchers (ADR 0015) ----------
+
+enum PromotionKind {
+  percent
+  amount
+}
+
+enum VoucherKind {
+  percent
+  amount
+  free_delivery
+}
+
+// A time-boxed price cut on chosen Products and/or Categories (a top-level
+// Category covers its sub-Categories). While it runs it is the shelf price.
+model Promotion {
+  id          String        @id @default(uuid(7)) @db.Uuid
+  name        String
+  kind        PromotionKind
+  /// Percent (1 to 90) or centavos off each unit.
+  value       Int
+  productIds  String[]      @default([]) @map("product_ids") @db.Uuid
+  categoryIds String[]      @default([]) @map("category_ids") @db.Uuid
+  startsAt    DateTime      @map("starts_at") @db.Timestamptz(3)
+  endsAt      DateTime      @map("ends_at") @db.Timestamptz(3)
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([isActive, endsAt])
+  @@map("promotions")
+}
+
+model Voucher {
+  id               String              @id @default(uuid(7)) @db.Uuid
+  /// Upper case, unique.
+  code             String              @unique
+  kind             VoucherKind
+  /// Percent (1 to 90), centavos off, or 0 for free delivery.
+  value            Int
+  /// The most a percent Voucher takes off, in centavos.
+  maxDiscountCents Int?                @map("max_discount_cents")
+  /// On the goods after Promotions.
+  minSpendCents    Int                 @default(0) @map("min_spend_cents")
+  startsAt         DateTime            @map("starts_at") @db.Timestamptz(3)
+  endsAt           DateTime            @map("ends_at") @db.Timestamptz(3)
+  /// Uses by all Customers; null means no limit.
+  usageLimit       Int?                @map("usage_limit")
+  perCustomerLimit Int                 @default(1) @map("per_customer_limit")
+  firstOrderOnly   Boolean             @default(false) @map("first_order_only")
+  isActive         Boolean             @default(true) @map("is_active")
+  /// Only this Customer may use it (Referral rewards).
+  customerId       String?             @map("customer_id") @db.Uuid
+  customer         Customer?           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  redemptions      VoucherRedemption[]
+  orders           Order[]
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([customerId])
+  @@map("vouchers")
+}
+
+// One per Order that used a Voucher; uses by cancelled Orders do not count.
+model VoucherRedemption {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  voucherId     String   @map("voucher_id") @db.Uuid
+  voucher       Voucher  @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  orderId       String   @unique @map("order_id") @db.Uuid
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId    String   @map("customer_id") @db.Uuid
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  discountCents Int      @map("discount_cents")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([voucherId])
+  @@index([customerId])
+  @@map("voucher_redemptions")
+}
+
+// The Referral reward ledger: one row per invited friend (ADR 0015).
+model ReferralReward {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  referrerId        String   @map("referrer_id") @db.Uuid
+  referrer          Customer @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  refereeId         String   @unique @map("referee_id") @db.Uuid
+  referee           Customer @relation("Referee", fields: [refereeId], references: [id], onDelete: Cascade)
+  orderId           String   @unique @map("order_id") @db.Uuid
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  referrerVoucherId String   @map("referrer_voucher_id") @db.Uuid
+  refereeVoucherId  String   @map("referee_voucher_id") @db.Uuid
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([referrerId])
+  @@map("referral_rewards")
+}
+
 // ---------- delivery ----------
 
 model Hub {
@@ -490,47 +587,52 @@ model ShoppingListItem {
 }
 
 model Order {
-  id               String             @id @default(uuid(7)) @db.Uuid
+  id                String             @id @default(uuid(7)) @db.Uuid
   // Human-facing number, SW-YYMMDD-XXXX.
-  orderNo          String             @unique @map("order_no")
-  customerId       String             @map("customer_id") @db.Uuid
-  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  hubId            String             @map("hub_id") @db.Uuid
-  hub              Hub                @relation(fields: [hubId], references: [id], onDelete: Restrict)
-  slotId           String             @map("slot_id") @db.Uuid
-  slot             Slot               @relation(fields: [slotId], references: [id], onDelete: Restrict)
-  channel          OrderChannel       @default(web)
-  status           OrderStatus
-  paymentStatus    PaymentStatus      @map("payment_status")
-  addressSnapshot  Json               @map("address_snapshot")
-  contactPhone     String             @map("contact_phone")
-  riderNotes       String?            @map("rider_notes")
-  subtotalCents    Int                @map("subtotal_cents")
-  discountCents    Int                @default(0) @map("discount_cents")
-  deliveryFeeCents Int                @map("delivery_fee_cents")
-  vatCents         Int                @map("vat_cents")
-  totalCents       Int                @map("total_cents")
-  authorisedCents  Int                @default(0) @map("authorised_cents")
-  finalTotalCents  Int?               @map("final_total_cents")
-  idempotencyKey   String             @unique @map("idempotency_key")
-  placedAt         DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
-  cancelledAt      DateTime?          @map("cancelled_at") @db.Timestamptz(3)
-  deliveredAt      DateTime?          @map("delivered_at") @db.Timestamptz(3)
+  orderNo           String             @unique @map("order_no")
+  customerId        String             @map("customer_id") @db.Uuid
+  customer          Customer           @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  hubId             String             @map("hub_id") @db.Uuid
+  hub               Hub                @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  slotId            String             @map("slot_id") @db.Uuid
+  slot              Slot               @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  channel           OrderChannel       @default(web)
+  status            OrderStatus
+  paymentStatus     PaymentStatus      @map("payment_status")
+  addressSnapshot   Json               @map("address_snapshot")
+  contactPhone      String             @map("contact_phone")
+  riderNotes        String?            @map("rider_notes")
+  subtotalCents     Int                @map("subtotal_cents")
+  discountCents     Int                @default(0) @map("discount_cents")
+  deliveryFeeCents  Int                @map("delivery_fee_cents")
+  vatCents          Int                @map("vat_cents")
+  totalCents        Int                @map("total_cents")
+  authorisedCents   Int                @default(0) @map("authorised_cents")
+  finalTotalCents   Int?               @map("final_total_cents")
+  idempotencyKey    String             @unique @map("idempotency_key")
+  placedAt          DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
+  cancelledAt       DateTime?          @map("cancelled_at") @db.Timestamptz(3)
+  deliveredAt       DateTime?          @map("delivered_at") @db.Timestamptz(3)
   // Dispatch (ADR 0011): the Rider carrying it, and the Delivery PIN the
   // Customer gives at the door, with the Rider's wrong tries.
-  riderId          String?            @map("rider_id") @db.Uuid
-  rider            Staff?             @relation("OrderRider", fields: [riderId], references: [id], onDelete: Restrict)
-  deliveryPin      String?            @map("delivery_pin")
-  pinAttempts      Int                @default(0) @map("pin_attempts")
-  dispatchedAt     DateTime?          @map("dispatched_at") @db.Timestamptz(3)
-  lines            OrderLine[]
-  statusEvents     OrderStatusEvent[]
-  payments         Payment[]
-  stockMovements   StockMovement[]
-  notifications    Notification[]
-  notes            OrderNote[]
-  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  riderId           String?            @map("rider_id") @db.Uuid
+  rider             Staff?             @relation("OrderRider", fields: [riderId], references: [id], onDelete: Restrict)
+  deliveryPin       String?            @map("delivery_pin")
+  pinAttempts       Int                @default(0) @map("pin_attempts")
+  dispatchedAt      DateTime?          @map("dispatched_at") @db.Timestamptz(3)
+  // The Voucher used, if any (ADR 0015); its discount is in discountCents.
+  voucherId         String?            @map("voucher_id") @db.Uuid
+  voucher           Voucher?           @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  voucherRedemption VoucherRedemption?
+  referralReward    ReferralReward?
+  lines             OrderLine[]
+  statusEvents      OrderStatusEvent[]
+  payments          Payment[]
+  stockMovements    StockMovement[]
+  notifications     Notification[]
+  notes             OrderNote[]
+  createdAt         DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([customerId])
   @@index([hubId, status])
@@ -738,21 +840,31 @@ model PaymentEvent {
 // ---------- customers and staff ----------
 
 model Customer {
-  id             String         @id @default(uuid(7)) @db.Uuid
+  id             String              @id @default(uuid(7)) @db.Uuid
   // Linked on first sign-in (identity module).
-  authUserId     String?        @unique @map("auth_user_id")
-  authUser       AuthUser?      @relation(fields: [authUserId], references: [id], onDelete: SetNull)
-  phone          String?        @unique
-  email          String?        @unique
+  authUserId     String?             @unique @map("auth_user_id")
+  authUser       AuthUser?           @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  phone          String?             @unique
+  email          String?             @unique
   name           String
-  marketingOptIn Boolean        @default(false) @map("marketing_opt_in")
+  marketingOptIn Boolean             @default(false) @map("marketing_opt_in")
+  // Referrals (ADR 0015): their own code, made when first needed, and who
+  // invited them.
+  referralCode   String?             @unique @map("referral_code")
+  referredById   String?             @map("referred_by_id") @db.Uuid
+  referredBy     Customer?           @relation("Referral", fields: [referredById], references: [id], onDelete: SetNull)
+  referred       Customer[]          @relation("Referral")
+  rewardsGiven   ReferralReward[]    @relation("Referrer")
+  rewardReceived ReferralReward?     @relation("Referee")
+  vouchers       Voucher[]
+  voucherUses    VoucherRedemption[]
   addresses      Address[]
   shoppingLists  ShoppingList[]
   stockAlerts    StockAlert[]
   carts          Cart[]
   orders         Order[]
-  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("customers")
 }

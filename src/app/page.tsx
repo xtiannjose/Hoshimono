@@ -13,6 +13,7 @@ import {
   FeaturedRecipeSkeleton,
 } from "@/components/home/featured-recipe";
 import { FreshPicks } from "@/components/home/fresh-picks";
+import { OnSale } from "@/components/home/on-sale";
 import { ServiceStrip } from "@/components/home/service-strip";
 import { ProductGridSkeleton } from "@/components/product/product-grid";
 import { buttonVariants } from "@/components/ui/button";
@@ -29,7 +30,7 @@ const SECTION_LINK =
   "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";
 
 // Home v1 (docs/mockup-v2/home.html): hero, service strip, Category mosaic
-// fresh picks and the featured Recipe (ADR 0013). Savings arrive with Phase 5.
+// fresh picks, the featured Recipe (ADR 0013) and what is on sale (ADR 0015).
 export default function Home() {
   return (
     <>
@@ -101,6 +102,10 @@ export default function Home() {
 
       <Suspense fallback={<FeaturedRecipeSkeleton />}>
         <FeaturedRecipe />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <OnSale />
       </Suspense>
     </>
   );
