@@ -7,6 +7,10 @@ import {
   CategoryMosaic,
   CategoryMosaicSkeleton,
 } from "@/components/home/category-mosaic";
+import {
+  FeaturedRecipe,
+  FeaturedRecipeSkeleton,
+} from "@/components/home/featured-recipe";
 import { FreshPicks } from "@/components/home/fresh-picks";
 import { ServiceStrip } from "@/components/home/service-strip";
 import { ProductGridSkeleton } from "@/components/product/product-grid";
@@ -24,7 +28,7 @@ const SECTION_LINK =
   "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";
 
 // Home v1 (docs/mockup-v2/home.html): hero, service strip, Category mosaic
-// and fresh picks. Recipes and savings arrive with Phase 5.
+// fresh picks and the featured Recipe (ADR 0013). Savings arrive with Phase 5.
 export default function Home() {
   return (
     <>
@@ -88,6 +92,10 @@ export default function Home() {
           <FreshPicks />
         </Suspense>
       </section>
+
+      <Suspense fallback={<FeaturedRecipeSkeleton />}>
+        <FeaturedRecipe />
+      </Suspense>
     </>
   );
 }

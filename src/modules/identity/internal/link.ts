@@ -11,6 +11,7 @@ export type StaffArea =
   | "reports"
   | "setup"
   | "catalog"
+  | "content"
   | "orders"
   | "refunds"
   | "staff"
@@ -26,12 +27,14 @@ const AREAS: Record<StaffRole, readonly StaffArea[]> = {
     "reports",
     "setup",
     "catalog",
+    "content",
     "orders",
     "refunds",
     "staff",
     "audit",
   ],
   merchandiser: ["catalog"],
+  content_editor: ["content"],
   dispatcher: ["dispatch", "orders", "stock", "reports"],
   picker: ["picking"],
   rider: ["delivery"],
@@ -50,15 +53,13 @@ export async function activeStaff(db: PrismaClient, user: AuthUserInfo) {
   let staff = await db.staff.findUnique({ where: { authUserId: user.id } });
 
   if (!staff && user.emailVerified) {
-    const byEmail = await db.staff.findUnique({
-      where: { email: user.email.toLowerCase() },
+    // One statement: the page and the admin menu both ask on a first visit,
+    // and a read-then-write let the slower one find the row "taken".
+    await db.staff.updateMany({
+      where: { email: user.email.toLowerCase(), authUserId: null },
+      data: { authUserId: user.id },
     });
-    if (byEmail && byEmail.authUserId === null) {
-      staff = await db.staff.update({
-        where: { id: byEmail.id },
-        data: { authUserId: user.id },
-      });
-    }
+    staff = await db.staff.findUnique({ where: { authUserId: user.id } });
   }
   return staff?.isActive ? staff : null;
 }

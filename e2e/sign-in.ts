@@ -44,9 +44,11 @@ export async function signInAs(browser: Browser, label: string, phone = false) {
   ).newPage();
   await page.goto("/dev/sign-in", { waitUntil: "networkidle" });
   await page.getByRole("link", { name: `Sign in as ${label}` }).click();
-  // Past the magic-link check too: leaving it early drops the session.
+  // Past the magic-link check too: leaving it early drops the session. The
+  // cookie comes with that redirect, so the landing page need not finish.
   await page.waitForURL((url) => !/^\/(dev|api)\//.test(url.pathname), {
     timeout: 45_000,
+    waitUntil: "commit",
   });
   return page;
 }

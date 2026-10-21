@@ -191,6 +191,16 @@ describe("staffForUser", () => {
     expect(found?.authUserId).toBe(user.id);
   });
 
+  it("links a first sign-in once, when two requests ask at the same moment", async () => {
+    // The admin menu and the page both check on the first visit.
+    const picker = await staff("picker");
+    const user = await authUser("picker@hoshimono.test");
+    const found = await Promise.all(
+      Array.from({ length: 6 }, () => staffForUser(db, user, "picking"))
+    );
+    expect(found.map((s) => s?.id)).toEqual(Array(6).fill(picker.id));
+  });
+
   it("refuses an unverified email and does not link it", async () => {
     const dispatcher = await staff("dispatcher");
     const user = await authUser("dispatcher@hoshimono.test", false);
@@ -221,6 +231,8 @@ describe("staffForUser", () => {
     expect(await staffForUser(db, dispatcher, "stock")).not.toBeNull();
     expect(await staffForUser(db, dispatcher, "setup")).toBeNull();
     expect(await staffForUser(db, merchandiser, "stock")).toBeNull();
+    // Recipes and Articles are the Content Editor's, not the catalogue's (ADR 0013).
+    expect(await staffForUser(db, merchandiser, "content")).toBeNull();
     for (const area of [
       "picking",
       "dispatch",
@@ -228,6 +240,7 @@ describe("staffForUser", () => {
       "stock",
       "reports",
       "setup",
+      "content",
       "catalog",
       "orders",
       "refunds",

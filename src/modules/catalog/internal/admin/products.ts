@@ -217,3 +217,24 @@ export async function getProductForAdmin(id: string) {
     })),
   };
 }
+
+/**
+ * Every Product still sold, by name: what a Content Editor can link from a
+ * Recipe or Article (ADR 0013).
+ * ponytail: the whole list goes to the editor's picker; search on the
+ * server instead once the catalogue passes a few thousand Products.
+ */
+export async function listProductChoices() {
+  return db.product.findMany({
+    where: { status: "active" },
+    orderBy: [{ name: "asc" }, { brand: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      packSizeValue: true,
+      packSizeUnit: true,
+      isWeighed: true,
+    },
+  });
+}

@@ -1,6 +1,6 @@
 // Source of truth for tables (docs/04-DATA-MODEL.md keeps the reasoning).
-// v0 covers the MVP (Phases 0 to 4). Recipes, Vouchers, Promotions,
-// Freshness Claims and Referrals arrive with Phase 5.
+// v0 covers the MVP (Phases 0 to 4); Recipes and Articles came in Batch 5.1.
+// Vouchers, Promotions, Freshness Claims and Referrals arrive later in Phase 5.
 //
 // Constraints Prisma cannot express (CHECKs, partial unique indexes, the
 // generated search column, extensions) live in hand-edited migration SQL.
@@ -99,6 +99,8 @@ model Product {
   orderLines         OrderLine[]              @relation("OrderLineProduct")
   preferredInOrders  OrderLine[]              @relation("OrderLinePreferred")
   substitutions      Substitution[]
+  recipeIngredients  RecipeIngredient[]
+  articleProducts    ArticleProduct[]
   createdAt          DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -122,6 +124,92 @@ model ProductImage {
 
   @@index([productId])
   @@map("product_images")
+}
+
+// ---------- content ----------
+// Recipes and Articles, written by Content Editors (ADR 0013).
+
+enum ContentStatus {
+  draft
+  published
+}
+
+model Recipe {
+  id          String             @id @default(uuid(7)) @db.Uuid
+  slug        String             @unique
+  title       String
+  intro       String             @default("")
+  photoUrl    String?            @map("photo_url")
+  photoAlt    String             @default("") @map("photo_alt")
+  /// The servings the ingredient counts are written for.
+  servings    Int
+  prepMinutes Int                @default(0) @map("prep_minutes")
+  cookMinutes Int                @default(0) @map("cook_minutes")
+  /// One cooking step per entry, in order.
+  steps       String[]           @default([])
+  status      ContentStatus      @default(draft)
+  featured    Boolean            @default(false)
+  publishedAt DateTime?          @map("published_at") @db.Timestamptz(3)
+  ingredients RecipeIngredient[]
+  createdAt   DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, publishedAt])
+  @@map("recipes")
+}
+
+/// A Product to buy, or plain text for something not sold (ADR 0013).
+model RecipeIngredient {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  recipeId  String   @map("recipe_id") @db.Uuid
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  productId String?  @map("product_id") @db.Uuid
+  product   Product? @relation(fields: [productId], references: [id])
+  /// Shown instead of the Product name; required without a Product.
+  label     String?
+  /// How it is used, as written ("6 cloves, crushed").
+  note      String   @default("")
+  /// How many of the Product to buy for the Recipe's base servings.
+  quantity  Int      @default(1)
+  /// Whether the count grows with servings (chicken yes, soy sauce no).
+  scales    Boolean  @default(true)
+  /// "Usually at home": starts unticked.
+  optional  Boolean  @default(false)
+  position  Int
+
+  @@index([recipeId, position])
+  @@index([productId])
+  @@map("recipe_ingredients")
+}
+
+model Article {
+  id          String           @id @default(uuid(7)) @db.Uuid
+  slug        String           @unique
+  title       String
+  intro       String           @default("")
+  photoUrl    String?          @map("photo_url")
+  photoAlt    String           @default("") @map("photo_alt")
+  /// [{ heading: string, text: string }], in order.
+  sections    Json             @default("[]")
+  status      ContentStatus    @default(draft)
+  publishedAt DateTime?        @map("published_at") @db.Timestamptz(3)
+  products    ArticleProduct[]
+  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, publishedAt])
+  @@map("articles")
+}
+
+model ArticleProduct {
+  articleId String  @map("article_id") @db.Uuid
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  productId String  @map("product_id") @db.Uuid
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  position  Int
+
+  @@id([articleId, productId])
+  @@map("article_products")
 }
 
 // ---------- delivery ----------
@@ -648,6 +736,7 @@ model Address {
 enum StaffRole {
   admin
   merchandiser
+  content_editor
   picker
   dispatcher
   rider

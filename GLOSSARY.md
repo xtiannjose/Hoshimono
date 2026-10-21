@@ -108,6 +108,14 @@ _Avoid_: Buy again (UI label only), repeat order
 Editorial content with an ingredient list mapped to Products, which a customer can add to a Cart in one action.
 _Avoid_: Meal kit, dish
 
+**Ingredient**:
+One line of a Recipe: a Product to buy (how many for the base servings, and whether that grows with servings) or plain text for something we do not sell. An ingredient "usually at home" starts unticked ([ADR 0013](docs/adr/0013-recipes-articles-and-content-editors.md)).
+_Avoid_: Item (that word is for Cart and Order lines)
+
+**Article**:
+Editorial content (a guide, tip or story) in sections, with Products linked from it. Customer copy says "Tips and guides".
+_Avoid_: Blog post, post
+
 ### Delivery and fulfilment
 
 **Hub**:
@@ -201,8 +209,12 @@ A person with an account who places Orders.
 _Avoid_: User (for shoppers), client, buyer, member
 
 **Staff**:
-A person with an admin-side role (Merchandiser, Picker, Dispatcher, Admin).
+A person with an admin-side role (Merchandiser, Content Editor, Picker, Dispatcher, Rider, Admin).
 _Avoid_: User (for admin side), employee, operator
+
+**Content Editor**:
+Staff who write and publish Recipes and Articles, and nothing else.
+_Avoid_: Writer, blogger, CMS user
 
 **Address**:
 A saved delivery location for a Customer, including landmark and delivery notes, resolved to a Zone.

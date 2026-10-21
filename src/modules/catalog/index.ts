@@ -28,6 +28,7 @@ export { listRelatedProducts } from "./internal/related";
 export {
   createProduct,
   getProductForAdmin,
+  listProductChoices,
   listProductsForAdmin,
   updateProduct,
 } from "./internal/admin/products";

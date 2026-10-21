@@ -10,4 +10,9 @@ export const TEST_ACCOUNTS = [
     next: "/admin/dispatch",
   },
   { label: "Rider", email: "rider@hoshimono.test", next: "/admin/deliveries" },
+  {
+    label: "Content Editor",
+    email: "editor@hoshimono.test",
+    next: "/admin/recipes",
+  },
 ] as const;

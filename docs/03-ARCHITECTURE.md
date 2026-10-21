@@ -43,7 +43,7 @@ Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/`
 | `payments`      | Payment, PaymentEvent, provider adapters        | `createPayment`, `handleWebhook`, `refund`                        |
 | `fulfilment`    | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch`    |
 | `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                      |
-| `content`       | Recipe, Article                                 | `getRecipe`, `recipeToCart`                                       |
+| `content`       | Recipe, Article                                 | `getRecipe`, `addRecipeToCart`, `saveRecipe`, `saveArticle`       |
 | `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                        |
 | `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                       |
 | `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                           |
@@ -143,6 +143,15 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 
 Reports and printouts, as built (Batch 4.4, ADR 0012). `dailyReport` gives a Manila day's Orders placed, delivered and cancelled, revenue (delivered Orders' Final Totals), average basket, fill rate and Substitution rate over delivered lines, and deliveries after their Slot ended (`/admin/report`). The pick sheet (`/admin/print/pick/[orderNo]`) and the delivery receipt (`/admin/print/receipt/[orderNo]`) are pages with a print stylesheet; the receipt splits the charged amounts into VATable (VAT included), VAT-exempt and zero-rated sales and the VAT inside (`pricing.receiptBreakdown`), and says it is not an official receipt.
 
+## 7a. Recipes and Articles
+
+As built (Batch 5.1, [ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). The `content` module owns Recipes, their ingredients, Articles and their linked Products.
+
+- A Content Editor (role `content_editor`, area `content`; Admins too) writes them at `/admin/recipes` and `/admin/articles`. The editor holds the whole draft in the browser and sends it as one JSON field, validated with zod and then by `saveRecipe` or `saveArticle` (form results, ADR 0009). Each save is audited and calls `updateTag("content")`, so the shop shows it at once.
+- An ingredient is a Product to buy (a count for the base servings, and whether it grows with servings) or plain text. The page shows live catalogue prices; `scaledCount` (`lib/servings.ts`) rounds scaled counts up, in the browser for the preview and on the server for the Cart.
+- `addRecipeToCart` takes only the servings and the ticked rows. It recomputes every count, accepts a Product in a row only if it is the ingredient's or one of its similar Products (`listRelatedProducts`), and adds on top of the Cart through `cart.setLineQuantity`, which caps at stock. It reports what sold out and what was capped.
+- Pages: `/recipes`, `/recipes/[slug]` (Recipe structured data), `/articles`, `/articles/[slug]`, the featured Recipe on Home, a Recipes link in the Category menu, and both in the sitemap. Reads are cached with the `content` and `catalog` tags.
+
 ## 8. Payments
 
 - **Interface:** `PaymentProvider` with `createCheckout`, `expireCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the one new Orders pay through. `fake` is a stand-in for development and the local e2e build only (refused on a real domain): its hosted checkout is `/dev/pay/[ref]`, whose Pay button sends a signed webhook.
@@ -199,7 +208,7 @@ As built (Batch 2.5):
 ## 12. Identity and access
 
 - **Customers:** mobile OTP, email magic link, Google. Sessions are HTTP-only cookies.
-- **Staff:** email plus Google Workspace or passkey; roles `admin`, `merchandiser`, `picker`, `dispatcher`.
+- **Staff:** email plus Google Workspace or passkey; roles `admin`, `merchandiser`, `content_editor`, `picker`, `dispatcher`, `rider`.
 - Authorisation is checked in two places: the page or Server Action (`requireCustomer`, `requireStaff` per operation) and data access (row ownership, every query filtered by the Customer). There is no route middleware layer: Next 16 pages render inside Suspense and each one checks on its own. A missing check in one layer must not expose data.
 - Rate-limit OTP sends, login and checkout creation per IP and per phone number.
 - Audit log for every admin write: who, what, before, after.

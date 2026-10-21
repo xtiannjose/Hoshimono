@@ -17,6 +17,8 @@ async function snapshot() {
     stockLevels: await db.stockLevel.count(),
     slots: await db.slot.count(),
     staff: await db.staff.count(),
+    recipes: await db.recipe.count({ where: { status: "published" } }),
+    articles: await db.article.count({ where: { status: "published" } }),
     customers: await db.customer.count(),
     addresses: await db.address.count(),
   };
@@ -36,7 +38,9 @@ describe("seed", () => {
       zones: 3,
       categories: 41,
       slots: 42,
-      staff: 6,
+      staff: 7,
+      recipes: 3,
+      articles: 1,
       customers: 4,
       addresses: 4,
     });
@@ -57,6 +61,7 @@ describe("seed", () => {
     expect(roles).toEqual([
       "admin",
       "admin",
+      "content_editor",
       "dispatcher",
       "merchandiser",
       "picker",
