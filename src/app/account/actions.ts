@@ -1,8 +1,9 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { updateName } from "@/modules/customers";
+import { setMarketingOptIn, updateName } from "@/modules/customers";
 import { requireCustomer, signOut } from "@/modules/identity";
 
 export async function signOutAction() {
@@ -22,4 +23,11 @@ export async function saveNameAction(
   return result.ok
     ? { saved: true, name }
     : { message: result.errors.name, name };
+}
+
+/** "Send me reminders and offers" on or off (ADR 0014). */
+export async function setRemindersAction(on: boolean): Promise<void> {
+  const customer = await requireCustomer("/account");
+  await setMarketingOptIn(customer.id, on);
+  refresh();
 }

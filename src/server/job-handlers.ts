@@ -1,7 +1,16 @@
 import { formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { productName } from "@/lib/product-name";
+import { productHref } from "@/lib/routes";
+import { signValue } from "@/lib/signed";
+import { CART_REMINDER_JOB, getCartReminder } from "@/modules/cart";
+import { getProductSummaries } from "@/modules/catalog";
+import { getProfile } from "@/modules/customers";
+import { STOCK_ALERT_JOB } from "@/modules/inventory";
 import type { JobHandlers } from "@/modules/jobs";
 import {
+  sendBackInStock,
+  sendCartReminder,
   sendDeliveryFailed,
   sendOrderConfirmed,
   sendOutForDelivery,
@@ -22,9 +31,42 @@ import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const trackingUrl = (orderNo: string) =>
   new URL(`/orders/${orderNo}`, appUrl()).toString();
+const link = (path: string) => new URL(path, appUrl()).toString();
 
 // Wires job kinds to modules; modules stay unaware of each other here.
 export const jobHandlers: JobHandlers = {
+  // The one Cart Reminder (ADR 0014): skipped if they ordered, emptied the
+  // Cart or said no to reminders since it was queued.
+  async [CART_REMINDER_JOB](payload) {
+    const cartId = String(payload.cartId);
+    const reminder = await getCartReminder(cartId);
+    if (!reminder) return;
+    await sendCartReminder({
+      cartId,
+      email: reminder.email,
+      name: reminder.name,
+      items: reminder.items,
+      cartUrl: link("/cart"),
+      stopUrl: link(`/stop/${signValue(reminder.customerId)}`),
+    });
+  },
+
+  // A Stock Alert came due: the Product is back (ADR 0014).
+  async [STOCK_ALERT_JOB](payload) {
+    const [profile, [product]] = await Promise.all([
+      getProfile(String(payload.customerId)),
+      getProductSummaries([String(payload.productId)]),
+    ]);
+    if (!profile || !product) return;
+    await sendBackInStock({
+      alertId: String(payload.alertId),
+      email: profile.email,
+      phone: profile.phone,
+      product: productName(product),
+      productUrl: link(productHref(product)),
+    });
+  },
+
   async [ORDER_CONFIRMED_JOB](payload) {
     const order = await getOrderForNotice(String(payload.orderId));
     // Cancelled before the job ran: a "confirmed" message would mislead.

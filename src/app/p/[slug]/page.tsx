@@ -29,6 +29,8 @@ import { categoryHref, productHref } from "@/lib/routes";
 import { isUuid } from "@/lib/uuid";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { SaveToListSlot, StockAlertSlot } from "./customer-slots";
+
 type Props = PageProps<"/p/[slug]">;
 
 // Product URLs end in the id: /p/<slug>-<36-character id>.
@@ -192,13 +194,24 @@ async function ProductView({ found }: { found: ProductDetail }) {
             </p>
           )}
           {state === "out" ? (
-            <p className="rounded-field bg-muted px-4 py-3 text-sm">
-              Out of stock today. Check back tomorrow, or see similar items
-              below.
-            </p>
+            <div className="grid gap-3">
+              <p className="rounded-field bg-muted px-4 py-3 text-sm">
+                Out of stock today. Check back tomorrow, or see similar items
+                below.
+              </p>
+              <Suspense fallback={null}>
+                <StockAlertSlot
+                  productId={found.id}
+                  href={productHref(found)}
+                />
+              </Suspense>
+            </div>
           ) : (
             <AddToCart productId={found.id} name={found.name} />
           )}
+          <Suspense fallback={null}>
+            <SaveToListSlot productId={found.id} />
+          </Suspense>
         </div>
       </div>
 

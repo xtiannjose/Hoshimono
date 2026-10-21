@@ -19,3 +19,10 @@ export {
   stockHistory,
 } from "./internal/admin";
 export type { StockRow } from "./internal/admin";
+export {
+  cancelStockAlert,
+  hasStockAlert,
+  queueStockAlerts,
+  requestStockAlert,
+  STOCK_ALERT_JOB,
+} from "./internal/alerts";

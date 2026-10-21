@@ -54,3 +54,4 @@ export {
 export type { QueueRow, StaffOrderDetail } from "./internal/staff";
 export type { OrderDetail, OrderSummary } from "./internal/read";
 export { dailyReport, getReceipt } from "./internal/reports";
+export { getReorderLines, listBoughtBefore } from "./internal/again";

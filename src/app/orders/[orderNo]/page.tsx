@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import Link from "next/link";
 
+import { FillCartButton } from "@/components/cart/fill-cart-button";
 import { OrderDetails } from "@/components/order/order-details";
 import { OrderTimeline } from "@/components/order/order-timeline";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
@@ -11,7 +12,7 @@ import { requireCustomer } from "@/modules/identity";
 import { getOrder } from "@/modules/orders";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { cancelOrderAction } from "./actions";
+import { cancelOrderAction, reorderAction } from "./actions";
 
 export const metadata: Metadata = {
   title: "Track your order",
@@ -83,6 +84,11 @@ async function Tracking({
         </Link>
       )}
       <OrderDetails order={order} />
+      <FillCartButton
+        fill={reorderAction.bind(null, order.orderNo)}
+        label="Reorder these items"
+        variant="secondary"
+      />
       {cancellable && (
         <form
           action={cancelOrderAction}

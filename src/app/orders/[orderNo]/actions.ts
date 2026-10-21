@@ -8,10 +8,12 @@ import { STOCK_TAG } from "@/app/_data/storefront";
 
 import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
-import { abandonPayment, cancelOrder } from "@/modules/orders";
+import { abandonPayment, cancelOrder, getReorderLines } from "@/modules/orders";
 import { paymentProvider } from "@/modules/payments";
 
 import { jobHandlers } from "@/server/job-handlers";
+
+import { fillCart, type FillResult } from "../../cart/fill";
 
 /** Cancel before picking (docs/03 section 7); the page then shows the result. */
 export async function cancelOrderAction(fd: FormData): Promise<void> {
@@ -30,4 +32,10 @@ export async function cancelOrderAction(fd: FormData): Promise<void> {
     after(() => runDueJobs(jobHandlers).then(() => undefined));
   }
   redirect(`/orders/${encodeURIComponent(orderNo)}`);
+}
+
+/** Reorder: this Order's Products on top of the Cart, at today's prices (ADR 0014). */
+export async function reorderAction(orderNo: string): Promise<FillResult> {
+  const customer = await requireCustomer(`/orders/${orderNo}`);
+  return fillCart((await getReorderLines(orderNo, customer.id)) ?? []);
 }

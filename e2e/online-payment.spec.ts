@@ -59,7 +59,9 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
   // Hydrated before clicking: next dev compiles the page on first visit.
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Fail payment" }).click();
-  await expect(page).toHaveURL(/\/checkout\/pay\/SW-.*back=cancelled/);
+  await expect(page).toHaveURL(/\/checkout\/pay\/SW-.*back=cancelled/, {
+    timeout: 30_000,
+  });
   await expect(
     page.getByRole("heading", { name: "Your payment did not go through" })
   ).toBeVisible();

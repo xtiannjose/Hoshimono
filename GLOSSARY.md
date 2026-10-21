@@ -101,8 +101,20 @@ The 15 minutes an online Order waits for payment, holding its stock and Slot pla
 _Avoid_: Payment timeout, expiry (for the Order)
 
 **Reorder**:
-Creating a new Cart from a past Order's lines.
+Adding a past Order's lines to the current Cart, on top of what is there, at today's prices ([ADR 0014](docs/adr/0014-reorder-lists-reminders-stock-alerts.md)).
 _Avoid_: Buy again (UI label only), repeat order
+
+**Shopping List**:
+A named list of Products and counts a Customer keeps to buy again, such as "Weekly" or "Office pantry". Added to the Cart in one tap.
+_Avoid_: Wishlist, favourites, saved items
+
+**Cart Reminder**:
+The one email sent 3 hours after a Customer, who agreed to reminders and offers, left items in their Cart without ordering.
+_Avoid_: Abandoned cart (in customer copy), nudge
+
+**Stock Alert**:
+A Customer's request to hear when a sold-out Product is back; it ends once the message is sent, or after 30 days.
+_Avoid_: Back-in-stock subscription, waitlist
 
 **Recipe**:
 Editorial content with an ingredient list mapped to Products, which a customer can add to a Cart in one action.

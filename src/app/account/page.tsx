@@ -9,6 +9,7 @@ import { requireCustomer } from "@/modules/identity";
 
 import { signOutAction } from "./actions";
 import { NameForm } from "./name-form";
+import { RemindersToggle } from "./reminders-toggle";
 
 export const metadata: Metadata = { title: "Your account" };
 
@@ -53,7 +54,19 @@ async function Account() {
             Where we deliver, with landmarks for the Rider
           </span>
         </Link>
+        <Link href="/account/lists" className={LINK}>
+          <b>Your lists</b>
+          <span className="text-muted-foreground text-sm">
+            Weekly groceries and more, added to your cart in one tap
+          </span>
+        </Link>
       </nav>
+      <section aria-labelledby="h-messages" className="grid gap-2">
+        <h2 id="h-messages" className="type-h3">
+          Messages
+        </h2>
+        <RemindersToggle on={profile.marketingOptIn} />
+      </section>
       <form action={signOutAction}>
         <Button type="submit" variant="secondary">
           Sign out

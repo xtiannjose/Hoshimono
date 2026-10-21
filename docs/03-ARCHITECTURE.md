@@ -32,22 +32,22 @@ Status: draft v0.1. Decisions that are expensive to reverse are recorded in [doc
 
 Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/` (private), and its own tests. A module owns its tables: only that module reads or writes them. Others call its interface.
 
-| Module          | Owns                                            | Public interface (examples)                                       |
-| --------------- | ----------------------------------------------- | ----------------------------------------------------------------- |
-| `catalog`       | Product, Category, ProductImage, search index   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree` |
-| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `validateVoucher`             |
-| `inventory`     | StockLevel, reservations                        | `reserve(orderId, lines)`, `release`, `adjust`, `availability`    |
-| `cart`          | Cart, CartLine                                  | `getCart`, `addLine`, `setQuantity`, `mergeGuestCart`             |
-| `delivery`      | Hub, Zone, Slot, Address resolution             | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot`    |
-| `orders`        | Order, OrderLine, status history, Substitution  | `placeOrder`, `transition(orderId, event)`, `cancelOrder`         |
-| `payments`      | Payment, PaymentEvent, provider adapters        | `createPayment`, `handleWebhook`, `refund`                        |
-| `fulfilment`    | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch`    |
-| `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                      |
-| `content`       | Recipe, Article                                 | `getRecipe`, `addRecipeToCart`, `saveRecipe`, `saveArticle`       |
-| `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                        |
-| `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                       |
-| `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                           |
-| `claims`        | Freshness Claims                                | `openClaim`, `resolveClaim`                                       |
+| Module          | Owns                                            | Public interface (examples)                                          |
+| --------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
+| `catalog`       | Product, Category, ProductImage, search index   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`    |
+| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `validateVoucher`                |
+| `inventory`     | StockLevel, reservations                        | `reserve(orderId, lines)`, `release`, `adjust`, `availability`       |
+| `cart`          | Cart, CartLine, Shopping List                   | `getCart`, `addLines`, `setQuantity`, `mergeGuestCart`, `saveToList` |
+| `delivery`      | Hub, Zone, Slot, Address resolution             | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot`       |
+| `orders`        | Order, OrderLine, status history, Substitution  | `placeOrder`, `transition(orderId, event)`, `cancelOrder`            |
+| `payments`      | Payment, PaymentEvent, provider adapters        | `createPayment`, `handleWebhook`, `refund`                           |
+| `fulfilment`    | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch`       |
+| `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                         |
+| `content`       | Recipe, Article                                 | `getRecipe`, `addRecipeToCart`, `saveRecipe`, `saveArticle`          |
+| `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                           |
+| `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                          |
+| `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                              |
+| `claims`        | Freshness Claims                                | `openClaim`, `resolveClaim`                                          |
 
 Allowed dependency direction (arrow means "may call"):
 
@@ -151,6 +151,16 @@ As built (Batch 5.1, [ADR 0013](adr/0013-recipes-articles-and-content-editors.md
 - An ingredient is a Product to buy (a count for the base servings, and whether it grows with servings) or plain text. The page shows live catalogue prices; `scaledCount` (`lib/servings.ts`) rounds scaled counts up, in the browser for the preview and on the server for the Cart.
 - `addRecipeToCart` takes only the servings and the ticked rows. It recomputes every count, accepts a Product in a row only if it is the ingredient's or one of its similar Products (`listRelatedProducts`), and adds on top of the Cart through `cart.setLineQuantity`, which caps at stock. It reports what sold out and what was capped.
 - Pages: `/recipes`, `/recipes/[slug]` (Recipe structured data), `/articles`, `/articles/[slug]`, the featured Recipe on Home, a Recipes link in the Category menu, and both in the sitemap. Reads are cached with the `content` and `catalog` tags.
+
+## 7b. Reorder, Shopping Lists, reminders and alerts
+
+As built (Batch 5.2, [ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
+
+- `cart.addLines` adds Products on top of the Cart, each capped by stock through `setLineQuantity`, and says what sold out or was capped. Reorder (`orders.getReorderLines`), Shopping Lists (`cart.shoppingListLines`) and Recipes all go through it; `app/cart/fill.ts` turns the result into the message the shopper sees.
+- "Buy again" on Home reads `orders.listBoughtBefore`: Products in delivered Orders, most often bought first, still sold.
+- Shopping Lists belong to the `cart` module and are read and written only with the owning Customer's id.
+- The cron tick queues Cart Reminders (`cart.queueCartReminders`: opted-in Customer with an email, Cart idle 3 hours to 2 days, not checked out, not reminded) and Stock Alerts (`inventory.queueStockAlerts`: ends alerts older than 30 days, queues the rest whose Product has free stock) before it runs jobs. Each marks its Cart or ends its alert in the transaction that queues the job.
+- `notifications.sendOnce` dedupes messages not tied to an Order by `ref` ("cart:<id>", "stock-alert:<id>"). The reminder's stop link carries the Customer id signed with HMAC (`lib/signed.ts`); `/stop/[token]` turns consent off on a button press, never on the link alone.
 
 ## 8. Payments
 
