@@ -11,6 +11,7 @@ export { recordAudits, type AuditEntry } from "./internal/audit";
 export {
   addStaff,
   listAudits,
+  listRiders,
   listStaff,
   updateStaff,
   type AuditRow,

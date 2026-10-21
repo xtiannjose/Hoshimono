@@ -6,6 +6,7 @@ import { customerForUser } from "@/modules/customers";
 import {
   addStaff,
   listAudits,
+  listRiders,
   listStaff,
   recordAudits,
   safeNext,
@@ -215,8 +216,12 @@ describe("staffForUser", () => {
     expect(await staffForUser(db, picker, "orders")).toBeNull();
     expect(await staffForUser(db, picker, "picking")).not.toBeNull();
     expect(await staffForUser(db, dispatcher, "picking")).toBeNull();
+    expect(await staffForUser(db, dispatcher, "dispatch")).not.toBeNull();
+    expect(await staffForUser(db, dispatcher, "delivery")).toBeNull();
     for (const area of [
       "picking",
+      "dispatch",
+      "delivery",
       "catalog",
       "orders",
       "refunds",
@@ -325,6 +330,46 @@ describe("managing Staff", () => {
     // Switched off: sign-in no longer opens anything.
     const user = await authUser("marites@hoshimono.test");
     expect(await staffForUser(db, user, "catalog")).toBeNull();
+  });
+
+  it("keeps a Rider's mobile number, and lists active Riders for dispatch", async () => {
+    await admin();
+    expect(
+      await addStaff({
+        name: "Jun Dela Rosa",
+        email: "jun@hoshimono.test",
+        role: "rider",
+        phone: "0917 123 4599",
+      })
+    ).toMatchObject({ ok: true });
+    expect(
+      await addStaff({
+        name: "Ben Cruz",
+        email: "ben@hoshimono.test",
+        role: "rider",
+        phone: "12345",
+      })
+    ).toEqual({
+      ok: false,
+      errors: { phone: "Enter a mobile number like 0917 123 4567." },
+    });
+    const off = await db.staff.create({
+      data: {
+        email: "off@hoshimono.test",
+        name: "Ramon",
+        role: "rider",
+        isActive: false,
+      },
+    });
+
+    const riders = await listRiders();
+    expect(riders).toEqual([
+      expect.objectContaining({
+        name: "Jun Dela Rosa",
+        phone: "+639171234599",
+      }),
+    ]);
+    expect(riders.map((r) => r.id)).not.toContain(off.id);
   });
 
   it("lists the audit log newest first, with who did it", async () => {

@@ -36,7 +36,7 @@ describe("seed", () => {
       zones: 3,
       categories: 41,
       slots: 42,
-      staff: 5,
+      staff: 6,
       customers: 4,
       addresses: 4,
     });
@@ -60,6 +60,7 @@ describe("seed", () => {
       "dispatcher",
       "merchandiser",
       "picker",
+      "rider",
     ]);
     expect(
       await db.address.count({

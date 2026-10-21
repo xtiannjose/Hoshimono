@@ -208,10 +208,20 @@ export async function addOrderNote(
   return { ok: true };
 }
 
+// Leaving the Hub and arriving go through dispatch: a Rider, the Delivery
+// PIN and the cash (ADR 0011).
+const VIA_DISPATCH: OrderStatus[] = [
+  "out_for_delivery",
+  "delivered",
+  "delivery_failed",
+];
+
 /**
- * Where staff may move an Order from `status`. An unpaid online Order is
- * left to its webhook and the Payment Window, never moved by hand.
+ * Where the order queue may move an Order from `status`. An unpaid online
+ * Order is left to its webhook and the Payment Window, and delivery moves
+ * to the dispatch board and the Rider.
  */
 export function staffMoves(status: OrderStatus): OrderStatus[] {
-  return status === "pending_payment" ? [] : nextStatuses(status);
+  if (status === "pending_payment") return [];
+  return nextStatuses(status).filter((s) => !VIA_DISPATCH.includes(s));
 }

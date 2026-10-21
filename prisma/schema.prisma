@@ -362,6 +362,13 @@ model Order {
   placedAt         DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
   cancelledAt      DateTime?          @map("cancelled_at") @db.Timestamptz(3)
   deliveredAt      DateTime?          @map("delivered_at") @db.Timestamptz(3)
+  // Dispatch (ADR 0011): the Rider carrying it, and the Delivery PIN the
+  // Customer gives at the door, with the Rider's wrong tries.
+  riderId          String?            @map("rider_id") @db.Uuid
+  rider            Staff?             @relation("OrderRider", fields: [riderId], references: [id], onDelete: Restrict)
+  deliveryPin      String?            @map("delivery_pin")
+  pinAttempts      Int                @default(0) @map("pin_attempts")
+  dispatchedAt     DateTime?          @map("dispatched_at") @db.Timestamptz(3)
   lines            OrderLine[]
   statusEvents     OrderStatusEvent[]
   payments         Payment[]
@@ -374,6 +381,7 @@ model Order {
   @@index([customerId])
   @@index([hubId, status])
   @@index([slotId])
+  @@index([riderId])
   @@map("orders")
 }
 
@@ -405,6 +413,25 @@ model OrderLine {
 
   @@index([orderId])
   @@map("order_lines")
+}
+
+// A Rider's cash-on-delivery cash counted by the Dispatcher at day's end,
+// against what the Rider recorded at each door (ADR 0011).
+model CashHandover {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  riderId       String   @map("rider_id") @db.Uuid
+  rider         Staff    @relation("HandoverRider", fields: [riderId], references: [id], onDelete: Restrict)
+  // The Manila date the cash was collected.
+  day           DateTime @db.Date
+  recordedCents Int      @map("recorded_cents")
+  countedCents  Int      @map("counted_cents")
+  countedById   String   @map("counted_by") @db.Uuid
+  countedBy     Staff    @relation("HandoverCounter", fields: [countedById], references: [id], onDelete: Restrict)
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([riderId, day])
+  @@map("cash_handovers")
 }
 
 // Staff notes on an Order, for each other; the Customer never sees them.
@@ -488,6 +515,8 @@ model Payment {
   amountCents   Int            @map("amount_cents")
   capturedCents Int            @default(0) @map("captured_cents")
   refundedCents Int            @default(0) @map("refunded_cents")
+  // Why the cash collected differs from the Final Total (ADR 0011).
+  collectedNote String?        @map("collected_note")
   status        PaymentStatus
   events        PaymentEvent[]
   refunds       Refund[]
@@ -599,6 +628,7 @@ enum StaffRole {
   merchandiser
   picker
   dispatcher
+  rider
 }
 
 model Staff {
@@ -613,6 +643,11 @@ model Staff {
   stockMovements StockMovement[]
   auditLog       AuditLog[]
   orderNotes     OrderNote[]
+  // A mobile number; a Rider's is shown to the Customer (ADR 0011).
+  phone          String?
+  deliveries     Order[]         @relation("OrderRider")
+  handovers      CashHandover[]  @relation("HandoverRider")
+  handoversTaken CashHandover[]  @relation("HandoverCounter")
   createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
 

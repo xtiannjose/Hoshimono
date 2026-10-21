@@ -48,6 +48,32 @@ async function Tracking({
         <h1 className="type-h1">Track your order</h1>
       </div>
       <OrderTimeline status={order.status} events={order.events} />
+      {order.delivery && (
+        <section
+          aria-labelledby="h-on-the-way"
+          className="rounded-card bg-accent-soft grid gap-2 p-5"
+        >
+          <h2 id="h-on-the-way" className="type-h3">
+            On its way with {order.delivery.riderName}
+          </h2>
+          {order.delivery.riderPhone && (
+            <a
+              href={`tel:${order.delivery.riderPhone}`}
+              className="font-semibold underline underline-offset-4"
+            >
+              Call {order.delivery.riderPhone}
+            </a>
+          )}
+          {order.delivery.pin && (
+            <p>
+              Give the Rider this PIN at the door:{" "}
+              <b className="font-mono text-2xl tracking-[0.2em]">
+                {order.delivery.pin}
+              </b>
+            </p>
+          )}
+        </section>
+      )}
       {order.status === "pending_payment" && (
         <Link
           href={`/checkout/pay/${order.orderNo}`}

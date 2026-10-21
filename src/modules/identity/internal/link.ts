@@ -4,15 +4,31 @@ import type { AuthUserInfo } from "@/modules/customers";
 
 /** The parts of the staff screens a role can open (PRD ADM-11). */
 export type StaffArea =
-  "picking" | "catalog" | "orders" | "refunds" | "staff" | "audit";
+  | "picking"
+  | "dispatch"
+  | "delivery"
+  | "catalog"
+  | "orders"
+  | "refunds"
+  | "staff"
+  | "audit";
 
-// Least privilege: each role gets only its own work. The Dispatcher's own
-// view arrives in Batch 4.3; until then they use the order queue.
+// Least privilege: each role gets only its own work.
 const AREAS: Record<StaffRole, readonly StaffArea[]> = {
-  admin: ["picking", "catalog", "orders", "refunds", "staff", "audit"],
+  admin: [
+    "picking",
+    "dispatch",
+    "delivery",
+    "catalog",
+    "orders",
+    "refunds",
+    "staff",
+    "audit",
+  ],
   merchandiser: ["catalog"],
-  dispatcher: ["orders"],
+  dispatcher: ["dispatch", "orders"],
   picker: ["picking"],
+  rider: ["delivery"],
 };
 
 /** Every area a role can open, in the order the staff menu lists them. */

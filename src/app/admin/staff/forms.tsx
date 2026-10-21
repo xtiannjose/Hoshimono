@@ -18,8 +18,9 @@ const FIELD =
 export const ROLES = {
   admin: "Admin: everything",
   merchandiser: "Merchandiser: Products and Categories",
-  dispatcher: "Dispatcher: the order queue",
-  picker: "Picker: picking (coming next)",
+  dispatcher: "Dispatcher: dispatch, cash, the order queue",
+  picker: "Picker: picking",
+  rider: "Rider: their deliveries",
 } as const;
 
 export function AddStaffForm() {
@@ -37,6 +38,10 @@ export function AddStaffForm() {
       <label className="grid gap-1 text-sm font-semibold">
         Email they sign in with
         <input name="email" type="email" className={`${FIELD} w-72`} />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold">
+        Mobile (Riders: shown to Customers)
+        <input name="phone" type="tel" inputMode="tel" className={FIELD} />
       </label>
       <label className="grid gap-1 text-sm font-semibold">
         Role

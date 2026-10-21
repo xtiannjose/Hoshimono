@@ -91,6 +91,10 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 **`orders`**: `id`, `order_no`, `customer_id`, `hub_id`, `slot_id`, `channel` (`web`, later `grab`, `lazada`), `status`, `payment_status`, `address_snapshot` (JSON), `contact_phone`, `rider_notes`, `subtotal_cents`, `discount_cents`, `delivery_fee_cents`, `vat_cents`, `total_cents`, `authorised_cents`, `final_total_cents?`, `voucher_id?`, `idempotency_key` (unique), `placed_at`, `cancelled_at?`, `delivered_at?`.
 
+Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `delivery_pin?` (4 digits, new per trip), `pin_attempts`, `dispatched_at?`.
+
+**`cash_handovers`**: a Rider's cash counted by the Dispatcher. `rider_id`, `day` (Manila date; **unique with rider_id**), `recorded_cents` (what the Rider recorded at the doors), `counted_cents`, `counted_by`, `note?`, `created_at`. Check: both amounts at or above 0.
+
 **`order_notes`**: Order Notes from staff. `order_id`, `staff_id`, `text` (up to 500 characters), `created_at`.
 
 **`order_lines`**: `order_id`, `product_id`, `name_snapshot`, `unit_price_cents`, `tax_class`, `vat_cents`, `ordered_qty`, `fulfilled_qty`, `ordered_weight_grams?`, `final_weight_grams?`, `line_total_cents`, `substitution_preference`, `preferred_product_id?` and `note?` (copied from the Cart Line for the Picker), `status` (`pending`, `picked`, `short`, `substituted`, `refunded`).
@@ -101,7 +105,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 ### payments
 
-**`payments`**: `id`, `order_id`, `provider`, `method` (`cod`, `gcash`, `card`, other wallets), `provider_ref` (the hosted checkout), `checkout_url`, `payment_ref` (the provider's id of the completed payment, which refunds name), `amount_cents`, `captured_cents`, `refunded_cents` (check: within `captured_cents`), `status`.
+**`payments`**: `id`, `order_id`, `provider`, `method` (`cod`, `gcash`, `card`, other wallets), `provider_ref` (the hosted checkout), `checkout_url`, `payment_ref` (the provider's id of the completed payment, which refunds name), `amount_cents`, `captured_cents`, `refunded_cents` (check: within `captured_cents`), `collected_note?` (why the cash taken differs from the Final Total), `status`.
 
 **`refunds`**: money going back on a Payment ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)). `payment_id`, `amount_cents` (check: above 0), `reason` (`cancelled`, `picked`, `late_payment`; **unique with payment_id**, so a trigger never refunds twice), `status` (`pending`, `sending`, `sent`, `needs_review`), `provider_ref?`, `last_error?`, `created_at`, `sent_at?`.
 

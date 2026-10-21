@@ -2,14 +2,19 @@ import { formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { JobHandlers } from "@/modules/jobs";
 import {
+  sendDeliveryFailed,
   sendOrderConfirmed,
+  sendOutForDelivery,
   sendRefundIssued,
   sendSubstitutionAsked,
 } from "@/modules/notifications";
 import {
+  DELIVERY_FAILED_JOB,
+  getDeliveryNotice,
   getOrderForNotice,
   getSubstitution,
   ORDER_CONFIRMED_JOB,
+  OUT_FOR_DELIVERY_JOB,
   SUBSTITUTION_ASKED_JOB,
 } from "@/modules/orders";
 import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
@@ -58,6 +63,37 @@ export const jobHandlers: JobHandlers = {
       unitPrice: formatMoney(sub.substitute.unitPriceCents),
       until: formatTime(sub.windowEndsAt),
       link: new URL(`/s/${sub.token}`, appUrl()).toString(),
+    });
+  },
+
+  // The Order left the Hub: who is coming and the Delivery PIN (ADR 0011).
+  async [OUT_FOR_DELIVERY_JOB](payload) {
+    const d = await getDeliveryNotice(String(payload.orderId));
+    // Delivered or back already: an "on its way" message would mislead.
+    if (!d || d.status !== "out_for_delivery" || !d.pin || !d.riderName) return;
+    await sendOutForDelivery({
+      orderId: d.orderId,
+      orderNo: d.orderNo,
+      email: d.email,
+      phone: d.phone,
+      trip: String(payload.dispatchedAt),
+      riderName: d.riderName,
+      riderPhone: d.riderPhone,
+      pin: d.pin,
+      cashDue: d.cashDueCents === null ? null : formatMoney(d.cashDueCents),
+      trackingUrl: trackingUrl(d.orderNo),
+    });
+  },
+
+  async [DELIVERY_FAILED_JOB](payload) {
+    const d = await getDeliveryNotice(String(payload.orderId));
+    if (!d) return;
+    await sendDeliveryFailed({
+      orderId: d.orderId,
+      orderNo: d.orderNo,
+      email: d.email,
+      phone: d.phone,
+      trip: String(payload.at),
     });
   },
 

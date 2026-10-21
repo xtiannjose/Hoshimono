@@ -23,6 +23,7 @@ export async function addStaffAction(
     name: text(fd, "name"),
     email: text(fd, "email"),
     role: text(fd, "role"),
+    phone: text(fd, "phone"),
   };
   const result = await adminWrite(
     admin.id,

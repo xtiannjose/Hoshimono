@@ -1,5 +1,6 @@
 import { StaffRole } from "@/generated/prisma/enums";
 import { db, type Client } from "@/lib/db";
+import { normalizePhone } from "@/lib/phone";
 
 // Admin writes to Staff (PRD ADM-11). Callers check requireStaff("staff").
 
@@ -7,6 +8,7 @@ export type StaffRow = {
   id: string;
   name: string;
   email: string;
+  phone: string | null;
   role: StaffRole;
   isActive: boolean;
   /** Has signed in at least once. */
@@ -21,6 +23,7 @@ export async function listStaff(client: Client = db): Promise<StaffRow[]> {
       id: true,
       name: true,
       email: true,
+      phone: true,
       role: true,
       isActive: true,
       authUserId: true,
@@ -30,7 +33,7 @@ export async function listStaff(client: Client = db): Promise<StaffRow[]> {
 }
 
 type StaffErrors = Partial<
-  Record<"name" | "email" | "role" | "isActive", string>
+  Record<"name" | "email" | "phone" | "role" | "isActive", string>
 >;
 type StaffResult<T = object> =
   ({ ok: true } & T) | { ok: false; errors: StaffErrors };
@@ -44,7 +47,7 @@ const isRole = (role: string): role is StaffRole =>
  * verified email (link.ts). ADR 0009 form result.
  */
 export async function addStaff(
-  input: { name: string; email: string; role: string },
+  input: { name: string; email: string; role: string; phone?: string },
   client: Client = db
 ): Promise<StaffResult<{ id: string }>> {
   const name = input.name.trim();
@@ -53,6 +56,10 @@ export async function addStaff(
   if (!name || name.length > 80) errors.name = "Enter a name.";
   if (!EMAIL.test(email)) errors.email = "Enter an email address.";
   if (!isRole(input.role)) errors.role = "Choose a role.";
+  const phone = input.phone?.trim() ? normalizePhone(input.phone) : null;
+  if (input.phone?.trim() && !phone) {
+    errors.phone = "Enter a mobile number like 0917 123 4567.";
+  }
   if (Object.keys(errors).length > 0) return { ok: false, errors };
   if (
     await client.staff.findUnique({ where: { email }, select: { id: true } })
@@ -63,7 +70,7 @@ export async function addStaff(
     };
   }
   const created = await client.staff.create({
-    data: { name, email, role: input.role as StaffRole },
+    data: { name, email, phone, role: input.role as StaffRole },
     select: { id: true },
   });
   return { ok: true, id: created.id };
@@ -106,6 +113,17 @@ export async function updateStaff(
   return count === 1
     ? { ok: true }
     : { ok: false, errors: { name: "No such staff member." } };
+}
+
+/** Active Riders, by name, for the dispatch board (ADR 0011). */
+export async function listRiders(): Promise<
+  { id: string; name: string; phone: string | null }[]
+> {
+  return db.staff.findMany({
+    where: { role: "rider", isActive: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, phone: true },
+  });
 }
 
 export type AuditRow = {

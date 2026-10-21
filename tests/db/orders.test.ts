@@ -17,6 +17,13 @@ import {
   abandonPayment,
   addOrderNote,
   answerSubstitution,
+  completeDelivery,
+  DELIVERY_FAILED_JOB,
+  deliverWithoutPin,
+  dispatchOrder,
+  failDelivery,
+  listDeliveriesForRider,
+  OUT_FOR_DELIVERY_JOB,
   cancelOrder,
   confirmPaidOrder,
   expireUnpaidOrders,
@@ -37,7 +44,14 @@ import {
   transitionOrder,
   type PlaceOrderInput,
 } from "@/modules/orders";
-import { startCheckout, type PaymentProvider } from "@/modules/payments";
+import {
+  listCashDay,
+  recordCashHandover,
+  riderCashDay,
+  startCheckout,
+  type PaymentProvider,
+} from "@/modules/payments";
+import { manilaDate } from "@/lib/dates";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
@@ -107,7 +121,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await db.$executeRawUnsafe(
-    "TRUNCATE rate_limits, jobs, notifications, order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
+    "TRUNCATE cash_handovers, rate_limits, jobs, notifications, order_status_events, payments, stock_movements, order_lines, orders, slot_holds, cart_lines, carts CASCADE"
   );
   await db.slot.updateMany({ data: { booked: 0, capacity: 20 } });
   await db.stockLevel.updateMany({
@@ -857,10 +871,10 @@ describe("the staff order queue", () => {
     // Unpaid online Orders are settled by the webhook or the Payment Window.
     expect(staffMoves("pending_payment")).toEqual([]);
     expect(staffMoves("confirmed")).toEqual(["picking", "cancelled"]);
-    expect(staffMoves("out_for_delivery")).toEqual([
-      "delivered",
-      "delivery_failed",
-    ]);
+    // Leaving the Hub and arriving go through dispatch: Rider, PIN, cash.
+    expect(staffMoves("picked")).toEqual([]);
+    expect(staffMoves("out_for_delivery")).toEqual([]);
+    expect(staffMoves("delivery_failed")).toEqual(["cancelled"]);
     expect(staffMoves("delivered")).toEqual([]);
   });
 });
@@ -1043,6 +1057,274 @@ describe("picking and Substitutions (ADR 0010)", () => {
     expect(
       await db.substitution.findUniqueOrThrow({ where: { id: sub.id } })
     ).toMatchObject({ customerResponse: "auto_accepted" });
+  });
+});
+
+describe("dispatch and delivery (ADR 0011)", () => {
+  const rider = seedId("staff:rider");
+  const dispatcher = { type: "staff" as const, id: seedId("staff:dispatcher") };
+
+  /** 2 milk, picked and ready for a Rider; cash on delivery unless given. */
+  async function ready(paymentMethod: "cod" | "gcash" = "cod") {
+    await setLineQuantity(owner(ligaya), MILK, 2, HUB);
+    const placed = await placeOrder(await checkout(ligaya, { paymentMethod }));
+    if (!placed.ok) throw new Error(placed.reason);
+    if (paymentMethod === "gcash") {
+      const { totalCents } = await db.order.findUniqueOrThrow({
+        where: { id: placed.orderId },
+      });
+      await db.payment.updateMany({
+        where: { orderId: placed.orderId },
+        data: {
+          status: "paid",
+          capturedCents: totalCents,
+          paymentRef: "pay_1",
+        },
+      });
+      await db.$transaction((tx) =>
+        confirmPaidOrder(tx, { orderId: placed.orderId })
+      );
+    }
+    await transitionOrder(placed.orderId, "picking", dispatcher);
+    expect(await finishPicking(placed.orderId, dispatcher)).toEqual({
+      ok: true,
+    });
+    return placed;
+  }
+
+  it("sends a picked Order out with a Rider and a 4-digit Delivery PIN", async () => {
+    const { orderId, orderNo } = await ready();
+    expect(
+      await dispatchOrder(orderId, seedId("staff:picker"), dispatcher)
+    ).toEqual({ ok: false, reason: "not_a_rider" });
+
+    const sent = await dispatchOrder(orderId, rider, dispatcher);
+    expect(sent).toMatchObject({ ok: true });
+    const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+    expect(order).toMatchObject({ status: "out_for_delivery", riderId: rider });
+    expect(order.deliveryPin).toMatch(/^\d{4}$/);
+    expect(await db.job.count({ where: { kind: OUT_FOR_DELIVERY_JOB } })).toBe(
+      1
+    );
+    expect(await dispatchOrder(orderId, rider, dispatcher)).toEqual({
+      ok: false,
+      reason: "not_ready",
+    });
+
+    // The Rider sees it; the Customer sees who is coming and the PIN.
+    expect((await listDeliveriesForRider(rider)).map((d) => d.orderNo)).toEqual(
+      [orderNo]
+    );
+    expect(await getOrder(ligaya, orderNo)).toMatchObject({
+      delivery: {
+        riderName: "Jun Dela Rosa",
+        riderPhone: "+639171234599",
+        pin: order.deliveryPin,
+      },
+    });
+  });
+
+  it("delivers with the PIN and records the cash, a different amount with a note", async () => {
+    const { orderId } = await ready();
+    await dispatchOrder(orderId, rider, dispatcher);
+    const { deliveryPin, finalTotalCents } = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+    });
+    const wrong = deliveryPin === "0000" ? "1111" : "0000";
+
+    expect(
+      await completeDelivery(orderId, rider, {
+        pin: wrong,
+        cashCents: finalTotalCents!,
+      })
+    ).toEqual({
+      ok: false,
+      errors: { pin: "That PIN is not right. 4 tries left." },
+    });
+    expect(
+      await completeDelivery(orderId, rider, {
+        pin: deliveryPin!,
+        cashCents: finalTotalCents! - 1000,
+      })
+    ).toEqual({
+      ok: false,
+      errors: { note: "Say why the cash is different from what is due." },
+    });
+    expect(
+      await completeDelivery(orderId, seedId("staff:picker"), {
+        pin: deliveryPin!,
+        cashCents: finalTotalCents!,
+      })
+    ).toEqual({
+      ok: false,
+      errors: { form: "This Order is not one of yours." },
+    });
+
+    expect(
+      await completeDelivery(orderId, rider, {
+        pin: deliveryPin!,
+        cashCents: finalTotalCents! - 1000,
+        note: "Customer short ₱10, will pay next order",
+      })
+    ).toEqual({ ok: true });
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { payments: true, statusEvents: { orderBy: { at: "asc" } } },
+    });
+    expect(order).toMatchObject({
+      status: "delivered",
+      paymentStatus: "cod_collected",
+    });
+    expect(order.deliveredAt).not.toBeNull();
+    expect(order.payments[0]).toMatchObject({
+      status: "cod_collected",
+      capturedCents: finalTotalCents! - 1000,
+      collectedNote: "Customer short ₱10, will pay next order",
+    });
+    expect(order.statusEvents.at(-1)).toMatchObject({
+      to: "delivered",
+      actorType: "staff",
+      actorId: rider,
+    });
+  });
+
+  it("locks the PIN after 5 wrong tries; the Dispatcher can deliver with a reason", async () => {
+    const { orderId } = await ready("gcash");
+    await dispatchOrder(orderId, rider, dispatcher);
+    const { deliveryPin } = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+    });
+    const wrong = deliveryPin === "0000" ? "1111" : "0000";
+    for (let i = 0; i < 5; i++) {
+      await completeDelivery(orderId, rider, { pin: wrong });
+    }
+    expect(
+      await completeDelivery(orderId, rider, { pin: deliveryPin! })
+    ).toEqual({
+      ok: false,
+      errors: { pin: "Too many tries. Call the Dispatcher." },
+    });
+
+    expect(await deliverWithoutPin(orderId, dispatcher, "", {})).toEqual({
+      ok: false,
+      errors: { reason: "Say why the PIN was not used." },
+    });
+    expect(
+      await deliverWithoutPin(
+        orderId,
+        dispatcher,
+        "Customer lost the text; called them",
+        {}
+      )
+    ).toEqual({ ok: true });
+    // Paid online: no cash to record.
+    expect(
+      await db.order.findUniqueOrThrow({ where: { id: orderId } })
+    ).toMatchObject({ status: "delivered", paymentStatus: "paid" });
+  });
+
+  it("counts a Rider's cash against what they recorded; a shortfall needs a note", async () => {
+    const delivered = async (cash: (due: number) => number, note?: string) => {
+      const { orderId, orderNo } = await ready();
+      await dispatchOrder(orderId, rider, dispatcher);
+      const o = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+      expect(
+        await completeDelivery(orderId, rider, {
+          pin: o.deliveryPin!,
+          cashCents: cash(o.finalTotalCents!),
+          note,
+        })
+      ).toEqual({ ok: true });
+      return { orderNo, due: o.finalTotalCents! };
+    };
+    const first = await delivered((due) => due);
+    const second = await delivered((due) => due - 1000, "Short ₱10");
+    const today = manilaDate(new Date());
+
+    const day = await riderCashDay(rider, today);
+    expect(
+      day.orders.map((o) => [o.orderNo, o.dueCents, o.collectedCents])
+    ).toEqual([
+      [first.orderNo, first.due, first.due],
+      [second.orderNo, second.due, second.due - 1000],
+    ]);
+    expect(day.recordedCents).toBe(first.due + second.due - 1000);
+    expect(day.handover).toBeNull();
+    expect(await listCashDay(today)).toEqual([
+      expect.objectContaining({
+        riderName: "Jun Dela Rosa",
+        orderCount: 2,
+        recordedCents: day.recordedCents,
+        countedCents: null,
+      }),
+    ]);
+
+    const staffId = dispatcher.id;
+    expect(
+      await recordCashHandover(
+        rider,
+        today,
+        day.recordedCents - 500,
+        staffId,
+        ""
+      )
+    ).toEqual({
+      ok: false,
+      errors: { note: "₱5.00 is missing. Say what happened." },
+    });
+    expect(
+      await recordCashHandover(
+        rider,
+        today,
+        day.recordedCents - 500,
+        staffId,
+        "Gave change twice"
+      )
+    ).toEqual({ ok: true, shortCents: 500 });
+    expect(
+      await recordCashHandover(rider, today, day.recordedCents, staffId, "")
+    ).toEqual({
+      ok: false,
+      errors: { form: "This Rider's cash for the day is already counted." },
+    });
+    expect((await riderCashDay(rider, today)).handover).toMatchObject({
+      countedCents: day.recordedCents - 500,
+      shortCents: 500,
+      countedBy: "Marites Aquino",
+      note: "Gave change twice",
+    });
+  });
+
+  it("marks a failed delivery with the reason and tells the Customer", async () => {
+    const { orderId } = await ready();
+    await dispatchOrder(orderId, rider, dispatcher);
+
+    expect(await failDelivery(orderId, rider, " ")).toEqual({
+      ok: false,
+      errors: { reason: "Say why it could not be delivered." },
+    });
+    expect(
+      await failDelivery(orderId, rider, "No one home, phone off")
+    ).toEqual({
+      ok: true,
+    });
+    const order = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+      include: { statusEvents: { orderBy: { at: "asc" } } },
+    });
+    expect(order.status).toBe("delivery_failed");
+    expect(order.statusEvents.at(-1)?.reason).toBe("No one home, phone off");
+    expect(await db.job.count({ where: { kind: DELIVERY_FAILED_JOB } })).toBe(
+      1
+    );
+
+    // Sent out again, with a new PIN.
+    expect(await dispatchOrder(orderId, rider, dispatcher)).toMatchObject({
+      ok: true,
+    });
+    expect(
+      (await db.order.findUniqueOrThrow({ where: { id: orderId } })).status
+    ).toBe("out_for_delivery");
   });
 });
 
