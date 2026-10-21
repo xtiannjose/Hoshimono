@@ -5,7 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setLineQuantity } from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
 import {
+  sendDeliveryFailed,
   sendOrderConfirmed,
+  sendOutForDelivery,
   sendRefundIssued,
   sendSubstitutionAsked,
   type Sent,
@@ -180,6 +182,53 @@ describe("sendSubstitutionAsked", () => {
     expect(sms).toContain("http://localhost:3000/s/abc123");
     expect(sms).toContain("by 3:42 PM");
     expect(sms).toContain("No reply means yes");
+    expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
+  });
+});
+
+describe("delivery messages", () => {
+  const base = {
+    orderNo: "SW-261002-TEST",
+    email: "ligaya@example.com",
+    phone: "+639171234567",
+  };
+
+  it("says who is coming, the PIN and the cash due, once per trip", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    const notice = {
+      ...base,
+      orderId,
+      trip: "2026-10-02T08:00:00.000Z",
+      riderName: "Jun Dela Rosa",
+      riderPhone: "+639171234599",
+      pin: "4821",
+      cashDue: "₱624.00",
+      trackingUrl: "http://localhost:3000/orders/SW-261002-TEST",
+    };
+    await sendOutForDelivery(notice, providers);
+    await sendOutForDelivery(notice, providers);
+    expect(sent.map((s) => s.channel)).toEqual(["email", "sms"]);
+    expect(sent[1].text).toContain(
+      "on its way with Jun Dela Rosa (+639171234599)"
+    );
+    expect(sent[1].text).toContain("PIN at the door: 4821");
+    expect(sent[1].text).toContain("₱624.00 ready in cash");
+
+    // A second trip after a failed try is a new message.
+    await sendOutForDelivery(
+      { ...notice, trip: "2026-10-02T10:00:00.000Z" },
+      providers
+    );
+    expect(sent).toHaveLength(4);
+  });
+
+  it("tells the Customer a delivery missed them, without staff notes", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    await sendDeliveryFailed({ ...base, orderId, trip: "t1" }, providers);
+    expect(sent[1].text).toContain("could not deliver order SW-261002-TEST");
+    expect(sent[1].text).toContain("call you");
     expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
   });
 });

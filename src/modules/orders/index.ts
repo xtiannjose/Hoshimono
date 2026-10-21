@@ -18,6 +18,18 @@ export {
 export type { Actor } from "./internal/status";
 export { getOrder, getOrderForNotice, listOrders } from "./internal/read";
 export {
+  completeDelivery,
+  DELIVERY_FAILED_JOB,
+  deliverWithoutPin,
+  dispatchOrder,
+  failDelivery,
+  getDeliveryNotice,
+  listDeliveriesForRider,
+  listDispatchBoard,
+  OUT_FOR_DELIVERY_JOB,
+} from "./internal/delivery";
+export type { BoardRow, DeliveryStop } from "./internal/delivery";
+export {
   answerSubstitution,
   finishPicking,
   getPickList,

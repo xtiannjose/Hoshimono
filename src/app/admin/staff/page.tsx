@@ -36,7 +36,10 @@ async function Staff() {
           <li key={s.id} className="grid gap-2 py-4">
             <p>
               <b>{s.name}</b>{" "}
-              <span className="text-muted-foreground">{s.email}</span>
+              <span className="text-muted-foreground">
+                {s.email}
+                {s.phone && `, ${s.phone}`}
+              </span>
               {!s.isActive && (
                 <span className="text-warn ml-2 text-sm font-semibold">
                   Switched off

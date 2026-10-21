@@ -332,13 +332,20 @@ const MANILA_OFFSET_HOURS = 8;
 
 // Signed in as <key>@hoshimono.test. "tech" is the technical test account:
 // an admin, so it sees every staff screen (docs/06 section 6).
-const STAFF: { key: string; role: StaffRole; name: string }[] = [
-  { key: "admin", role: "admin", name: "Rafael Cruz" },
-  { key: "merchandiser", role: "merchandiser", name: "Joanna Lim" },
-  { key: "picker", role: "picker", name: "Arnel Bautista" },
-  { key: "dispatcher", role: "dispatcher", name: "Marites Aquino" },
-  { key: "tech", role: "admin", name: "Hoshimono Tech" },
-];
+const STAFF: { key: string; role: StaffRole; name: string; phone?: string }[] =
+  [
+    { key: "admin", role: "admin", name: "Rafael Cruz" },
+    { key: "merchandiser", role: "merchandiser", name: "Joanna Lim" },
+    { key: "picker", role: "picker", name: "Arnel Bautista" },
+    { key: "dispatcher", role: "dispatcher", name: "Marites Aquino" },
+    { key: "tech", role: "admin", name: "Hoshimono Tech" },
+    {
+      key: "rider",
+      role: "rider",
+      name: "Jun Dela Rosa",
+      phone: "+639171234599",
+    },
+  ];
 
 const CUSTOMERS = [
   // The client test account: a Customer ready to order (docs/06 section 6).
@@ -576,12 +583,13 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
   }
 
   // Staff
-  for (const { key, role, name } of STAFF) {
+  for (const { key, role, name, phone } of STAFF) {
     const staff = {
       id: seedId(`staff:${key}`),
       email: `${key}@hoshimono.test`,
       name,
       role,
+      phone: phone ?? null,
     };
     await db.staff.upsert({
       where: { id: staff.id },

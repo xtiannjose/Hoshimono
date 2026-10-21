@@ -12,6 +12,25 @@ export const AREA_LINKS: Record<
       hint: "Orders to pick, each in aisle order",
     },
   ],
+  dispatch: [
+    {
+      href: "/admin/dispatch",
+      label: "Dispatch",
+      hint: "Send picked Orders out with a Rider",
+    },
+    {
+      href: "/admin/cash",
+      label: "Cash",
+      hint: "Count each Rider's cash at day's end",
+    },
+  ],
+  delivery: [
+    {
+      href: "/admin/deliveries",
+      label: "My deliveries",
+      hint: "The Orders you are carrying",
+    },
+  ],
   orders: [
     {
       href: "/admin/orders",

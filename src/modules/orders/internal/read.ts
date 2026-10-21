@@ -48,6 +48,12 @@ export type OrderDetail = OrderSummary & {
   }[];
   /** Oldest first. */
   events: { to: OrderStatus; at: Date }[];
+  /** While out for delivery: who is coming and the Delivery PIN (ADR 0011). */
+  delivery: {
+    riderName: string;
+    riderPhone: string | null;
+    pin: string | null;
+  } | null;
 };
 
 /** The Customer's Orders, newest first. */
@@ -91,6 +97,7 @@ export async function getOrderByNumber(where: {
       slot: { select: { startsAt: true, endsAt: true } },
       lines: { orderBy: { createdAt: "asc" } },
       statusEvents: { orderBy: { at: "asc" }, select: { to: true, at: true } },
+      rider: { select: { name: true, phone: true } },
       payments: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -133,6 +140,14 @@ export async function getOrderByNumber(where: {
       weighed: l.orderedWeightGrams !== null,
     })),
     events: order.statusEvents,
+    delivery:
+      order.status === "out_for_delivery" && order.rider
+        ? {
+            riderName: order.rider.name,
+            riderPhone: order.rider.phone,
+            pin: order.deliveryPin,
+          }
+        : null,
   };
 }
 

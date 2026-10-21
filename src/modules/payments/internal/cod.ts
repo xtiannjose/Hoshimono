@@ -25,3 +25,23 @@ export async function voidCodPayment(
   });
   return count > 0;
 }
+
+/**
+ * The cash a Rider took at the door (ADR 0011), in the delivery's
+ * transaction. A different amount from what was due carries its note.
+ */
+export async function recordCodCollected(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  cents: number,
+  note: string | null
+): Promise<void> {
+  await tx.payment.updateMany({
+    where: { orderId, method: "cod", status: "cod_pending" },
+    data: {
+      status: "cod_collected",
+      capturedCents: cents,
+      collectedNote: note,
+    },
+  });
+}

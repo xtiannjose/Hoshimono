@@ -131,9 +131,23 @@ async function Order({ params }: { params: Props["params"] }) {
               />
             ) : (
               <p className="text-muted-foreground">
-                {order.status === "pending_payment"
-                  ? "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on."
-                  : "Nothing more to do: this Order is closed."}
+                {order.status === "pending_payment" ? (
+                  "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on."
+                ) : order.status === "picked" ||
+                  order.status === "out_for_delivery" ? (
+                  <>
+                    It goes out and is delivered through{" "}
+                    <Link
+                      href="/admin/dispatch"
+                      className="font-semibold underline underline-offset-4"
+                    >
+                      Dispatch
+                    </Link>
+                    , with a Rider and the Customer&apos;s PIN.
+                  </>
+                ) : (
+                  "Nothing more to do: this Order is closed."
+                )}
               </p>
             )}
           </section>

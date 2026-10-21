@@ -154,6 +154,14 @@ _Avoid_: Packer, shopper
 A person who carries a picked Order from a Hub to the customer's address.
 _Avoid_: Driver, courier, delivery guy
 
+**Delivery PIN**:
+A 4-digit number the Customer gets when their Order leaves the Hub and gives the Rider at the door, as proof of delivery ([ADR 0011](docs/adr/0011-dispatch-pin-and-cash.md)).
+_Avoid_: OTP, code (those are for sign-in)
+
+**Cash Handover**:
+A Rider's cash from cash-on-delivery Orders, counted by the Dispatcher at day's end against what the Rider recorded at each door.
+_Avoid_: Remittance, settlement (settlement is for card and wallet payouts)
+
 **Substitution**:
 A Product delivered in place of an ordered Product that was unavailable, recorded against the Order Line.
 _Avoid_: Replacement, swap

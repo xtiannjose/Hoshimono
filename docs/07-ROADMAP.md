@@ -20,14 +20,15 @@ Resume here: read this section, then the batch named first under Next.
 - Carry-over (PR #14): the cart drawer names the held or next Slot (vaul stays, no Motion spring or detents); Category search words are data set in the admin; the accessibility remainder (one Skeleton, 44 px filters, the current aisle marked); one rule for how a module says no ([ADR 0009](adr/0009-module-results-and-errors.md)).
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
+- Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
 
-**Open pull requests:** #14 (carry-over), then #15 (test accounts, Phase 3 closed, Batch 4.1), then #16 (Batch 4.2). Each is built on the one before: merge them in that order.
+**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3). Each is built on the one before: merge them in that order.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 4, Operations (section 10): Batch 4.3 next, dispatch and cash on delivery. Batch 4.1 is in #15, Batch 4.2 (Picker view, Substitutions) in #16.
+1. Phase 4, Operations (section 10): Batch 4.4 next, stock, Zones and reports (and the stock deduction for picked items left from 4.2). Then the Phase 4 dry run (exit criteria).
 2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
@@ -357,8 +358,8 @@ Frontend:
 
 **Batch 4.3 Dispatch and cash on delivery** (W13). Stack: object storage for proof photos. Skills: `tdd`.
 
-- [ ] Dispatch view: assign Rider, out for delivery, proof of delivery (photo or PIN), failed delivery
-- [ ] COD collection and per-Rider reconciliation
+- [x] Dispatch view: assign Rider, out for delivery, proof of delivery (photo or PIN), failed delivery. 21 Oct ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)): `/admin/dispatch` sends picked Orders out with a Rider (new `rider` role and phone); proof is the Customer's 4-digit Delivery PIN (photo waits for R2); the Rider's `/admin/deliveries` delivers with the PIN or marks it failed with a reason; missed Orders go out again or are cancelled
+- [x] COD collection and per-Rider reconciliation. The Rider records the cash per Order at the door (a different amount needs a note); `/admin/cash` counts each Rider's day, a shortfall needs a note
 
 **Batch 4.4 Stock, Zones and reports** (W14). Stack: TanStack Table, print stylesheets or PDF. Skills: `dataviz`, `anthropic-skills:pdf`.
 
