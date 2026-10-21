@@ -1,8 +1,7 @@
+import { PAYMENT_METHOD_LABEL } from "@/components/order/status-labels";
 import { formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import type { OrderDetail } from "@/modules/orders";
-
-const PAID_BY = { cod: "Cash on delivery", gcash: "GCash", card: "Card" };
 
 /** Delivery, items and totals of an Order, as stored at checkout. */
 export function OrderDetails({ order }: { order: OrderDetail }) {
@@ -31,7 +30,9 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
         <div>
           <dt className="text-muted-foreground text-sm">Payment</dt>
           <dd>
-            {order.paymentMethod ? PAID_BY[order.paymentMethod] : "Online"}
+            {order.paymentMethod
+              ? PAYMENT_METHOD_LABEL[order.paymentMethod]
+              : "Online"}
           </dd>
         </div>
         <div>

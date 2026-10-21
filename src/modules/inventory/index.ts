@@ -4,7 +4,18 @@ export { getAvailability, getStockStates } from "./internal/stock-states";
 export type { Availability, StockState } from "./internal/stock-states";
 export {
   OutOfStockError,
+  pickStock,
   releaseStock,
   reserveStock,
+  returnStock,
 } from "./internal/reserve";
-export type { StockLine } from "./internal/reserve";
+export type { PickedStock, StockLine } from "./internal/reserve";
+export {
+  countStock,
+  listStockForAdmin,
+  receiveStock,
+  recordShrink,
+  setLowStockThreshold,
+  stockHistory,
+} from "./internal/admin";
+export type { StockRow } from "./internal/admin";

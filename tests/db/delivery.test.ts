@@ -4,7 +4,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { db as appDb } from "@/lib/db";
 import {
+  addSlotTemplate,
   bookSlot,
+  ensureSlots,
+  listSlotTemplates,
+  listZonesForAdmin,
+  removeSlotTemplate,
+  setSlotCapacity,
+  setTemplateCapacity,
+  updateZoneFees,
   SLOT_HOLD_MINUTES,
   getSlotHold,
   holdSlot,
@@ -367,4 +375,109 @@ it("purgeExpiredHolds removes only lapsed holds", async () => {
   await holdSlot(await newCart(), slot.id, { hubId: HUB, now: minutes(8) });
   expect(await purgeExpiredHolds(minutes(12))).toBe(1);
   expect(await db.slotHold.count()).toBe(1);
+});
+
+describe("the Slot schedule (ADR 0012)", () => {
+  it("keeps 7 days of Slots made from the weekly schedule, never touching existing ones", async () => {
+    const before = await db.slot.count({ where: { hubId: HUB } });
+    // A day later, one more day of 6 windows is due.
+    const tomorrow = minutes(24 * 60);
+    expect(await ensureSlots(tomorrow)).toBe(6);
+    expect(await ensureSlots(tomorrow)).toBe(0);
+    expect(await db.slot.count({ where: { hubId: HUB } })).toBe(before + 6);
+
+    // A schedule change shapes only days not yet made.
+    const templates = await listSlotTemplates(HUB);
+    expect(templates).toHaveLength(42);
+    // The day ensureSlots will make next is Tuesday 27 Oct, Manila.
+    const tuesday = new Date("2026-10-27T00:00:00Z").getUTCDay();
+    const window = templates.find((t) => t.weekday === tuesday)!;
+    expect(await setTemplateCapacity(window.id, 12)).toEqual({ ok: true });
+    await ensureSlots(minutes(2 * 24 * 60));
+    const newest = await db.slot.findMany({
+      where: { hubId: HUB },
+      orderBy: { startsAt: "desc" },
+      take: 6,
+    });
+    expect(newest.map((s) => s.capacity)).toContain(12);
+    expect(
+      (await db.slot.findMany({ where: { hubId: HUB } }))
+        .filter((s) => s.startsAt <= tomorrow)
+        .every((s) => s.capacity === 20)
+    ).toBe(true);
+  });
+
+  it("adds and removes windows, refusing one that ends before it starts or repeats", async () => {
+    expect(
+      await addSlotTemplate(HUB, {
+        weekday: 1,
+        start: "20:00",
+        end: "21:00",
+        capacity: 8,
+      })
+    ).toMatchObject({ ok: true });
+    expect(
+      await addSlotTemplate(HUB, {
+        weekday: 1,
+        start: "20:00",
+        end: "21:30",
+        capacity: 8,
+      })
+    ).toEqual({
+      ok: false,
+      errors: { start: "There is already a window at 8:00 PM." },
+    });
+    expect(
+      await addSlotTemplate(HUB, {
+        weekday: 1,
+        start: "18:00",
+        end: "17:00",
+        capacity: 8,
+      })
+    ).toEqual({ ok: false, errors: { end: "End after the start." } });
+    const added = (await listSlotTemplates(HUB)).find(
+      (t) => t.weekday === 1 && t.startMinute === 20 * 60
+    )!;
+    expect(await removeSlotTemplate(added.id)).toBe(true);
+  });
+
+  it("resizes or closes one Slot, never below what is booked", async () => {
+    const slot = await firstSlot();
+    await db.slot.update({ where: { id: slot.id }, data: { booked: 3 } });
+    expect(await setSlotCapacity(slot.id, 2)).toEqual({
+      ok: false,
+      errors: { capacity: "3 are booked: at least 3." },
+    });
+    // Closing it: no more bookings, the 3 already booked stay.
+    expect(await setSlotCapacity(slot.id, 3)).toEqual({ ok: true });
+  });
+});
+
+describe("Zone fees (ADR 0012)", () => {
+  it("changes what a Zone charges, and Checkout uses it at once", async () => {
+    const zoneId = seedId("zone:pasig-mandaluyong");
+    expect(
+      await updateZoneFees(zoneId, {
+        deliveryFeeCents: -1,
+        freeDeliveryOverCents: null,
+        minOrderCents: 0,
+      })
+    ).toEqual({ ok: false, errors: { deliveryFee: "Enter 0 or more." } });
+    expect(
+      await updateZoneFees(zoneId, {
+        deliveryFeeCents: 5900,
+        freeDeliveryOverCents: null,
+        minOrderCents: 40000,
+      })
+    ).toEqual({ ok: true });
+    const zone = await resolveZone({ city: "Pasig", barangay: "Kapitolyo" });
+    expect(zone?.fees).toEqual({
+      deliveryFeeCents: 5900,
+      freeDeliveryOverCents: null,
+      minOrderCents: 40000,
+    });
+    expect((await listZonesForAdmin()).map((z) => z.name)).toContain(
+      "Pasig and Mandaluyong"
+    );
+  });
 });

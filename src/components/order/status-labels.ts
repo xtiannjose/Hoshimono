@@ -1,4 +1,8 @@
-import type { OrderStatus, PaymentStatus } from "@/generated/prisma/enums";
+import type {
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from "@/generated/prisma/enums";
 
 /** An Order's status in words, for Customers and staff alike. */
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
@@ -10,6 +14,13 @@ export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   delivered: "Delivered",
   delivery_failed: "Delivery failed",
   cancelled: "Cancelled",
+};
+
+/** How an Order is paid, in words. */
+export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
+  cod: "Cash on delivery",
+  gcash: "GCash",
+  card: "Card",
 };
 
 /** A Payment's status in words, for staff. */

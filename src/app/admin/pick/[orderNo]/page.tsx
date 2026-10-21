@@ -65,6 +65,12 @@ async function Pick({ params }: { params: Props["params"] }) {
           All Orders to pick
         </Link>
         <h1 className="type-h2 font-mono">{list.orderNo}</h1>
+        <Link
+          href={`/admin/print/pick/${list.orderNo}`}
+          className="text-sm font-semibold hover:underline"
+        >
+          Pick sheet to print
+        </Link>
         <p className="tabular-nums">
           {formatSlot(list.slot.startsAt, list.slot.endsAt)},{" "}
           <b>{ORDER_STATUS_LABEL[list.status]}</b>

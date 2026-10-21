@@ -16,6 +16,11 @@ const db = new PrismaClient({
 try {
   await resetDb(db);
   await seedDatabase(db);
+  // Most specs check out Fresh Milk at once; the seed's count runs out.
+  await db.stockLevel.updateMany({
+    where: { product: { slug: "magnolia-fresh-milk" } },
+    data: { onHand: 200 },
+  });
 } finally {
   await db.$disconnect();
 }

@@ -1,22 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
-import { devices, expect, test, type Browser } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+
+import { signInAs as as } from "./sign-in";
 
 // Batch 4.3 (ADR 0011): pick, dispatch with a Rider, deliver with the
-// Customer's PIN and the cash, then count the Rider's cash.
+// Customer's PIN and the cash, then count the Rider's cash. The pick
+// sheet and the delivery receipt print along the way (ADR 0012).
 test.describe.configure({ timeout: 240_000 });
-
-/** A new browser signed in as one of the test accounts (/dev/sign-in). */
-async function as(browser: Browser, label: string, phone = false) {
-  const page = await (
-    await browser.newContext(phone ? { ...devices["Pixel 7"] } : {})
-  ).newPage();
-  await page.goto("/dev/sign-in", { waitUntil: "networkidle" });
-  await page.getByRole("link", { name: `Sign in as ${label}` }).click();
-  await page.waitForURL((url) => !url.pathname.startsWith("/dev/"), {
-    timeout: 30_000,
-  });
-  return page;
-}
 
 test("an Order is picked, sent out with a Rider, delivered with the PIN, and the cash counted", async ({
   browser,
@@ -51,6 +41,11 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
   const picker = await as(browser, "Picker", true);
   await picker.goto(`/admin/pick/${orderNo}`, { waitUntil: "networkidle" });
   await picker.getByRole("button", { name: "Start picking" }).click();
+  await picker.getByRole("link", { name: "Pick sheet to print" }).click();
+  await expect(
+    picker.getByRole("row").filter({ hasText: "Fresh Milk" })
+  ).toContainText("Similar item OK", { timeout: 30_000 });
+  await picker.goBack({ waitUntil: "networkidle" });
   await picker
     .getByRole("button", { name: "Found all 5" })
     .click({ timeout: 30_000 });
@@ -119,6 +114,22 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
       timeout: 30_000,
     }
   );
+
+  // The delivery receipt, with the VAT inside the Total.
+  await dispatcher.goto(`/admin/print/receipt/${orderNo}`, {
+    waitUntil: "networkidle",
+  });
+  await expect(
+    dispatcher.getByRole("heading", { name: "Delivery receipt" })
+  ).toBeVisible();
+  await expect(dispatcher.getByText(/^Total₱624\.00$/)).toBeVisible();
+  await expect(dispatcher.getByText(/^VAT \(12%\)₱66\.86$/)).toBeVisible();
+  await expect(
+    dispatcher.getByText("This is not an official receipt.")
+  ).toBeVisible();
+  expect(
+    (await new AxeBuilder({ page: dispatcher }).analyze()).violations
+  ).toEqual([]);
 
   await shopper.reload({ waitUntil: "networkidle" });
   await expect(

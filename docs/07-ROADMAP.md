@@ -4,7 +4,7 @@ Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order,
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
 
-## 0. Where we are (updated 2026-10-20)
+## 0. Where we are (updated 2026-10-21)
 
 Resume here: read this section, then the batch named first under Next.
 
@@ -21,16 +21,18 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3). Each is built on the one before: merge them in that order.
+**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4). Each is built on the one before: merge them in that order.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 4, Operations (section 10): Batch 4.4 next, stock, Zones and reports (and the stock deduction for picked items left from 4.2). Then the Phase 4 dry run (exit criteria).
-2. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
-3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
+1. A general checkup of the app, asked for by the owner on 21 Oct before going further.
+2. The Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
+3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
+4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
 **Waiting on the owner**
 
@@ -354,7 +356,7 @@ Frontend:
 
 - [x] Picker view (mobile-first): aisle-ordered list, tick, mark short, propose Substitution, enter final weight. Saving `fulfilled_qty` and `final_weight_grams`, then moving the Order to `picked`, sets the Final Total and refunds the difference (ADR 0008); Substitution price differences are not in it yet. 21 Oct: `/admin/pick` and `/admin/pick/[orderNo]` for Pickers and Admins: Category order until the Hub has aisle codes; Found all, Short, grams within 10% over, Offer substitute ([ADR 0010](adr/0010-picking-and-substitutions.md)); weighed lines are never substituted
 - [x] Customer-side Substitution response (SMS link or app notice) with auto-accept on timeout. SMS and email with a link to `/s/[token]` for "pick a similar item" lines; 10-minute Substitution Window, silence is a yes; their own chosen Product needs no answer
-- [x] Final amount recalculation and payment adjustment after picking. `finishPicking` sets the Final Total (an accepted substitute at the lower price, a refused one free) and ADR 0008 refunds the difference. Stock is not yet deducted for picked and substituted items: Batch 4.4
+- [x] Final amount recalculation and payment adjustment after picking. `finishPicking` sets the Final Total (an accepted substitute at the lower price, a refused one free) and ADR 0008 refunds the difference. Stock for picked and substituted items leaves the shelf at `picked` (Batch 4.4)
 
 **Batch 4.3 Dispatch and cash on delivery** (W13). Stack: object storage for proof photos. Skills: `tdd`.
 
@@ -363,10 +365,10 @@ Frontend:
 
 **Batch 4.4 Stock, Zones and reports** (W14). Stack: TanStack Table, print stylesheets or PDF. Skills: `dataviz`, `anthropic-skills:pdf`.
 
-- [ ] Stock: receipts, adjustments, shrink, low-stock list
-- [ ] Zone, fee and Slot management UI
-- [ ] Minimal daily report: orders, revenue, fill rate, late deliveries
-- [ ] Printable pick sheets and delivery receipts (VAT breakdown)
+- [x] Stock: receipts, adjustments, shrink, low-stock list. 21 Oct ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)): `/admin/stock` for admins and Dispatchers, searchable, "only what is low"; per Product: received, shrink (with a reason), physical count, low-stock threshold, and the latest movements. Picked stock leaves `on_hand` at `picked`; a cancel after that returns it
+- [x] Zone, fee and Slot management UI. `/admin/setup` (admins): each Zone's Delivery Fee, free-delivery threshold and minimum; a weekly Slot schedule the cron turns into the next 7 days' Slots; each upcoming Slot's capacity (set it to its booked number to close it). Zone areas (cities, barangays) stay in the seed until a Hub opens a new one
+- [x] Minimal daily report: orders, revenue, fill rate, late deliveries. `/admin/report`: a Manila day's placed, delivered, cancelled, revenue, average basket, fill rate, Substitution rate and late deliveries, and the 7 days before it; no chart yet
+- [x] Printable pick sheets and delivery receipts (VAT breakdown). Print pages, not PDF: `/admin/print/pick/[orderNo]` and `/admin/print/receipt/[orderNo]`, linked from the Pick List and the Order. The receipt says "This is not an official receipt" until BIR registration (ADR 0007)
 
 **Exit criteria:** a Hub dry run with 20 real-looking Orders, one Picker and one Rider completes with no developer help, including three shorts, two Substitutions and one weighed adjustment; every status change appears in the order history.
 

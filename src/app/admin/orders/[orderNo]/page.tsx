@@ -72,6 +72,12 @@ async function Order({ params }: { params: Props["params"] }) {
           All Orders
         </Link>
         <h1 className="type-h2 font-mono">{order.orderNo}</h1>
+        <Link
+          href={`/admin/print/receipt/${order.orderNo}`}
+          className="text-sm font-semibold hover:underline"
+        >
+          Delivery receipt to print
+        </Link>
         <p>
           <b>{ORDER_STATUS_LABEL[order.status]}</b>
           <span className="text-muted-foreground">

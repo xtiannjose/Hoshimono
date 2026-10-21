@@ -32,7 +32,7 @@ async function AdminNav() {
   return (
     <nav
       aria-label="Admin"
-      className="border-border mb-6 flex min-h-11 flex-wrap gap-1 border-b"
+      className="border-border mb-6 flex min-h-11 flex-wrap gap-1 border-b print:hidden"
     >
       {links.map((l) => (
         <Link

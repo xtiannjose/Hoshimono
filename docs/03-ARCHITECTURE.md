@@ -141,6 +141,8 @@ stateDiagram-v2
 
 Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`, `failed`, `cod_pending`, `cod_collected`.
 
+Reports and printouts, as built (Batch 4.4, ADR 0012). `dailyReport` gives a Manila day's Orders placed, delivered and cancelled, revenue (delivered Orders' Final Totals), average basket, fill rate and Substitution rate over delivered lines, and deliveries after their Slot ended (`/admin/report`). The pick sheet (`/admin/print/pick/[orderNo]`) and the delivery receipt (`/admin/print/receipt/[orderNo]`) are pages with a print stylesheet; the receipt splits the charged amounts into VATable (VAT included), VAT-exempt and zero-rated sales and the VAT inside (`pricing.receiptBreakdown`), and says it is not an official receipt.
+
 ## 8. Payments
 
 - **Interface:** `PaymentProvider` with `createCheckout`, `expireCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the one new Orders pay through. `fake` is a stand-in for development and the local e2e build only (refused on a real domain): its hosted checkout is `/dev/pay/[ref]`, whose Pay button sends a signed webhook.
@@ -161,11 +163,14 @@ Payment status: `unpaid`, `authorised`, `paid`, `partially_refunded`, `refunded`
 
 ## 9. Inventory and Slots
 
-- `stock_levels(product_id, hub_id, on_hand, reserved)`. Available = `on_hand - reserved`. All changes go through `inventory`, which writes an append-only `stock_movements` row (reason: receipt, reserve, release, pick, shrink, adjustment).
+- `stock_levels(product_id, hub_id, on_hand, reserved)`. Available = `on_hand - reserved`. All changes go through `inventory`, which writes an append-only `stock_movements` row (reason: receipt, reserve, release, pick, shrink, adjustment, return).
 - Reservation, release and Slot booking are single atomic SQL updates with a `WHERE` guard, not read-then-write in application code. This avoids overselling under concurrent checkouts.
 - Slot hold for 10 minutes uses a `slot_holds` row with `expires_at`; a cron job purges expired holds each minute.
 - As built (Batch 2.3): places left in a Slot are `capacity - booked - live holds of other carts`. `holdSlot` and `bookSlot` lock the Slot row (`SELECT ... FOR UPDATE`) before counting, so the last place goes to exactly one cart. A Slot stops taking new holds 90 minutes before it starts (`SLOT_CUTOFF_MINUTES`, an assumption until operations set it); a cart holding a place may still book until the Slot starts. `bookSlot` runs inside the caller's Order transaction.
 - Low stock shows as "Only a few left" below a per-Product threshold; the storefront never reveals exact counts.
+- As built (Batch 4.4, [ADR 0012](adr/0012-stock-slots-reports-receipts.md)): stock leaves the shelf when an Order moves to `picked`. `pickStock` releases each line's reservation and takes what was packed (pieces found, or the whole pack for a weighed line, plus an accepted substitute) off `on_hand`. Cancelling after the pick puts it back (`return`); cancelling before it only releases.
+- Staff with the `stock` area receive deliveries, record shrink (a note is required), set the count after a physical count (never below what is reserved) and set the low-stock threshold at `/admin/stock`. Each change is a movement and an audit row.
+- Slots are made from a weekly schedule (`slot_templates`: weekday, start, end, capacity per Hub). The cron makes the next 7 Manila days' Slots and never touches one that exists, so a change to the schedule applies to days not made yet. Admins edit Zone fees, the schedule and single Slots' capacity at `/admin/setup`; a Slot cannot go below what is booked.
 
 ## 10. Search
 
@@ -188,7 +193,7 @@ As built (Batch 2.5):
 
 - `jobs` is an outbox. Work that must follow a commit is written in the same transaction (`placeOrder` enqueues `order.confirmed`), so a placed Order always gets its notice.
 - `runDueJobs` leases due rows with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)`, so overlapping runs never take the same job. Failures retry after 1, 4, 9 and 16 minutes, then stop with the last error kept.
-- `GET /api/cron/tick` needs `Authorization: Bearer <CRON_SECRET>` (Vercel Cron sends it). It purges lapsed Slot holds, cancels online Orders unpaid after 15 minutes, and runs due jobs. Checkout also starts a run with `after()` so notices go out at once.
+- `GET /api/cron/tick` needs `Authorization: Bearer <CRON_SECRET>` (Vercel Cron sends it). It purges lapsed Slot holds, cancels online Orders unpaid after 15 minutes, makes the next 7 days' Slots from the schedule (Batch 4.4), and runs due jobs. Checkout also starts a run with `after()` so notices go out at once.
 - `notifications` logs each sent message (unique per template, channel and Order), so a retried job sends only what is missing. Console providers only, until Resend and the SMS sender exist. Per-minute crons need a paid Vercel plan.
 
 ## 12. Identity and access

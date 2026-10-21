@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { priceFinal, type PickedLine } from "@/modules/pricing";
+import {
+  chargedLine,
+  priceFinal,
+  receiptBreakdown,
+  type PickedLine,
+} from "@/modules/pricing";
 
 const piece = (over: Partial<PickedLine> = {}): PickedLine => ({
   lineTotalCents: 23000, // 2 x Fresh Milk at 115.00
@@ -105,5 +110,31 @@ describe("priceFinal with Substitutions (ADR 0010)", () => {
         fees
       )
     ).toBe(11500 + 9800 + 4900);
+  });
+});
+
+describe("receiptBreakdown (ADR 0012)", () => {
+  it("splits what was charged into VATable, exempt and zero-rated sales, VAT inside", () => {
+    // Milk 230.00 vatable, rice 118.00 VAT-exempt, delivery 49.00 vatable.
+    expect(
+      receiptBreakdown(
+        [
+          { amountCents: 23000, taxClass: "vatable" },
+          { amountCents: 11800, taxClass: "vat_exempt" },
+        ],
+        { deliveryFeeCents: 4900, discountCents: 0 }
+      )
+    ).toEqual({
+      vatableSalesCents: 27900,
+      vatExemptSalesCents: 11800,
+      zeroRatedSalesCents: 0,
+      // 12/112 of 230.00 (24.64) plus of 49.00 (5.25)
+      vatCents: 2464 + 525,
+      totalCents: 23000 + 11800 + 4900,
+    });
+  });
+
+  it("charges each line as priceFinal does", () => {
+    expect(chargedLine({ ...weighed(), finalWeightGrams: 930 })).toBe(26505);
   });
 });

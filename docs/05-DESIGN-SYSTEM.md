@@ -137,6 +137,8 @@ Dense and functional, same tokens and fonts, no Motion beyond focus and state tr
 - Tables use TanStack Table with sticky headers, row hover, keyboard navigation and numeric columns in tabular figures (Geist Mono for codes).
 - The Picker view is **mobile-first and one-handed**: large tap rows (56 px), aisle-ordered list, big "Short" and "Substitute" buttons, final weight keypad, haptic-friendly confirmations.
 - Charts use the `dataviz` skill's palette rules; never colour-only encodings.
+- As built (Batch 4.4): admin tables are plain HTML tables with server-side search and filters; TanStack Table waits until a screen needs sorting in the browser. The daily report is number tiles and a 7-day table, no chart yet.
+- **Printouts** (pick sheet, delivery receipt) are ordinary pages: the site header, category bar, footer and admin menu carry `print:hidden`, and a Print button calls `window.print()`. Black on white, body size, boxes to tick on the pick sheet.
 
 ## 10. Accessibility checklist (per component and per page)
 

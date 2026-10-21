@@ -556,6 +556,31 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
     });
   }
 
+  // The weekly schedule the cron tick makes Slots from (ADR 0012): every
+  // day, the same windows as the Slots below.
+  for (let weekday = 0; weekday < 7; weekday++) {
+    for (const hour of SLOT_START_HOURS) {
+      const template = {
+        hubId: HUB.id,
+        weekday,
+        startMinute: hour * 60,
+        endMinute: (hour + SLOT_HOURS) * 60,
+        capacity: SLOT_CAPACITY,
+      };
+      await db.slotTemplate.upsert({
+        where: {
+          hubId_weekday_startMinute: {
+            hubId: HUB.id,
+            weekday,
+            startMinute: template.startMinute,
+          },
+        },
+        create: template,
+        update: {},
+      });
+    }
+  }
+
   // Slots for the next 7 days, Manila local time
   const today = manilaToday(now);
   for (let day = 0; day < SLOT_DAYS; day++) {

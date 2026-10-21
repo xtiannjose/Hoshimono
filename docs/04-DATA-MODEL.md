@@ -75,13 +75,15 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 **`slots`**: `id`, `hub_id`, `date` (Manila local), `starts_at`, `ends_at`, `capacity`, `booked`. Check: `booked <= capacity`. Unique: `(hub_id, starts_at)`.
 
+**`slot_templates`**: the weekly schedule Slots are made from (ADR 0012). `hub_id`, `weekday` (0 Sunday), `start_minute`, `end_minute` (Manila minutes after midnight), `capacity`. Unique: `(hub_id, weekday, start_minute)`. Check: weekday 0 to 6, `start_minute < end_minute <= 1440`, `capacity >= 0`.
+
 **`slot_holds`**: `slot_id`, `cart_id`, `expires_at`.
 
 ### inventory
 
 **`stock_levels`**: `(product_id, hub_id)` primary key, `on_hand`, `reserved`, `low_stock_threshold`. Check: `reserved >= 0 AND on_hand >= 0 AND reserved <= on_hand`.
 
-**`stock_movements`**: append-only. `product_id`, `hub_id`, `delta`, `reason`, `order_id?`, `staff_id?`, `note`.
+**`stock_movements`**: append-only. `product_id`, `hub_id`, `delta`, `reason` (receipt, reserve, release, pick, shrink, adjustment, return), `order_id?`, `staff_id?`, `note`.
 
 ### buying
 

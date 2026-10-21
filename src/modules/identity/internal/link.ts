@@ -7,6 +7,9 @@ export type StaffArea =
   | "picking"
   | "dispatch"
   | "delivery"
+  | "stock"
+  | "reports"
+  | "setup"
   | "catalog"
   | "orders"
   | "refunds"
@@ -19,6 +22,9 @@ const AREAS: Record<StaffRole, readonly StaffArea[]> = {
     "picking",
     "dispatch",
     "delivery",
+    "stock",
+    "reports",
+    "setup",
     "catalog",
     "orders",
     "refunds",
@@ -26,7 +32,7 @@ const AREAS: Record<StaffRole, readonly StaffArea[]> = {
     "audit",
   ],
   merchandiser: ["catalog"],
-  dispatcher: ["dispatch", "orders"],
+  dispatcher: ["dispatch", "orders", "stock", "reports"],
   picker: ["picking"],
   rider: ["delivery"],
 };

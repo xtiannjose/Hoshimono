@@ -2,9 +2,19 @@ import { connection } from "next/server";
 
 import { testMailboxEnabled } from "@/lib/test-mode";
 import { emailSignInLink } from "@/modules/identity";
-import { lastMessage } from "@/modules/notifications";
+import { lastSignInLink } from "@/modules/notifications";
 
 import { TEST_ACCOUNTS } from "../accounts";
+
+// One sign-in at a time: between sending a link and reading it back, a
+// second sign-in to the same account would overwrite it, and two browsers
+// would race for one single-use link (parallel e2e workers).
+let previous: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(work: () => Promise<T>): Promise<T> {
+  const run = previous.then(work, work);
+  previous = run.catch(() => undefined);
+  return run;
+}
 
 /**
  * Sign in as a test account: send its magic link, then send the browser to
@@ -18,8 +28,10 @@ export async function GET(request: Request) {
   if (!testMailboxEnabled() || !account) {
     return new Response("Not found", { status: 404 });
   }
-  await emailSignInLink(account.email, account.next);
-  const link = /https?:\/\/\S+/.exec(lastMessage(account.email) ?? "")?.[0];
+  const link = await oneAtATime(async () => {
+    await emailSignInLink(account.email, account.next);
+    return lastSignInLink(account.email);
+  });
   return link
     ? Response.redirect(link, 303)
     : new Response("No sign-in link was sent", { status: 500 });
