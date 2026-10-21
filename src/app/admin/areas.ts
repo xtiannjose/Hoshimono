@@ -76,6 +76,18 @@ export const AREA_LINKS: Record<
       hint: "Products as CSV",
     },
   ],
+  content: [
+    {
+      href: "/admin/recipes",
+      label: "Recipes",
+      hint: "Write, publish and feature Recipes",
+    },
+    {
+      href: "/admin/articles",
+      label: "Articles",
+      hint: "Tips and guides, with Products to buy",
+    },
+  ],
   refunds: [
     {
       href: "/admin/refunds",

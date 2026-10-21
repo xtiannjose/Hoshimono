@@ -336,6 +336,7 @@ const STAFF: { key: string; role: StaffRole; name: string; phone?: string }[] =
   [
     { key: "admin", role: "admin", name: "Rafael Cruz" },
     { key: "merchandiser", role: "merchandiser", name: "Joanna Lim" },
+    { key: "editor", role: "content_editor", name: "Bea Navarro" },
     { key: "picker", role: "picker", name: "Arnel Bautista" },
     { key: "dispatcher", role: "dispatcher", name: "Marites Aquino" },
     { key: "tech", role: "admin", name: "Hoshimono Tech" },
@@ -346,6 +347,146 @@ const STAFF: { key: string; role: StaffRole; name: string; phone?: string }[] =
       phone: "+639171234599",
     },
   ];
+
+// Recipes and an Article from seeded Products (ADR 0013). Each ingredient:
+// [Product slug or null, label, note, count for the servings, scales, at home].
+type SeedIngredient = [string | null, string, string, number, boolean, boolean];
+const RECIPES: {
+  key: string;
+  title: string;
+  intro: string;
+  servings: number;
+  prep: number;
+  cook: number;
+  featured?: boolean;
+  ingredients: SeedIngredient[];
+  steps: string[];
+}[] = [
+  {
+    key: "chicken-adobo",
+    title: "Chicken Adobo",
+    intro:
+      "The one everyone grew up with: chicken braised in soy sauce, vinegar and lots of garlic. Better the next day.",
+    servings: 4,
+    prep: 10,
+    cook: 45,
+    featured: true,
+    ingredients: [
+      [
+        "magnolia-chicken-thighs",
+        "",
+        "cut into serving pieces",
+        1,
+        true,
+        false,
+      ],
+      ["silver-swan-soy-sauce", "", "1/2 cup", 1, false, false],
+      ["datu-puti-cane-vinegar", "", "1/3 cup", 1, false, false],
+      ["garlic", "", "1 whole head, crushed", 1, false, true],
+      ["red-onions", "", "1 medium, sliced", 1, false, true],
+      ["baguio-vegetable-oil", "", "2 tablespoons", 1, false, true],
+      ["harvesters-jasmine-rice", "", "to serve", 1, false, true],
+      [null, "Water", "1 cup", 1, false, false],
+    ],
+    steps: [
+      "Mix the chicken with the soy sauce and half the garlic. Leave it for 30 minutes if you have time.",
+      "Heat the oil in a pot. Brown the rest of the garlic and the onion, then the chicken, skin side down.",
+      "Pour in the marinade, the vinegar and the water. Bring to a boil without stirring, so the vinegar cooks off.",
+      "Cover and simmer for 30 to 35 minutes, until the chicken is tender and the sauce has thickened.",
+      "Serve hot with rice.",
+    ],
+  },
+  {
+    key: "sinigang-na-baboy",
+    title: "Sinigang na Baboy",
+    intro:
+      "Sour tamarind soup with pork and vegetables, for a rainy afternoon or any day at all.",
+    servings: 6,
+    prep: 15,
+    cook: 75,
+    ingredients: [
+      ["pork-kasim", "", "cut into cubes", 2, true, false],
+      ["knorr-sinigang-mix", "", "1 pack", 1, true, false],
+      ["tomatoes", "", "2, quartered", 1, false, false],
+      ["red-onions", "", "1, quartered", 1, false, true],
+      ["eggplant", "", "sliced", 1, false, false],
+      ["sitaw", "", "cut into 2-inch pieces", 1, false, false],
+      ["kangkong", "", "leaves and tender stems", 1, true, false],
+      ["rufina-fish-sauce-patis", "", "to taste", 1, false, true],
+      [null, "Water", "2 liters", 1, false, false],
+    ],
+    steps: [
+      "Boil the pork, tomatoes and onion in the water. Skim off the scum, then simmer for an hour until tender.",
+      "Stir in the sinigang mix. Add the eggplant and sitaw and cook for 5 minutes.",
+      "Add the kangkong, turn off the heat and season with fish sauce.",
+    ],
+  },
+  {
+    key: "pancit-bihon",
+    title: "Pancit Bihon",
+    intro:
+      "Rice noodles with chicken and vegetables. Long noodles for a long life, so it shows up at every birthday.",
+    servings: 6,
+    prep: 20,
+    cook: 25,
+    ingredients: [
+      ["excellent-bihon", "", "soaked in water for 10 minutes", 1, true, false],
+      [
+        "bounty-fresh-chicken-breast-fillet",
+        "",
+        "boiled and shredded",
+        1,
+        true,
+        false,
+      ],
+      ["cabbage", "", "shredded", 1, false, false],
+      ["carrots", "", "cut into strips", 1, false, false],
+      ["silver-swan-soy-sauce", "", "1/4 cup", 1, false, true],
+      ["garlic", "", "4 cloves, minced", 1, false, true],
+      ["red-onions", "", "1, sliced", 1, false, true],
+      ["calamansi", "", "to serve", 1, false, false],
+    ],
+    steps: [
+      "Saute the garlic and onion, then the chicken.",
+      "Add the carrots and cabbage and cook until just tender. Take half out for the top.",
+      "Pour in 2 cups of the chicken broth and the soy sauce. Bring to a boil.",
+      "Add the drained noodles and toss until they soak up the broth.",
+      "Top with the vegetables you took out. Serve with calamansi.",
+    ],
+  },
+];
+
+const ARTICLES = [
+  {
+    key: "stocking-a-filipino-pantry",
+    title: "Stocking a Filipino pantry",
+    intro:
+      "Five bottles and a sack of rice cover most of the week. Here is what to keep on the shelf.",
+    sections: [
+      {
+        heading: "The sour and the salty",
+        text: "Soy sauce, vinegar and fish sauce are the base of adobo, paksiw, sinigang and most dipping sauces. Buy the liter bottles: they keep for months.",
+      },
+      {
+        heading: "Garlic, onions and oil",
+        text: "Almost every dish starts with garlic and onions in hot oil. Keep them in a cool, dry place, not the fridge.",
+      },
+      {
+        heading: "Rice",
+        text: "A 5-kilo bag lasts a family of four about a week. Store it sealed, away from the stove.",
+      },
+    ],
+    products: [
+      "silver-swan-soy-sauce",
+      "datu-puti-cane-vinegar",
+      "rufina-fish-sauce-patis",
+      "garlic",
+      "red-onions",
+      "baguio-vegetable-oil",
+      "harvesters-jasmine-rice",
+    ],
+  },
+];
 
 const CUSTOMERS = [
   // The client test account: a Customer ready to order (docs/06 section 6).
@@ -620,6 +761,67 @@ export async function seedDatabase(db: PrismaClient, now = new Date()) {
       where: { id: staff.id },
       create: staff,
       update: staff,
+    });
+  }
+
+  // Recipes and Articles, published (ADR 0013)
+  for (const [i, r] of RECIPES.entries()) {
+    const recipe = {
+      id: seedId(`recipe:${r.key}`),
+      slug: r.key,
+      title: r.title,
+      intro: r.intro,
+      servings: r.servings,
+      prepMinutes: r.prep,
+      cookMinutes: r.cook,
+      steps: r.steps,
+      status: "published" as const,
+      featured: r.featured ?? false,
+      publishedAt: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
+    };
+    await db.recipe.upsert({
+      where: { id: recipe.id },
+      create: recipe,
+      update: recipe,
+    });
+    await db.recipeIngredient.deleteMany({ where: { recipeId: recipe.id } });
+    await db.recipeIngredient.createMany({
+      data: r.ingredients.map(
+        ([slug, label, note, quantity, scales, optional], position) => ({
+          recipeId: recipe.id,
+          productId: slug ? seedId(`product:${slug}`) : null,
+          label: label || null,
+          note,
+          quantity,
+          scales,
+          optional,
+          position,
+        })
+      ),
+    });
+  }
+  for (const a of ARTICLES) {
+    const article = {
+      id: seedId(`article:${a.key}`),
+      slug: a.key,
+      title: a.title,
+      intro: a.intro,
+      sections: a.sections,
+      status: "published" as const,
+      publishedAt: now,
+    };
+    await db.article.upsert({
+      where: { id: article.id },
+      create: article,
+      update: article,
+    });
+    await db.articleProduct.deleteMany({ where: { articleId: article.id } });
+    await db.articleProduct.createMany({
+      data: a.products.map((slug, position) => ({
+        articleId: article.id,
+        productId: seedId(`product:${slug}`),
+        position,
+      })),
     });
   }
 

@@ -8,11 +8,15 @@ import { ActiveCategoryLinks, CategoryLinks } from "./category-links";
 /** Top-level Categories: chips on phones, underlined tabs from md up. */
 export async function CategoryNav() {
   const tree = await categoryTree();
-  const links = tree.map((c) => ({
-    slug: c.slug,
-    name: c.name,
-    href: categoryHref([c.slug]),
-  }));
+  const links = [
+    ...tree.map((c) => ({
+      slug: c.slug,
+      name: c.name,
+      href: categoryHref([c.slug]),
+    })),
+    // Not a Category, but shopped the same way (ADR 0013).
+    { slug: "recipes", name: "Recipes", href: "/recipes" },
+  ];
   return (
     <nav
       aria-label="Categories"

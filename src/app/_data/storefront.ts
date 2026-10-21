@@ -14,11 +14,19 @@ import {
   type CategoryNode,
   type ListProductsInput,
 } from "@/modules/catalog";
+import {
+  getArticle,
+  getFeaturedRecipe,
+  getRecipe,
+  listArticles,
+  listRecipes,
+} from "@/modules/content";
 import { getDefaultHubId, listCoverage } from "@/modules/delivery";
 import { getStockStates } from "@/modules/inventory";
 
 export const CATALOG_TAG = "catalog";
 export const STOCK_TAG = "stock";
+export const CONTENT_TAG = "content";
 
 function catalogCache() {
   cacheLife("minutes");
@@ -79,6 +87,43 @@ export async function stockStates(productIds: string[]) {
   if (!hubId)
     return Object.fromEntries(productIds.map((id) => [id, "out" as const]));
   return getStockStates(productIds, hubId);
+}
+
+// Recipes and Articles (ADR 0013): a Content Editor's save refreshes them
+// at once; they show catalogue prices, so a catalogue edit does too.
+function contentCache() {
+  cacheLife("minutes");
+  cacheTag(CONTENT_TAG, CATALOG_TAG);
+}
+
+export async function recipeList() {
+  "use cache";
+  contentCache();
+  return listRecipes();
+}
+
+export async function recipe(slug: string) {
+  "use cache";
+  contentCache();
+  return getRecipe(slug);
+}
+
+export async function featuredRecipe() {
+  "use cache";
+  contentCache();
+  return getFeaturedRecipe();
+}
+
+export async function articleList() {
+  "use cache";
+  contentCache();
+  return listArticles();
+}
+
+export async function article(slug: string) {
+  "use cache";
+  contentCache();
+  return getArticle(slug);
 }
 
 /** Served Zones and their fees: the coverage page and the service strip. */

@@ -2,7 +2,7 @@
 
 Status: v0.2, 2026-10-17. `prisma/schema.prisma` is now the source of truth for tables and fields; this document keeps the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
-**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes, Vouchers, Promotions, Freshness Claims and the Referral fields on `customers` arrive with Phase 5 in a new migration; `orders.voucher_id` comes with them. Differences from the field lists below:
+**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`). Vouchers, Promotions, Freshness Claims and the Referral fields on `customers` arrive later in Phase 5; `orders.voucher_id` comes with them. Differences from the field lists below:
 
 - `carts.checked_out_at` marks a Cart that became an Order. "Active Cart" (invariant 9) means `checked_out_at IS NULL`.
 - Append-only tables (`stock_movements`, `order_status_events`, `payment_events`, `audit_log`) have `created_at` (or `at`, `received_at`) but no `updated_at`.
@@ -119,7 +119,11 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 **`addresses`**: `customer_id`, `label`, `line1`, `barangay`, `city`, `landmark`, `lat`, `lng`, `zone_id?`, `notes`, `is_default`.
 
-**`recipes`** and **`recipe_ingredients`**: ingredient rows hold `product_id`, `quantity_per_serving`, `unit`, `is_optional`.
+**`recipes`** (Batch 5.1, ADR 0013): `slug` (unique, made once from the title), `title`, `intro`, `photo_url`, `photo_alt`, `servings` (the base the counts are for, 1 to 50), `prep_minutes`, `cook_minutes`, `steps text[]`, `status` (`draft`, `published`), `featured`, `published_at` (set when published).
+
+**`recipe_ingredients`**: `recipe_id`, `product_id?` (null for plain text), `label?` (required without a Product), `note`, `quantity` (to buy for the base servings, 1 to 99), `scales`, `optional` ("usually at home"), `position`.
+
+**`articles`**: `slug`, `title`, `intro`, `photo_url`, `photo_alt`, `sections jsonb` (`[{heading, text}]`), `status`, `published_at`. **`article_products`**: `(article_id, product_id)`, `position`.
 
 **`vouchers`**, **`promotions`**: eligibility JSON (categories, products, minimum spend, first order only), `starts_at`, `ends_at`, `usage_limit`, `per_customer_limit`.
 

@@ -31,7 +31,7 @@ export function CategoryLinks({
 export function ActiveCategoryLinks({ links }: { links: CategoryLink[] }) {
   // /c/<top-level slug>/...: the top-level aisle is the one to mark.
   const [, section, slug] = usePathname().split("/");
-  return (
-    <CategoryLinks links={links} current={section === "c" ? slug : null} />
-  );
+  const current =
+    section === "c" ? slug : section === "recipes" ? "recipes" : null;
+  return <CategoryLinks links={links} current={current} />;
 }

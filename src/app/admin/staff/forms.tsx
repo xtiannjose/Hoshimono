@@ -18,6 +18,7 @@ const FIELD =
 export const ROLES = {
   admin: "Admin: everything",
   merchandiser: "Merchandiser: Products and Categories",
+  content_editor: "Content Editor: Recipes and Articles",
   dispatcher: "Dispatcher: dispatch, cash, the order queue",
   picker: "Picker: picking",
   rider: "Rider: their deliveries",

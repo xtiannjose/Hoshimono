@@ -4,7 +4,7 @@ Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order,
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
 
-## 0. Where we are (updated 2026-10-21)
+## 0. Where we are (updated 2026-10-21, evening)
 
 Resume here: read this section, then the batch named first under Next.
 
@@ -21,16 +21,17 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4). Each is built on the one before: merge them in that order.
+**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4), #19 (Batch 5.1). Each is built on the one before: merge them in that order.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. A general checkup of the app, asked for by the owner on 21 Oct before going further.
-2. The Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
+1. Phase 5 (section 10), in order: Batch 5.2 retention, 5.3 promotions and Vouchers, 5.4 Freshness Claims, 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
+2. A general checkup of the app (asked for on 21 Oct), and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
 3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
@@ -378,7 +379,7 @@ Frontend:
 
 **Batch 5.1 Recipes** (W15). Stack: `content` module, `cart`. Skills: `design-taste-frontend`, `motion`.
 
-- [ ] Recipes: admin editor, public pages, servings scaler, "Add all to cart"
+- [x] Recipes: admin editor, public pages, servings scaler, "Add all to cart". 21 Oct ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)): a Content Editor role writes Recipes and Articles at `/admin/recipes` and `/admin/articles` with no code (one box per step, ingredients picked from the catalogue, one photo, Draft or Published, featured on Home); `/recipes`, `/recipes/[slug]`, `/articles`, `/articles/[slug]`; servings rescale the counts, "usually at home" starts unticked, a sold-out ingredient offers a similar Product, one button adds the rest to the Cart. Articles came forward from ADM-9 at the owner's request
 
 **Batch 5.2 Retention** (W15 to W16). Stack: jobs, email and SMS with consent.
 
