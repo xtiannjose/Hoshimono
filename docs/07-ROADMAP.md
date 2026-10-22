@@ -39,6 +39,7 @@ Resume here: read this section, then the batch named first under Next.
 2. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
 3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 4. Phase 6, Launch hardening (section 10).
+5. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled).
 
 **Waiting on the owner**
 
@@ -455,6 +456,39 @@ Frontend:
 ### After launch (not scheduled)
 
 - Native Flutter app for Customers, only if the triggers in [concepts/flutter-mobile](concepts/flutter-mobile/README.md) are met. The plan is frozen until then.
+
+### Feature ideas from other grocery shops (22 Oct, not scheduled)
+
+Collected on 22 Oct from what other online grocers offer (MetroMart, GrabMart, pandamart, SM Markets, Instacart, Tesco) and 2026 Philippine payment surveys, so the owner can see what could come next. Nothing here is decided or scheduled: the owner picks, and a picked idea becomes a batch with its own ADR. Competitor details came from the web and some are dated; check them before relying on them. Size is a rough guide: small is a few days, medium about a batch, large two batches or more.
+
+**First picks: a big gain on what is already built**
+
+- [ ] **More ways to pay: QR Ph, InstaPay and Maya.** We take cash, GCash and card. A 2026 Xendit study found 41% of Filipino shoppers who dropped a purchase lacked their preferred payment method; QR Ph and InstaPay are growing fastest. PayMongo supports them, so it extends ADR 0003. Medium. Needs the PayMongo account.
+- [ ] **Change an Order after placing it**, until picking starts (add items, change counts). Today a Customer can only cancel. Tesco lets shoppers amend until a cutoff. Touches the price, stock and Payment of a placed Order (ADR 0008 for online payments). Large.
+- [ ] **Pickup at the Hub** (click and collect): a Slot kind with no delivery fee and a counter handover with the Delivery PIN. SM Markets offers pickup. Medium. Needs a pickup counter at the Hub.
+- [ ] **Delivery membership**: a monthly fee for free delivery over a minimum (MetroMart's pass, Tesco's Delivery Saver). Steady income and loyalty; builds on Vouchers and pricing (ADR 0015). Large: recurring billing needs the payment provider.
+- [ ] **Searches that found nothing**, a report for staff: what shoppers look for that we do not sell, to guide stocking. Uses the search data we have. Small.
+
+**Strong for the Philippine market**
+
+- [ ] **Multi-buy and bundles**: "Buy 1 Take 1", "2 for ₱99", and ready kits (sinigang set, Noche Buena pack). Promotions today are percent or pesos off one Product (ADR 0015). Medium.
+- [ ] **Loyalty points**: points per peso, spent as a Voucher (like SM's SMAC). Builds on the Voucher and Referral ledger. Medium.
+- [ ] **Payday and seasonal campaigns**: sales on the 15th and 30th, Christmas. Mostly scheduled Promotions plus bundles. Small once bundles exist.
+- [ ] **Repeat orders**: "every Saturday: rice, eggs, water", from a Shopping List on a schedule, with a reminder to confirm. Builds on Reorder and Shopping Lists (ADR 0014). Medium.
+- [ ] **Senior Citizen and PWD discount** (20% and VAT exemption on qualifying items). May be required by law: waits on the accountant (ADR 0007 item 4). Medium.
+
+**Better delivery and trust**
+
+- [ ] **Live Order progress**: "picked 12 of 15", Substitutions approved on the Order page as well as by SMS (ADR 0010), and a chat with the Picker (as Instacart does). Medium.
+- [ ] **Rider on the way**: the Rider's time to arrive or location, and a photo at the door as proof of delivery, beside the Delivery PIN (ADR 0011). Medium.
+- [ ] **Viber or Messenger** for Order messages and support. Widely used in the Philippines; not confirmed by survey yet. Medium. Needs a business account.
+- [ ] **Fuller Product pages**: real photos (business track), ingredients, nutrition, origin ("from Benguet") and a shelf-life promise ("at least 5 days"). Data entry plus a few fields. Small to medium.
+
+**Later**
+
+- [ ] **Buy now, pay later** (GGives, BillEase, Atome): about 5% of Philippine online shopping in 2026 (IDC estimate); less useful for groceries. Medium.
+- [ ] **Paste a shopping list** to add every line at once, and search by scanning a barcode. Medium.
+- [ ] **For staff**: barcode scanning while picking (fewer wrong items) and grouping deliveries into Rider routes. Medium each.
 
 ## 11. Business tracks (run alongside)
 
