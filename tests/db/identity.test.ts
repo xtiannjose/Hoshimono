@@ -65,7 +65,8 @@ describe("customerForUser", () => {
     const again = await customerForUser(db, user);
     expect(again.id).toBe(first.id);
     expect(first.email).toBe("ligaya@example.com");
-    expect(first.name).toBe("ligaya");
+    // No name made from the email (ADR 0018): the Customer adds their own.
+    expect(first.name).toBe("");
     expect(await db.customer.count()).toBe(1);
   });
 

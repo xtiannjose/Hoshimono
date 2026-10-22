@@ -8,6 +8,7 @@ import type { ClaimReason } from "@/generated/prisma/enums";
 import { formatMoney } from "@/lib/money";
 
 import { fileClaimAction, type ClaimFormState } from "./actions";
+import { INLINE_FIELD, TEXTAREA } from "@/components/ui/field-classes";
 
 type Line = {
   id: string;
@@ -18,8 +19,6 @@ type Line = {
 };
 
 const initial: ClaimFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 text-base";
 const PHOTO_NEEDED: ClaimReason[] = ["not_fresh", "damaged"];
 
 function Problem({ message }: { message?: string }) {
@@ -107,7 +106,7 @@ export function ClaimForm({
             min={1}
             max={line.units}
             defaultValue={1}
-            className={`${FIELD} w-28`}
+            className={`${INLINE_FIELD} w-28`}
           />
           <Problem message={e.units} />
         </div>
@@ -127,7 +126,7 @@ export function ClaimForm({
           aria-describedby="photos-help"
           className="text-sm"
         />
-        <p id="photos-help" className="text-muted-foreground text-[13px]">
+        <p id="photos-help" className="text-muted-foreground text-fine">
           Up to 3 photos of the item and its label. Needed when it was spoiled
           or damaged.
         </p>
@@ -143,7 +142,7 @@ export function ClaimForm({
           name="note"
           rows={3}
           maxLength={500}
-          className={`${FIELD} py-2`}
+          className={TEXTAREA}
         />
         <Problem message={e.note} />
       </div>

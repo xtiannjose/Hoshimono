@@ -8,7 +8,7 @@ export async function OnSale() {
   if (products.length === 0) return null;
   const stock = await stockStates(products.map((p) => p.id));
   return (
-    <section aria-labelledby="sale-h" className="wrap pt-14">
+    <section aria-labelledby="sale-h" className="wrap pt-10">
       <h2 id="sale-h" className="type-h2 mb-5">
         {(await getMessages()).home.onSale}
       </h2>

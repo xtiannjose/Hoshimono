@@ -11,10 +11,9 @@ import {
   updateStaffAction,
   type StaffFormState,
 } from "./actions";
+import { INLINE_FIELD as FIELD } from "@/components/ui/field-classes";
 
 const initial: StaffFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal";
 export const ROLES = {
   admin: "Admin: everything",
   merchandiser: "Merchandiser: Products and Categories",

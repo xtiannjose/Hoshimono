@@ -11,7 +11,7 @@ test("the shop in Filipino keeps the language while shopping", async ({
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Sariwang grocery, ihahatid ngayon.",
+      name: "Ano ang kailangan mo ngayon?",
     })
   ).toBeVisible();
   const results = await new AxeBuilder({ page })

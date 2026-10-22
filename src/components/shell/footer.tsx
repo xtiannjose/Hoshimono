@@ -33,6 +33,9 @@ export function Footer({ lang }: { lang: Lang }) {
           <Link href="/articles" className={LINK}>
             {t.tipsAndGuides}
           </Link>
+          <Link href="/help" className={LINK}>
+            {t.help}
+          </Link>
           <Suspense fallback={<LanguageLink long className={LINK} />}>
             <LanguageSwitch long className={LINK} />
           </Suspense>

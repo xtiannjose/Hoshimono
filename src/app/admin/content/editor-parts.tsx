@@ -4,13 +4,11 @@ import { ArrowDownIcon, ArrowUpIcon, TrashIcon } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+export { FIELD, INLINE_FIELD, TEXTAREA } from "@/components/ui/field-classes";
 
 // Pieces shared by the Recipe and Article editors (ADR 0013).
 
 export type ProductChoice = { id: string; label: string };
-
-export const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 text-base font-normal";
 
 export const PRODUCT_LIST = "product-choices";
 
@@ -44,7 +42,7 @@ export function RowTools({
     <div className="flex gap-1">
       <Button
         type="button"
-        size="icon-sm"
+        size="icon"
         variant="ghost"
         aria-label={`Move ${what} up`}
         disabled={index === 0}
@@ -54,7 +52,7 @@ export function RowTools({
       </Button>
       <Button
         type="button"
-        size="icon-sm"
+        size="icon"
         variant="ghost"
         aria-label={`Move ${what} down`}
         disabled={index === count - 1}
@@ -64,7 +62,7 @@ export function RowTools({
       </Button>
       <Button
         type="button"
-        size="icon-sm"
+        size="icon"
         variant="ghost"
         aria-label={`Remove ${what}`}
         onClick={onRemove}
@@ -111,7 +109,7 @@ export function Labeled({
         {label}
       </label>
       {children}
-      {hint && <p className="text-muted-foreground text-[13px]">{hint}</p>}
+      {hint && <p className="text-muted-foreground text-fine">{hint}</p>}
       <FieldError message={error} />
     </div>
   );

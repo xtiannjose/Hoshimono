@@ -39,6 +39,11 @@ const STATUS_STYLE = {
   draft: "bg-warn-soft text-warn",
   archived: "bg-muted text-muted-foreground",
 };
+const STATUS_NAME = {
+  active: "In the shop",
+  draft: "Draft",
+  archived: "Archived",
+};
 
 async function ProductsTable({
   searchParams,
@@ -166,7 +171,7 @@ async function ProductsTable({
                   <span
                     className={`rounded-pill px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[r.status]}`}
                   >
-                    {r.status}
+                    {STATUS_NAME[r.status]}
                   </span>
                 </td>
                 <td className="text-muted-foreground px-4 py-2.5 tabular-nums">

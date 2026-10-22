@@ -9,7 +9,7 @@ export async function Breadcrumb({ items }: { items: Crumb[] }) {
   const t = (await getMessages()).breadcrumb;
   const all = [{ name: t.home, href: "/" }, ...items];
   return (
-    <nav aria-label={t.label} className="pt-5 pb-2">
+    <nav aria-label={t.label} className="pt-3 pb-1 md:pt-5 md:pb-2">
       <ol className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm">
         {all.map((c, i) => {
           const last = i === all.length - 1;

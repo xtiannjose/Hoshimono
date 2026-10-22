@@ -3,7 +3,7 @@ import Link from "@/components/link";
 import { buttonVariants } from "@/components/ui/button";
 import { getMessages } from "@/i18n/server";
 
-/** "Showing 25 to 48 of 120" with Previous and Next links. */
+/** "Showing 25 to 48 of 120" with Previous and Next links, past one page. */
 export async function Pagination({
   page,
   pageSize,
@@ -15,7 +15,8 @@ export async function Pagination({
   total: number;
   href: (page: number) => string;
 }) {
-  if (total === 0) return null;
+  // One page holds everything: nothing to count or page through.
+  if (total <= pageSize) return null;
   const t = (await getMessages()).listing;
   const last = Math.min(total, page * pageSize);
   const first = Math.min((page - 1) * pageSize + 1, last);
@@ -26,7 +27,7 @@ export async function Pagination({
       className="flex flex-col items-center gap-3 pt-8 pb-2"
     >
       <p className="text-muted-foreground">{t.showing(first, last, total)}</p>
-      {pages > 1 && (
+      {
         <div className="flex gap-2">
           {page > 1 && (
             <Link
@@ -47,7 +48,7 @@ export async function Pagination({
             </Link>
           )}
         </div>
-      )}
+      }
     </nav>
   );
 }

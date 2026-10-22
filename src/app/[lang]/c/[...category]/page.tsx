@@ -91,10 +91,13 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   return (
     <div className="wrap">
       <Breadcrumb items={crumbs} />
-      {/* Phones: heading, count, then sort on its own row (it never fits
-          beside a title). From sm up: sort beside heading and count. */}
-      <div className="grid items-end gap-x-6 pt-1 sm:grid-cols-[1fr_auto]">
-        <h1 className="type-h1 sm:col-start-1 sm:row-start-1">{found.name}</h1>
+      {/* Phones: the heading, then the count and sort on one row, so the
+          first Products show without scrolling (ADR 0018). From sm up: sort
+          beside the heading and count. */}
+      <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 pt-1 sm:items-end sm:gap-x-6">
+        <h1 className="type-h1 max-sm:type-h2 col-span-2 sm:col-span-1 sm:col-start-1 sm:row-start-1">
+          {found.name}
+        </h1>
         <Suspense fallback={<ListingFallback />}>
           <CategoryListing
             listing={listing}
@@ -112,8 +115,8 @@ export default async function CategoryPage({ params, searchParams }: Props) {
 // Grid cells shared by the streamed listing and its fallback.
 const COUNT_CELL = "text-muted-foreground mt-1 sm:col-start-1 sm:row-start-2";
 const SORT_CELL =
-  "mt-6 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:self-end";
-const LIST_CELL = "pt-6 sm:col-span-2";
+  "mt-1 sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:self-end";
+const LIST_CELL = "col-span-2 pt-4 sm:pt-6";
 
 // shortcut: inside Suspense, so a missing Category streams a noindex
 // not-found page with status 200 (see the Product page).
@@ -205,7 +208,7 @@ async function CategoryListing({
         className={`${LIST_CELL} grid items-start gap-8 lg:grid-cols-[248px_1fr]`}
       >
         {/* Phones: filters fold away; desktop: a sticky sidebar. */}
-        <details className="rounded-card border-border bg-card border px-4 py-2 lg:hidden">
+        <details className="rounded-card border-border bg-card border px-4 lg:hidden">
           <summary className="flex min-h-11 cursor-pointer items-center gap-2 font-semibold">
             <FunnelSimpleIcon size={20} aria-hidden />
             {t.listing.filters}
@@ -214,7 +217,7 @@ async function CategoryListing({
         </details>
         <aside
           aria-label={t.listing.filters}
-          className="sticky top-[136px] hidden lg:block"
+          className="top-sticky sticky hidden lg:block"
         >
           {filterForm("filters-wide")}
         </aside>
@@ -236,7 +239,7 @@ async function CategoryListing({
                   </Link>
                 </p>
               ) : (
-                <p>{t.listing.emptyAisle}</p>
+                <p>{t.listing.emptyCategory}</p>
               )
             }
           />

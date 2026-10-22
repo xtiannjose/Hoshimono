@@ -17,7 +17,7 @@ const CartDrawer = dynamic(() => import("./cart-drawer"), { ssr: false });
 // The count's bump brings Motion, so it loads once the Cart has items.
 const CountBadge = lazy(() => import("./count-badge"));
 const BADGE =
-  "rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums";
+  "rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-fine leading-6 font-bold tabular-nums";
 
 /** Hands the server's Cart to the store once it streams in. */
 export function CartSync({ view }: { view: CartView }) {

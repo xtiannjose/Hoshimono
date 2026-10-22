@@ -40,6 +40,17 @@ test("a Product page shows price, Unit Price and redirects a stale slug", async 
   ).toBeVisible();
   await expect(page.getByText("₱115.00 per litre").first()).toBeVisible();
 
+  // The buy box: choose how many, then add them in one go.
+  await page.waitForLoadState("networkidle");
+  const stepper = page.getByRole("group", { name: "Quantity of Fresh Milk" });
+  await stepper.getByRole("button", { name: "Add one" }).click();
+  await expect(stepper.locator("output")).toHaveText("2");
+  await page.getByRole("button", { name: "Add to cart" }).click();
+  await expect(
+    page.getByRole("main").getByRole("button", { name: "View cart" })
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(stepper.locator("output")).toHaveText("2");
+
   const id = href.slice(-36);
   await page.goto(`/p/old-name-${id}`);
   await expect(page).toHaveURL(new RegExp(`${href}$`));
@@ -55,12 +66,12 @@ test("search finds Filipino words, corrects typos and guides on no results", asy
 
   await page.goto("/search?q=mlik");
   await expect(
-    page.getByText('we searched for "milk"').filter({ visible: true })
+    page.getByText("we searched for “milk”").filter({ visible: true })
   ).toBeVisible();
 
   await page.goto("/search?q=xylophone");
   await expect(
-    page.getByRole("heading", { name: 'No results for "xylophone"' })
+    page.getByRole("heading", { name: "No results for “xylophone”" })
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Pantry" }).last()).toBeVisible();
 });

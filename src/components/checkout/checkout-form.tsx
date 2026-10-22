@@ -22,7 +22,7 @@ import {
   placeOrderAction,
   type CheckoutState,
 } from "@/app/[lang]/checkout/actions";
-import { CartSummary } from "@/components/cart/cart-summary";
+import { CartNotes, CartSummary } from "@/components/cart/cart-summary";
 import { VoucherForm } from "@/components/cart/voucher-form";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { useLang, useLocalPath, useMessages } from "@/i18n/client";
@@ -31,6 +31,7 @@ import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import type { CartView } from "@/modules/cart";
 import type { AddressView } from "@/modules/customers";
+import { FIELD, RADIO_CARD as CARD } from "@/components/ui/field-classes";
 
 type SlotChoice = {
   id: string;
@@ -42,10 +43,6 @@ type SlotChoice = {
   state: "open" | "few" | "full";
 };
 
-const FIELD =
-  "h-11 w-full rounded-field border border-input bg-card px-3 text-base";
-const CARD =
-  "rounded-field border-border-strong bg-card has-[:checked]:border-ink has-[:focus-visible]:outline-ring flex cursor-pointer border has-[:checked]:border-2 has-[:focus-visible]:outline-2";
 const PAYMENT = [
   { value: "gcash", Icon: DeviceMobileIcon },
   { value: "card", Icon: CreditCardIcon },
@@ -176,7 +173,7 @@ export function CheckoutForm({
             {addresses.map((a) => (
               <label
                 key={a.id}
-                className={`${CARD} items-start gap-3 px-4 py-3.5 has-[:checked]:px-[15px] has-[:checked]:py-[13px]`}
+                className={`${CARD} items-start gap-3 px-4 py-3.5`}
               >
                 <input
                   type="radio"
@@ -190,12 +187,12 @@ export function CheckoutForm({
                   }
                   className="accent-ink mt-0.5 size-5 shrink-0"
                 />
-                <span className="text-[15px] leading-[22px]">
+                <span className="text-label leading-[22px]">
                   <b>{a.label}</b>
                   <span className="block">
                     {a.line1}, {a.barangay}, {a.city}
                   </span>
-                  <span className="text-muted-foreground block text-[13px]">
+                  <span className="text-muted-foreground text-fine block">
                     {t.landmark(a.landmark)}
                   </span>
                 </span>
@@ -242,7 +239,7 @@ export function CheckoutForm({
                 aria-describedby="phone-hint"
                 className={FIELD}
               />
-              <p id="phone-hint" className="text-muted-foreground text-[13px]">
+              <p id="phone-hint" className="text-muted-foreground text-fine">
                 {t.mobileHint}
               </p>
             </div>
@@ -273,7 +270,7 @@ export function CheckoutForm({
                   {days.map(([date, label]) => (
                     <label
                       key={date}
-                      className="rounded-field border-border-strong bg-card text-muted-foreground has-[:checked]:bg-ink has-[:checked]:border-ink has-[:checked]:text-bg has-[:focus-visible]:outline-ring relative min-w-[92px] shrink-0 cursor-pointer border px-3.5 py-2.5 text-[15px] leading-5 font-semibold has-[:focus-visible]:outline-2"
+                      className="rounded-field border-border-strong bg-card text-muted-foreground has-[:checked]:bg-ink has-[:checked]:border-ink has-[:checked]:text-bg has-[:focus-visible]:outline-ring text-label relative min-w-[92px] shrink-0 cursor-pointer border px-3.5 py-2.5 font-semibold has-[:focus-visible]:outline-2"
                     >
                       <input
                         type="radio"
@@ -298,7 +295,7 @@ export function CheckoutForm({
                       return (
                         <label
                           key={s.id}
-                          className={`${CARD} has-[:checked]:bg-accent-soft relative grid gap-0.5 px-3.5 py-3 has-[:checked]:px-[13px] has-[:checked]:py-[11px] ${full ? "bg-muted cursor-not-allowed border-dashed opacity-75" : ""}`}
+                          className={`${CARD} has-[:checked]:bg-accent-soft relative grid gap-0.5 px-3.5 py-3 ${full ? "bg-muted cursor-not-allowed border-dashed opacity-75" : ""}`}
                         >
                           <input
                             type="radio"
@@ -310,12 +307,12 @@ export function CheckoutForm({
                             className="sr-only"
                           />
                           <b
-                            className={`text-[15px] tabular-nums ${full ? "text-muted-foreground line-through" : ""}`}
+                            className={`text-label tabular-nums ${full ? "text-muted-foreground line-through" : ""}`}
                           >
                             {s.time}
                           </b>
                           <small
-                            className={`inline-flex items-center gap-1 text-[13px] ${slotId === s.id ? "text-foreground" : s.state === "few" ? "text-warn font-semibold" : "text-muted-foreground"}`}
+                            className={`text-fine inline-flex items-center gap-1 ${slotId === s.id ? "text-foreground" : s.state === "few" ? "text-warn font-semibold" : "text-muted-foreground"}`}
                           >
                             {slotId === s.id ? (
                               <>
@@ -353,12 +350,12 @@ export function CheckoutForm({
               ({ value, Icon }) => (
                 <label
                   key={value}
-                  className={`${CARD} grid grid-cols-[28px_1fr_22px] items-center gap-3.5 px-4 py-3.5 has-[:checked]:px-[15px] has-[:checked]:py-[13px]`}
+                  className={`${CARD} grid grid-cols-[28px_1fr_22px] items-center gap-3.5 px-4 py-3.5`}
                 >
                   <Icon size={26} aria-hidden />
                   <span>
                     <b className="block">{t.methods[value].name}</b>
-                    <small className="text-muted-foreground block text-[13px] leading-[18px]">
+                    <small className="text-muted-foreground text-fine block">
                       {t.methods[value].hint}
                     </small>
                   </span>
@@ -375,10 +372,10 @@ export function CheckoutForm({
             )}
           </fieldset>
           {!onlinePayments && (
-            <p className="text-muted-foreground text-[13px]">{t.comingSoon}</p>
+            <p className="text-muted-foreground text-fine">{t.comingSoon}</p>
           )}
           {priced.weighedSubtotalCents > 0 && (
-            <p className="rounded-field bg-warn-soft flex items-start gap-3 px-4 py-3.5 text-[15px] leading-[22px]">
+            <p className="rounded-field bg-warn-soft text-label flex items-start gap-3 px-4 py-3.5 leading-[22px]">
               <ScalesIcon
                 size={22}
                 aria-hidden
@@ -390,57 +387,11 @@ export function CheckoutForm({
         </Panel>
       </div>
 
-      <aside
-        aria-labelledby="h-summary"
-        className="rounded-card border-border bg-card grid min-w-0 gap-4 border p-5 md:p-7 lg:sticky lg:top-28"
-      >
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 id="h-summary" className="type-h3">
-            {m.cart.orderSummary}
-          </h2>
-          <span className="text-muted-foreground text-sm">
-            {cart.itemCount} {m.items(cart.itemCount)}
-          </span>
-        </div>
-        <ul className="grid">
-          {cart.lines.map((line) => {
-            const total = priced.lines.find(
-              (p) => p.productId === line.product.id
-            );
-            const name = productName(line.product);
-            return (
-              <li
-                key={line.product.id}
-                className="border-border grid grid-cols-[1fr_auto] gap-3 border-b py-2.5"
-              >
-                <span>
-                  <b className="block text-[15px] leading-5 font-semibold">
-                    {name}
-                  </b>
-                  <small className="text-muted-foreground block text-[13px] leading-[18px]">
-                    {t.lineDetail(
-                      line.quantity,
-                      line.product.isWeighed,
-                      m.cart.substitution[line.substitution.preference].label
-                    )}
-                  </small>
-                </span>
-                <span className="font-semibold tabular-nums">
-                  {total ? (
-                    formatMoney(total.lineTotalCents)
-                  ) : (
-                    <span className="text-muted-foreground text-sm font-medium">
-                      {t.soldOut}
-                    </span>
-                  )}
-                </span>
-              </li>
-            );
-          })}
-        </ul>
+      <aside aria-labelledby="h-summary" className={SUMMARY}>
+        <SummaryLines cart={cart} />
         <CartSummary priced={priced} size="page" />
         <VoucherForm view={cart} />
-        <p className="text-muted-foreground text-[13px]">{t.vat}</p>
+        <p className="text-muted-foreground text-fine">{t.vat}</p>
         {priced.belowMinimumByCents > 0 && (
           <p className="rounded-field bg-warn-soft text-warn px-4 py-3 text-sm font-semibold">
             {t.belowMinimum(formatMoney(priced.belowMinimumByCents))}
@@ -466,12 +417,12 @@ export function CheckoutForm({
             : t.place(formatMoney(priced.totalCents))}
         </button>
         {online && slotId && !blocked && (
-          <p className="text-muted-foreground text-center text-[13px]">
+          <p className="text-muted-foreground text-fine text-center">
             {t.payNext}
           </p>
         )}
         {!slotId && !blocked && (
-          <p className="text-muted-foreground text-center text-[13px]">
+          <p className="text-muted-foreground text-fine text-center">
             {t.chooseSlot}
           </p>
         )}
@@ -483,5 +434,76 @@ export function CheckoutForm({
         </Link>
       </aside>
     </form>
+  );
+}
+
+const SUMMARY =
+  "rounded-card border-border bg-card grid min-w-0 gap-4 border p-5 md:p-7 lg:sticky lg:top-sticky";
+
+/** The summary's heading and one row per Cart Line. */
+function SummaryLines({ cart }: { cart: CartView }) {
+  const m = useMessages();
+  const t = m.checkout;
+  const { priced } = cart;
+  return (
+    <>
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 id="h-summary" className="type-h3">
+          {m.cart.orderSummary}
+        </h2>
+        <span className="text-muted-foreground text-sm">
+          {cart.itemCount} {m.items(cart.itemCount)}
+        </span>
+      </div>
+      <ul className="grid">
+        {cart.lines.map((line) => {
+          const total = priced.lines.find(
+            (p) => p.productId === line.product.id
+          );
+          const name = productName(line.product);
+          return (
+            <li
+              key={line.product.id}
+              className="border-border grid grid-cols-[1fr_auto] gap-3 border-b py-2.5"
+            >
+              <span>
+                <b className="text-label block font-semibold">{name}</b>
+                <small className="text-muted-foreground text-fine block">
+                  {t.lineDetail(
+                    line.quantity,
+                    line.product.isWeighed,
+                    m.cart.substitution[line.substitution.preference].label
+                  )}
+                </small>
+              </span>
+              <span className="font-semibold tabular-nums">
+                {total ? (
+                  formatMoney(total.lineTotalCents)
+                ) : (
+                  <span className="text-muted-foreground text-sm font-medium">
+                    {t.soldOut}
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+/**
+ * Checkout before the first address (ADR 0018): the address form beside
+ * what is being bought and the total so far.
+ */
+export function SummaryPreview({ cart }: { cart: CartView }) {
+  return (
+    <aside aria-labelledby="h-summary" className={SUMMARY}>
+      <SummaryLines cart={cart} />
+      <CartSummary priced={cart.priced} size="page" />
+      <CartNotes priced={cart.priced} />
+      <VoucherForm view={cart} />
+    </aside>
   );
 }

@@ -29,7 +29,8 @@ export type ProductSummary = {
   taxClass: TaxClass;
   storage: Storage;
   primaryImage: ProductImageView | null;
-  category: { id: string; slug: string; name: string };
+  /** `topSlug`: the top-level Category's slug (its own when top-level). */
+  category: { id: string; slug: string; name: string; topSlug: string };
   /** The running Promotion's name; priceCents is then the promoted price. */
   promotion: string | null;
 };
@@ -81,7 +82,15 @@ const summarySelect = {
   isWeighed: true,
   taxClass: true,
   storage: true,
-  category: { select: { id: true, slug: true, name: true, parentId: true } },
+  category: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      parentId: true,
+      parent: { select: { slug: true } },
+    },
+  },
   // Cards and Carts show one image; getProduct asks for the whole gallery.
   images: {
     select: { url: true, alt: true },
@@ -115,6 +124,8 @@ function toSummary(row: SummaryRow): ProductSummary {
       id: row.category.id,
       slug: row.category.slug,
       name: row.category.name,
+      // Two levels deep (docs/04), so the parent is the top level.
+      topSlug: row.category.parent?.slug ?? row.category.slug,
     },
     promotion: null,
   };

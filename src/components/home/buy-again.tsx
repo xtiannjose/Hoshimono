@@ -17,7 +17,7 @@ export async function BuyAgain() {
   const products = await getProductSummaries(ids);
   const stock = await stockStates(products.map((p) => p.id));
   return (
-    <section aria-labelledby="again-h" className="wrap pt-14">
+    <section aria-labelledby="again-h" className="wrap pt-10">
       <h2 id="again-h" className="type-h2 mb-5">
         {(await getMessages()).home.buyAgain}
       </h2>

@@ -112,7 +112,7 @@ async function Guidance({
           <li key={c.slug}>
             <Link
               href={categoryHref([c.slug])}
-              className="rounded-pill border-input bg-card hover:bg-muted inline-flex min-h-11 items-center border px-4 text-[15px] font-medium"
+              className="rounded-pill border-input bg-card hover:bg-muted text-label inline-flex min-h-11 items-center border px-4 font-medium"
             >
               {c.name}
             </Link>

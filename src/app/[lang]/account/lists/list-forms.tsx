@@ -15,9 +15,8 @@ import {
   setListQuantityAction,
   type ListFormState,
 } from "./actions";
+import { FIELD } from "@/components/ui/field-classes";
 
-const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 text-base";
 const initial: ListFormState = { errors: {} };
 
 function NameForm({
@@ -100,7 +99,7 @@ export function DeleteListButton({ id, name }: { id: string; name: string }) {
         if (!confirm(`Delete the list "${name}"?`)) e.preventDefault();
       }}
     >
-      <Button type="submit" variant="ghost" className="text-err">
+      <Button type="submit" variant="danger">
         Delete this list
       </Button>
     </form>
@@ -137,7 +136,7 @@ export function ListItemControls({
       </div>
       <Button
         type="button"
-        size="icon-sm"
+        size="icon"
         variant="ghost"
         aria-label={`Remove ${name} from the list`}
         disabled={pending}

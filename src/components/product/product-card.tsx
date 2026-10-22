@@ -53,7 +53,11 @@ export async function ProductCard({
             className="rounded-field object-cover"
           />
         ) : (
-          <CategoryIcon slug={product.category.slug} className="opacity-70" />
+          <CategoryIcon
+            slug={product.category.topSlug}
+            size={32}
+            className="opacity-60"
+          />
         )}
       </Link>
       <div className="grid content-start gap-1 px-1">
@@ -69,12 +73,12 @@ export async function ProductCard({
         </div>
         <Link
           href={href}
-          className="line-clamp-2 text-[15px] leading-5 font-semibold hover:underline"
+          className="text-label line-clamp-2 font-semibold hover:underline"
         >
           {product.brand && <span className="sr-only">{product.brand} </span>}
           {product.name}
         </Link>
-        <span className="text-muted-foreground text-[13px] leading-[18px]">
+        <span className="text-muted-foreground text-fine">
           {formatPackSize(product.packSize, product.isWeighed, lang)}
         </span>
       </div>

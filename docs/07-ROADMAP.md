@@ -21,6 +21,7 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- General checkup and design pass (branches `checkup/general` and `design/pass`, committed locally, not yet pushed): roadmap section 9 and [ADR 0018](adr/0018-design-pass.md).
 - Batch 5.5 (branch `phase-5/pwa-language-analytics`, committed locally, not yet pushed): Filipino pages at `/fil`, the installable app with offline basics, and a privacy-first shopping funnel in the daily report ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). Every Phase 5 batch is built.
 - Batch 5.4 (branch `phase-5/claims`, committed locally, not yet pushed): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
 - Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
@@ -28,16 +29,16 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so `phase-5/claims` (Batch 5.4) and `phase-5/pwa-language-analytics` (Batch 5.5, built on 5.4) wait locally. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
+**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general` and `design/pass` wait locally, each built on the one before. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
 
 **Current phase:** 5, Growth: built, exit criteria to check in the checkup. Phase 4 waits on its dry run. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. The design pass (section 9, "Review: what reads as AI-made"): Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy. The owner chose on 22 Oct to do it right after the general checkup (done 22 Oct, section 9, branch `checkup/general`).
-2. The Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
-3. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
-4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
+1. The Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
+2. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
+3. The PayMongo test-mode run (Batch 6.3) when the keys exist.
+4. Phase 6, Launch hardening (section 10).
 
 **Waiting on the owner**
 
@@ -305,7 +306,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [x] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now). Decided 20 Oct: vaul stays. The Cart has one height, so detents have nothing to snap to, and vaul already follows the finger, closes on a fling and handles focus; docs/05 records it
 - [x] Cart drawer delivery row shows the held Slot, not a generic line. The held Slot and when the hold ends, else the next open Slot for the address, with Change; fetched when the drawer opens
 - [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
-- [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
+- [x] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round) Covered by the design pass of 22 Oct.
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
 
 **General checkup** (22 Oct, branch `checkup/general`). The main flows were walked on a production build (phone and desktop, light and dark, English and Filipino, Customer and Admin), the full test suites run, and the code and dependencies swept.
@@ -323,13 +324,13 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 
 UI and UX:
 
-- [ ] Placeholders: every Product, the hero and the category tiles show one striped box with a mismatched line icon (cheese and yogurt get a basket; avocado, calamansi and mango share one icon). Until real photos arrive (business track), drop the empty hero box and make cards text-first with quieter placeholders
-- [ ] Home follows the stock AI landing formula: highlighted last word, one pill button, image on the right, three equal feature tiles, mostly empty category tiles. Rework with `design-taste-frontend`
-- [ ] Product page: quantity stepper and a large "Add to cart" as in `mockup-v2/product.html`, the next Slot and delivery fee, the substitution choice; "Ingredients and allergens" shows only allergens
-- [ ] Checkout without an address shows no order summary or total: show it from the start; do not pre-tick "Use this address by default" on the first address; put the coverage note next to City
-- [ ] Phone Category page: header, chips, heading, sort and filters push the first Product below the fold
-- [ ] Admin: its own shell without the shopper header (cart, "Deliver to"); status badges in words, not raw values like `active`
-- [ ] Small tells: straight quotes in `Results for "gatas"`; "Showing 1 to 6 of 6" on a single page; the name pre-filled from the email; a footer with no help, terms or contact; the lime banner at full brightness in dark mode; a generic letter-in-a-circle logo
+- [x] Placeholders: every Product, the hero and the category tiles show one striped box with a mismatched line icon (cheese and yogurt get a basket; avocado, calamansi and mango share one icon). Until real photos arrive (business track), drop the empty hero box and make cards text-first with quieter placeholders Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): a plain tint with one icon per top-level Category; the hero box is gone.
+- [x] Home follows the stock AI landing formula: highlighted last word, one pill button, image on the right, three equal feature tiles, mostly empty category tiles. Rework with `design-taste-frontend` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): Home opens on a delivery strip, one row of Categories, then Products (the owner chose shop-first).
+- [x] Product page: quantity stepper and a large "Add to cart" as in `mockup-v2/product.html`, the next Slot and delivery fee, the substitution choice; "Ingredients and allergens" shows only allergens Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): a stepper beside a big "Add to cart", "View cart" and the Substitution choice once in the Cart, the delivery line under it; "Allergens" for what exists today.
+- [x] Checkout without an address shows no order summary or total: show it from the start; do not pre-tick "Use this address by default" on the first address; put the coverage note next to City Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): the summary shows beside the first address; the default box is hidden for a first address (it always becomes the default); the coverage note sits under City.
+- [x] Phone Category page: header, chips, heading, sort and filters push the first Product below the fold Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): count and sort share a row, a smaller heading on phones, a tighter breadcrumb and Filters bar.
+- [x] Admin: its own shell without the shopper header (cart, "Deliver to"); status badges in words, not raw values like `active` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): its own root layout with a sidebar grouped by job (a menu button on phones); roles, Product status, tax and storage in words.
+- [x] Small tells: straight quotes in `Results for "gatas"`; "Showing 1 to 6 of 6" on a single page; the name pre-filled from the email; a footer with no help, terms or contact; the lime banner at full brightness in dark mode; a generic letter-in-a-circle logo Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): typographic quotes; no count line on a single page; no name made from the email; a Help page in the footer (terms wait for Batch 6.3); the lime band is gone; the owner kept the logo for now.
 
 Engineering:
 
@@ -347,8 +348,8 @@ Engineering:
 
 Frontend:
 
-- [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
-- [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
+- [x] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): `text-fine` (13/18), `text-label` (15/20) and `top-sticky` replace the pasted values; no lint rule (no Tailwind lint plugin installed).
+- [x] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): `button-classes.ts` and `field-classes.ts` are the one source; `RADIO_CARD` draws the chosen edge inside; cva, cn and radix-ui are uninstalled.
 - [x] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
 - [x] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
 - [x] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop. Done 19 Oct for SearchBox (it hydrated twice) and CategoryNav (one nav, sticky from md up). The Filters form stays twice on purpose: it is server-only, so the copy costs bytes, not hydration, and one form would need `::details-content`, which iOS before 18.4 lacks
@@ -356,7 +357,7 @@ Frontend:
 - [ ] Replace workarounds: the `CartSync` effect, the hidden `data-no-cart-bar` div (use a route-group layout), the WeakMap `formKey`. 19 Oct: the hidden `data-no-cart-bar` div is gone (the bar reads the path). `CartSync` and `formKey` stay: the header's Cart must reach Product cards outside its tree, which an effect into the shared store does plainly, and `formKey` is a 10-line helper where the alternative threads a counter through four actions
 - [x] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category. 19 Oct: the stepper `<output>` no longer speaks over the Cart announcement. 20 Oct: the rest is done. Placeholders are hidden from screen readers; one `Skeleton` (aria-hidden, 1.2 s pulse, still under reduced motion) replaces the hand-made pulse divs; filter rows and Category chips are 44 px; the header marks the current aisle with `aria-current`
 - [x] Category page: one Suspense boundary instead of three with filler fallbacks; no skeleton on the redirect and not-found branches (both added in the Lighthouse fix)
-- [ ] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff
+- [x] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): one wording ("charged for the weight we pack") in both languages; contractions throughout the dictionaries.
 
 ## 10. Phases 4 to 6 and launch
 

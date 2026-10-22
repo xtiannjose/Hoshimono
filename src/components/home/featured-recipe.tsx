@@ -13,7 +13,7 @@ export async function FeaturedRecipe() {
   if (!recipe) return null;
   const { rows, extras } = await recipeRows(recipe);
   return (
-    <section aria-label="Recipe of the week" className="wrap pt-14">
+    <section aria-label="Recipe of the week" className="wrap pt-10">
       <div className="rounded-card border-border bg-card grid overflow-hidden border lg:grid-cols-2">
         <ContentPhoto
           url={recipe.photoUrl}
@@ -43,7 +43,7 @@ export async function FeaturedRecipe() {
 
 export function FeaturedRecipeSkeleton() {
   return (
-    <div className="wrap pt-14">
+    <div className="wrap pt-10">
       <Skeleton className="rounded-card h-[420px]" />
     </div>
   );

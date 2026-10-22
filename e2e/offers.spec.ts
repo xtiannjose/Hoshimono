@@ -36,7 +36,7 @@ test("a new Customer's first-order Voucher comes off the Cart, and can be remove
   await summary.getByLabel("Have a Voucher code?").fill("nope");
   await summary.getByRole("button", { name: "Apply" }).click();
   await expect(summary.getByRole("alert")).toHaveText(
-    "We do not know that code. Check it and try again.",
+    "We don't know that code. Check it and try again.",
     { timeout: 30_000 }
   );
 

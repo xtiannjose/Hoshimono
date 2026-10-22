@@ -27,6 +27,7 @@ export const en = {
     categories: "Categories",
     recipes: "Recipes",
     tipsAndGuides: "Tips and guides",
+    help: "Help",
     moreFrom: (brand: string) => `More from ${brand}`,
     about: "Online supermarket for Metro Manila.",
     deliverTo: "Deliver to",
@@ -51,12 +52,12 @@ export const en = {
     install: "Install the app",
   },
   notFound: {
-    title: "We could not find that page",
+    title: "We couldn't find that page",
     body: "The link may be old, or the item is no longer sold. Try a search instead.",
     home: "Back to home",
   },
   error: {
-    title: "This page did not load",
+    title: "This page didn't load",
     body: "Something went wrong on our side. Please try again.",
     retry: "Try again",
   },
@@ -87,29 +88,65 @@ export const en = {
   home: {
     description:
       "Fresh groceries delivered the same day across Metro Manila. Pick a 2-hour delivery slot and pay cash on delivery.",
-    hero: "Fresh groceries, delivered",
-    heroToday: "today.",
-    lead: "Pick a 2-hour delivery slot, then pay the Rider in cash when your order arrives.",
-    startShopping: "Start shopping",
-    byCategory: "Shop by category",
+    title: "What do you need today?",
+    delivery: "Delivery",
+    coverage: (areas: string[], fee: string, free: string | null) =>
+      `Same-day delivery across ${list(areas)}, in 2-hour slots. ${fee} delivery${free ? `, free over ${free}` : ""}.`,
+    whereWeDeliver: "See where we deliver",
+    deliverTo: (label: string, barangay: string) =>
+      `Deliver to ${label}, ${barangay}`,
+    nextSlot: (slot: string) => `Next slot: ${slot}`,
+    noSlot: "No open slots right now",
+    fee: (fee: string, free: string | null) =>
+      free ? `${fee} delivery, free over ${free}` : `${fee} delivery`,
+    notServed: "We don't deliver to your saved address yet.",
+    addAddress: "Add your address to see your next slot.",
+    change: "Change",
+    categories: "Shop by category",
+    recipes: "Recipes",
     freshPicks: "Fresh picks today",
     seeAllFresh: "See all fruit and vegetables",
     noFresh: "No fresh picks to show right now.",
     browseFresh: "Browse fruit and vegetables",
     buyAgain: "Buy again",
     onSale: "On sale this week",
-    sample: (names: string, more: number) =>
-      more > 0 ? `${names} and ${more} more` : names,
-    deliveryFrom: (fee: string) => `Delivery from ${fee}`,
-    sameDay: "Same-day delivery",
-    freeOver: (amount: string) => `Free over ${amount}. `,
-    whereWeDeliver: "See where we deliver",
-    freshness: "Freshness checked",
-    freshnessText: "Every order inspected at pick",
-    cash: "Cash on delivery",
-    cashText: "Pay the Rider when your order arrives",
   },
   breadcrumb: { label: "Breadcrumb", home: "Home" },
+  help: {
+    title: "Help",
+    description: "Delivery, paying, substitutions and refunds at Hoshimono.",
+    intro:
+      "Quick answers about delivery, paying, and what happens if something goes wrong.",
+    questions: [
+      {
+        q: "Where and when do you deliver?",
+        a: "The same day, in 2-hour slots, to the areas on our delivery page. You choose a slot at checkout and we hold it for 10 minutes while you finish.",
+      },
+      {
+        q: "How can I pay?",
+        a: "Cash on delivery: pay the Rider at your door. When checkout offers them, you can also pay ahead with GCash or a card.",
+      },
+      {
+        q: "What if something is out of stock?",
+        a: "Each item in your cart says what to do: pick a similar item, use the one you chose, or leave it out. You're never charged for an item you don't get.",
+      },
+      {
+        q: "How are items sold by weight charged?",
+        a: "Meat, fish and some produce are charged for the weight we pack, within 10% of what you ordered. Your order page shows the final total.",
+      },
+      {
+        q: "Something arrived spoiled or damaged. What now?",
+        a: "Report it from your order page within 24 hours, with a photo. If we approve it, we refund your GCash or card, or give you a Voucher for a cash order.",
+      },
+      {
+        q: "Can I cancel an order?",
+        a: "Yes, from your order page, until we start picking it.",
+      },
+    ],
+    deliveryAreas: "See where we deliver",
+    orders: "Your orders",
+    contact: "Still stuck? Email us at",
+  },
   listing: {
     notFound: "Category not found",
     description: (name: string) =>
@@ -126,7 +163,7 @@ export const en = {
     apply: "Apply filters",
     clear: "Clear filters",
     noMatch: "No products match these filters.",
-    emptyAisle: "Nothing here yet. We are stocking this aisle soon.",
+    emptyCategory: "Nothing here yet. We're stocking it soon.",
     pages: "Pages",
     showing: (first: number, last: number, total: number) =>
       `Showing ${first} to ${last} of ${total}`,
@@ -145,12 +182,12 @@ export const en = {
     askTitle: "What are you looking for?",
     askBody:
       "Type a product, brand or Filipino name in the search box, such as gatas, Alaska or pandesal.",
-    noneTitle: (query: string) => `No results for "${query}"`,
+    noneTitle: (query: string) => `No results for “${query}”`,
     noneBody:
-      "Check the spelling, use fewer words, or try the English or Filipino name (milk or gatas). You can also browse an aisle:",
-    resultsFor: (query: string) => `Results for "${query}"`,
+      "Check the spelling, use fewer words, or try the English or Filipino name (milk or gatas). You can also browse a category:",
+    resultsFor: (query: string) => `Results for “${query}”`,
     corrected: (query: string, corrected: string) =>
-      `We did not find "${query}", so we searched for "${corrected}". `,
+      `We didn't find “${query}”, so we searched for “${corrected}”. `,
   },
   productPage: {
     notFound: "Product not found",
@@ -158,12 +195,12 @@ export const en = {
       `${name}, ${size}, ${price}. Same-day delivery in Metro Manila.`,
     estimatedFor: (size: string) => `Estimated for ${size}`,
     byWeight: (size: string) =>
-      `Sold by weight. You pay for the exact weight we pack, within 10% of ${size}. Your final total is confirmed at delivery.`,
+      `Sold by weight: we charge for the weight we pack, within 10% of ${size}, and confirm your total at delivery.`,
     outToday:
       "Out of stock today. Check back tomorrow, or see similar items below.",
     info: "Product information",
     details: "Product details",
-    ingredients: "Ingredients and allergens",
+    ingredients: "Allergens",
     contains: (allergens: string) => `Contains: ${allergens}.`,
     noAllergens:
       "No allergens listed. Check the pack before eating if you have an allergy.",
@@ -178,10 +215,11 @@ export const en = {
     loading: "Loading product",
     saveToList: "Save to a list",
     saved: "Saved.",
-    signInForAlert: "Sign in to get a message when it is back",
-    alertOn: "We will message you when it is back.",
+    signInForAlert: "Sign in to get a message when it's back",
+    alertOn: "We'll message you when it's back.",
     alertOff: "No need, stop the alert",
-    alertAsk: "Tell me when it is back",
+    alertAsk: "Tell me when it's back",
+    addToCart: "Add to cart",
   },
   cart: {
     title: "Your cart",
@@ -214,9 +252,9 @@ export const en = {
     freeDeliveryIn: (amount: string) => `Add ${amount} more for free delivery.`,
     feeLater: "We show the delivery fee once we know your address.",
     weighedNote:
-      "Weighed items are charged by their actual weight, so your final total may change a little.",
+      "Items sold by weight are charged for the weight we pack, so your total may change a little.",
     each: (pack: string, price: string) => `${pack}, ${price} each`,
-    finalByWeight: "Final price follows the actual weight.",
+    finalByWeight: "Charged for the weight we pack.",
     remove: (name: string) => `Remove ${name}`,
     notInTotal: "Not in total",
     outToday: "Out of stock today, so it is not in your total.",
@@ -261,30 +299,30 @@ export const en = {
     },
     // What a Cart action can answer besides the Cart (ADR 0009 reasons).
     notices: {
-      invalid: "That did not work.",
+      invalid: "That didn't work.",
       busy: "Too many new carts from your network. Please try again later.",
       sold_out: "Sorry, that just sold out.",
       not_sold: "Sorry, that item is no longer sold.",
       capped: "That is all we have for now.",
       pick_item: "Please pick an item.",
       note_too_long: `Notes can be up to ${MAX_NOTE_LENGTH} characters.`,
-      not_found: "We do not know that code. Check it and try again.",
-      not_started: "This Voucher has not started yet.",
+      not_found: "We don't know that code. Check it and try again.",
+      not_started: "This Voucher hasn't started yet.",
       ended: "This Voucher has ended.",
       not_yours: "This Voucher belongs to another account.",
       first_order_only: "This Voucher is for a first order only.",
       used_up: "This Voucher has been fully used.",
-      used_by_you: "You have already used this Voucher.",
+      used_by_you: "You've already used this Voucher.",
       sign_in: "Sign in to use a Voucher.",
       empty_cart: "Add something to your cart first.",
       gone: "This Recipe is no longer available.",
     },
     failed: {
-      generic: "That did not work. Please try again.",
-      update: "We could not update your cart. Please try again.",
-      save: "We could not save that. Please try again.",
-      note: "We could not save your note. Please try again.",
-      fill: "We could not add these. Please try again.",
+      generic: "That didn't work. Please try again.",
+      update: "We couldn't update your cart. Please try again.",
+      save: "We couldn't save that. Please try again.",
+      note: "We couldn't save your note. Please try again.",
+      fill: "We couldn't add these. Please try again.",
     },
     adding: "Adding...",
     /** "Added 5 items to your cart. Sorry, X just sold out." (ADR 0013, 0014) */
@@ -313,7 +351,7 @@ export const en = {
     landmark: (landmark: string) => `Landmark: ${landmark}`,
     zoneFee: (zone: string, fee: string) => `Delivery to ${zone}: ${fee}.`,
     freeForOrder: "free for this order",
-    outOfZone: "We do not deliver to this address yet. Please choose another.",
+    outOfZone: "We don't deliver to this address yet. Please choose another.",
     edit: (label: string) => `Edit ${label}`,
     mobile: "Mobile number",
     mobileHint: "The Rider calls this number on arrival.",
@@ -344,9 +382,9 @@ export const en = {
     },
     comingSoon: "GCash and card payments are coming soon.",
     weighedOnline:
-      "Some items are sold by weight. You pay this estimate now; we charge the weight we actually pack and refund any difference within one day.",
+      "Items sold by weight are charged for the weight we pack. You pay this estimate now, and we refund any difference within a day.",
     weighedCash:
-      "Some items are sold by weight. We charge the weight we actually pack, so your final total may change a little. You pay the final amount in cash.",
+      "Items sold by weight are charged for the weight we pack, so the cash you pay may change a little.",
     lineDetail: (quantity: number, weighed: boolean, substitution: string) =>
       `Quantity ${quantity}${weighed ? ", by weight" : ""}. ${substitution}.`,
     soldOut: "Sold out",
@@ -369,7 +407,7 @@ export const en = {
     onlineOff:
       "Paying online is not available right now. Please choose cash on delivery.",
     tooMany:
-      "You have placed several orders just now. Please wait a while, or contact us for help.",
+      "You've placed several orders just now. Please wait a while, or contact us for help.",
     // Why an Order was not placed (placeOrder reasons).
     refused: {
       total_changed: (total: string) =>
@@ -381,7 +419,7 @@ export const en = {
         "That delivery slot just filled up. Please choose another.",
       invalid_phone: "Please enter a mobile number like 0917 123 4567.",
       out_of_zone:
-        "We do not deliver to this address yet. Please choose another.",
+        "We don't deliver to this address yet. Please choose another.",
       address_not_found: "Please choose a delivery address.",
       empty_cart: "Your cart is empty.",
       nothing_in_stock:
@@ -412,10 +450,10 @@ export const en = {
     busyTitle: "Your payment is still going through",
     busyBody: (by: string) =>
       `We'll confirm your order as soon as ${by} does. This page updates by itself.`,
-    cancelledBackTitle: "Your payment did not go through",
+    cancelledBackTitle: "Your payment didn't go through",
     cancelledBackBody:
       "You can try again, or go back to your cart to change something.",
-    errorTitle: "We could not open the payment page",
+    errorTitle: "We couldn't open the payment page",
     errorBody: "Please try again in a moment.",
     waitingTitle: "Pay to confirm your order",
     waitingBody: (total: string) => `Your order is waiting for ${total}.`,
@@ -432,7 +470,7 @@ export const en = {
     sentTo: (email: boolean) =>
       `We sent the details to ${email ? "your email and phone" : "your phone"}.`,
     cashAbout: (total: string) =>
-      `Please have about ${total} ready in cash. The final amount follows the weight we pack.`,
+      `Please have about ${total} ready in cash. Items sold by weight are charged for the weight we pack.`,
     cash: (total: string) =>
       `Please have ${total} ready in cash for the Rider.`,
     paid: (total: string, method: "gcash" | "card") =>
@@ -459,8 +497,7 @@ export const en = {
     },
     notYet: " (not yet)",
     cancelled: "This order was cancelled.",
-    failed:
-      "We could not deliver this order. We will contact you to try again.",
+    failed: "We couldn't deliver this order. We'll contact you to try again.",
     slot: "Delivery slot",
     deliverTo: "Deliver to",
     landmark: (landmark: string) => `Landmark: ${landmark}`,
@@ -482,7 +519,7 @@ export const en = {
       `Refund to your ${method === "card" ? "card" : "GCash"}`,
     vat: (amount: string) => `VAT included (${amount}).`,
     weighedNote:
-      " Weighed items are charged by the weight we pack, so the final amount may change a little.",
+      " Items sold by weight are charged for the weight we pack, so the final amount may change a little.",
   },
 };
 

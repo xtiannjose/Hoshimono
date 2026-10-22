@@ -30,6 +30,7 @@ export const fil: Messages = {
     categories: "Mga kategorya",
     recipes: "Mga recipe",
     tipsAndGuides: "Tips at gabay",
+    help: "Tulong",
     moreFrom: (brand) => `Iba pa sa ${brand}`,
     about: "Online na supermarket para sa Metro Manila.",
     deliverTo: "Ihatid sa",
@@ -88,28 +89,66 @@ export const fil: Messages = {
   home: {
     description:
       "Sariwang grocery na ihahatid sa parehong araw sa buong Metro Manila. Pumili ng 2-hour delivery slot at magbayad ng cash pagdating.",
-    hero: "Sariwang grocery, ihahatid",
-    heroToday: "ngayon.",
-    lead: "Pumili ng 2-hour delivery slot, tapos bayaran ang Rider ng cash pagdating ng order mo.",
-    startShopping: "Mamili na",
-    byCategory: "Mamili ayon sa kategorya",
+    title: "Ano ang kailangan mo ngayon?",
+    delivery: "Delivery",
+    coverage: (areas, fee, free) =>
+      `Same-day delivery sa ${list(areas)}, sa 2-hour slots. ${fee} ang delivery${free ? `, libre kapag lampas ${free}` : ""}.`,
+    whereWeDeliver: "Tingnan kung saan kami naghahatid",
+    deliverTo: (label, barangay) => `Ihatid sa ${label}, ${barangay}`,
+    nextSlot: (slot) => `Susunod na slot: ${slot}`,
+    noSlot: "Walang bukas na slot sa ngayon",
+    fee: (fee, free) =>
+      free
+        ? `${fee} ang delivery, libre kapag lampas ${free}`
+        : `${fee} ang delivery`,
+    notServed: "Hindi pa kami naghahatid sa naka-save mong address.",
+    addAddress: "Ilagay ang address mo para makita ang susunod mong slot.",
+    change: "Palitan",
+    categories: "Mamili ayon sa kategorya",
+    recipes: "Mga recipe",
     freshPicks: "Sariwang pili ngayong araw",
     seeAllFresh: "Tingnan lahat ng prutas at gulay",
     noFresh: "Walang sariwang pili na maipapakita sa ngayon.",
     browseFresh: "Tingnan ang prutas at gulay",
     buyAgain: "Bilhin ulit",
     onSale: "Naka-sale ngayong linggo",
-    sample: (names, more) => (more > 0 ? `${names} at ${more} pa` : names),
-    deliveryFrom: (fee) => `Delivery mula ${fee}`,
-    sameDay: "Same-day delivery",
-    freeOver: (amount) => `Libre kapag lampas ${amount}. `,
-    whereWeDeliver: "Tingnan kung saan kami naghahatid",
-    freshness: "Siniguradong sariwa",
-    freshnessText: "Sinusuri ang bawat order habang pini-pick",
-    cash: "Cash on delivery",
-    cashText: "Bayaran ang Rider pagdating ng order mo",
   },
   breadcrumb: { label: "Breadcrumb", home: "Home" },
+  help: {
+    title: "Tulong",
+    description: "Delivery, bayad, kapalit at refund sa Hoshimono.",
+    intro:
+      "Mabilis na sagot tungkol sa delivery, bayad, at kung ano ang mangyayari kapag may problema.",
+    questions: [
+      {
+        q: "Saan at kailan kayo naghahatid?",
+        a: "Sa parehong araw, sa 2-hour slots, sa mga lugar na nasa delivery page namin. Pipili ka ng slot sa checkout at ire-reserve namin ito nang 10 minuto habang tinatapos mo.",
+      },
+      {
+        q: "Paano ako magbabayad?",
+        a: "Cash on delivery: bayaran ang Rider sa pinto mo. Kapag inaalok sa checkout, puwede ka ring magbayad nang maaga sa GCash o card.",
+      },
+      {
+        q: "Paano kung maubusan ng isang item?",
+        a: "Bawat item sa cart mo ay may bilin: pumili ng kapareho, gamitin ang pinili mo, o huwag nang isama. Hindi ka sisingilin sa item na hindi mo natanggap.",
+      },
+      {
+        q: "Paano sinisingil ang mga item na binebenta ayon sa timbang?",
+        a: "Ang karne, isda at ilang gulay at prutas ay sinisingil ayon sa timbang na ini-pack namin, pasok sa 10% ng in-order mo. Makikita ang final total sa order page mo.",
+      },
+      {
+        q: "May dumating na sira o hindi sariwa. Ano ang gagawin ko?",
+        a: "I-report ito mula sa order page mo sa loob ng 24 oras, may kasamang litrato. Kapag inaprubahan namin, ibabalik namin ang bayad sa GCash o card mo, o bibigyan ka ng Voucher para sa cash na order.",
+      },
+      {
+        q: "Puwede ko bang i-cancel ang order?",
+        a: "Oo, mula sa order page mo, hangga't hindi pa namin sinisimulang i-pick.",
+      },
+    ],
+    deliveryAreas: "Tingnan kung saan kami naghahatid",
+    orders: "Ang mga order mo",
+    contact: "May tanong pa? I-email kami sa",
+  },
   listing: {
     notFound: "Walang ganitong kategorya",
     description: (name) =>
@@ -126,8 +165,7 @@ export const fil: Messages = {
     apply: "I-apply ang filter",
     clear: "Alisin ang filter",
     noMatch: "Walang produktong tugma sa mga filter na ito.",
-    emptyAisle:
-      "Wala pang laman dito. Malapit na naming lagyan ang aisle na ito.",
+    emptyCategory: "Wala pang laman dito. Malapit na naming lagyan ito.",
     pages: "Mga pahina",
     showing: (first, last, total) =>
       `Ipinapakita ang ${first} hanggang ${last} sa ${total}`,
@@ -146,12 +184,12 @@ export const fil: Messages = {
     askTitle: "Ano ang hinahanap mo?",
     askBody:
       "Mag-type ng produkto, brand o Filipino na pangalan sa search box, tulad ng gatas, Alaska o pandesal.",
-    noneTitle: (query) => `Walang resulta para sa "${query}"`,
+    noneTitle: (query) => `Walang resulta para sa “${query}”`,
     noneBody:
-      "I-check ang spelling, gumamit ng mas kaunting salita, o subukan ang English o Filipino na pangalan (milk o gatas). Puwede ka ring mag-browse ng aisle:",
-    resultsFor: (query) => `Mga resulta para sa "${query}"`,
+      "I-check ang spelling, gumamit ng mas kaunting salita, o subukan ang English o Filipino na pangalan (milk o gatas). Puwede ka ring mag-browse ng kategorya:",
+    resultsFor: (query) => `Mga resulta para sa “${query}”`,
     corrected: (query, corrected) =>
-      `Wala kaming nakitang "${query}", kaya "${corrected}" ang hinanap namin. `,
+      `Wala kaming nakitang “${query}”, kaya “${corrected}” ang hinanap namin. `,
   },
   productPage: {
     notFound: "Walang ganitong produkto",
@@ -159,12 +197,12 @@ export const fil: Messages = {
       `${name}, ${size}, ${price}. Same-day delivery sa Metro Manila.`,
     estimatedFor: (size) => `Tantiya para sa ${size}`,
     byWeight: (size) =>
-      `Binebenta ayon sa timbang. Ang eksaktong timbang na ini-pack namin ang babayaran mo, pasok sa 10% ng ${size}. Makukumpirma ang final total mo sa delivery.`,
+      `Binebenta ayon sa timbang: sinisingil namin ang timbang na ini-pack namin, pasok sa 10% ng ${size}, at kinukumpirma ang total mo sa delivery.`,
     outToday:
       "Ubos na ngayong araw. Bumalik bukas, o tingnan ang mga kapareho sa ibaba.",
     info: "Impormasyon ng produkto",
     details: "Detalye ng produkto",
-    ingredients: "Sangkap at allergen",
+    ingredients: "Mga allergen",
     contains: (allergens) => `May ${allergens}.`,
     noAllergens:
       "Walang nakalistang allergen. I-check ang pakete bago kainin kung may allergy ka.",
@@ -183,6 +221,7 @@ export const fil: Messages = {
     alertOn: "Ime-message ka namin kapag meron na ulit.",
     alertOff: "Huwag na, itigil ang alert",
     alertAsk: "Sabihan ako kapag meron na ulit",
+    addToCart: "Idagdag sa cart",
   },
   cart: {
     title: "Ang cart mo",
@@ -215,9 +254,9 @@ export const fil: Messages = {
     feeLater:
       "Ipapakita namin ang delivery fee kapag alam na namin ang address mo.",
     weighedNote:
-      "Ang mga tinitimbang na item ay sinisingil ayon sa totoong timbang, kaya puwedeng magbago nang kaunti ang final total mo.",
+      "Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang total mo.",
     each: (pack, price) => `${pack}, ${price} bawat isa`,
-    finalByWeight: "Susunod ang final na presyo sa totoong timbang.",
+    finalByWeight: "Sinisingil ayon sa timbang na ini-pack namin.",
     remove: (name) => `Alisin ang ${name}`,
     notInTotal: "Hindi kasama sa total",
     outToday: "Ubos na ngayong araw, kaya hindi kasama sa total mo.",
@@ -345,9 +384,9 @@ export const fil: Messages = {
     },
     comingSoon: "Malapit na ang bayad sa GCash at card.",
     weighedOnline:
-      "May mga item na binebenta ayon sa timbang. Ang tantiyang ito ang babayaran mo ngayon; sisingilin namin ang totoong timbang na ini-pack namin at ibabalik ang sobra sa loob ng isang araw.",
+      "Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin. Ang tantiyang ito ang babayaran mo ngayon, at ibabalik namin ang sobra sa loob ng isang araw.",
     weighedCash:
-      "May mga item na binebenta ayon sa timbang. Sisingilin namin ang totoong timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang final total mo. Cash mong babayaran ang final na halaga.",
+      "Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang cash na babayaran mo.",
     lineDetail: (quantity, weighed, substitution) =>
       `Dami: ${quantity}${weighed ? ", ayon sa timbang" : ""}. ${substitution}.`,
     soldOut: "Ubos na",
@@ -433,7 +472,7 @@ export const fil: Messages = {
     sentTo: (email) =>
       `Pinadala namin ang detalye sa ${email ? "email at phone mo" : "phone mo"}.`,
     cashAbout: (total) =>
-      `Maghanda ng mga ${total} na cash. Susunod ang final na halaga sa timbang na ini-pack namin.`,
+      `Maghanda ng mga ${total} na cash. Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin.`,
     cash: (total) => `Maghanda ng ${total} na cash para sa Rider.`,
     paid: (total, method) =>
       `Bayad na ang ${total} ${method === "gcash" ? "sa GCash" : "sa card"}.`,
@@ -483,6 +522,6 @@ export const fil: Messages = {
       `Ibinalik sa ${method === "card" ? "card" : "GCash"} mo`,
     vat: (amount) => `Kasama na ang VAT (${amount}).`,
     weighedNote:
-      " Ang mga tinitimbang na item ay sinisingil ayon sa timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang final na halaga.",
+      " Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang final na halaga.",
   },
 };

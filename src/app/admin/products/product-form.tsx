@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { formKey } from "@/components/form-key";
 
 import { saveProduct, type FormState } from "../actions";
+import { FIELD } from "@/components/ui/field-classes";
+import { TEXTAREA } from "@/components/ui/field-classes";
 
 export type ProductFormValues = {
   id?: string;
@@ -29,8 +31,6 @@ export type ProductFormValues = {
 
 type Option = { value: string; label: string };
 
-const FIELD =
-  "h-11 w-full rounded-field border border-input bg-card px-3 text-base";
 const initial: FormState = { errors: {} };
 
 function Field({
@@ -53,7 +53,7 @@ function Field({
       </label>
       {children}
       {hint && !message && (
-        <p className="text-muted-foreground text-[13px]">{hint}</p>
+        <p className="text-muted-foreground text-fine">{hint}</p>
       )}
       {message && (
         <p id={`${id}-error`} className="text-err text-sm">
@@ -158,16 +158,16 @@ export function ProductForm({
         <Field
           {...f.status.label}
           label="Status"
-          hint="Only active Products show in the shop."
+          hint="Customers see only Products in the shop."
         >
           <select
             {...f.status.control}
             defaultValue={v.status}
             className={FIELD}
           >
-            <option value="draft">draft</option>
-            <option value="active">active</option>
-            <option value="archived">archived</option>
+            <option value="draft">Draft</option>
+            <option value="active">In the shop</option>
+            <option value="archived">Archived</option>
           </select>
         </Field>
         <Field
@@ -225,9 +225,9 @@ export function ProductForm({
             defaultValue={v.taxClass}
             className={FIELD}
           >
-            <option value="vatable">vatable</option>
-            <option value="vat_exempt">vat_exempt</option>
-            <option value="zero_rated">zero_rated</option>
+            <option value="vatable">VAT-able</option>
+            <option value="vat_exempt">VAT-exempt</option>
+            <option value="zero_rated">Zero-rated</option>
           </select>
         </Field>
         <Field {...f.storage.label} label="Storage">
@@ -236,9 +236,9 @@ export function ProductForm({
             defaultValue={v.storage}
             className={FIELD}
           >
-            <option value="ambient">ambient</option>
-            <option value="chilled">chilled</option>
-            <option value="frozen">frozen</option>
+            <option value="ambient">Room temperature</option>
+            <option value="chilled">Chilled</option>
+            <option value="frozen">Frozen</option>
           </select>
         </Field>
         <Field {...f.barcode.label} label="Barcode (optional)">
@@ -266,7 +266,7 @@ export function ProductForm({
           {...f.description.control}
           defaultValue={v.description}
           rows={4}
-          className="rounded-field border-input bg-card w-full border px-3 py-2 text-base"
+          className={TEXTAREA}
         />
       </Field>
       <div className="grid gap-5 md:grid-cols-2">

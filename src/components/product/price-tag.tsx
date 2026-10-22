@@ -49,7 +49,7 @@ export function PriceTag({
           </>
         )}
         {onSale && (
-          <s className="text-muted-foreground ml-1.5 font-sans text-[13px] font-medium tracking-normal">
+          <s className="text-muted-foreground text-fine ml-1.5 font-sans font-medium tracking-normal">
             <span className="sr-only">{t.was}</span>
             {formatMoney(compareAtCents)}
           </s>

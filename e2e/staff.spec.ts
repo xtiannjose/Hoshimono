@@ -49,7 +49,7 @@ test("a Dispatcher moves an Order along with a note, and the Customer sees it", 
   await expect(menu.getByRole("link", { name: "Products" })).toHaveCount(0);
   await staff.goto("/admin/products", { waitUntil: "networkidle" });
   await expect(
-    staff.getByRole("heading", { name: "We could not find that page" })
+    staff.getByRole("heading", { name: "We couldn't find that page" })
   ).toBeVisible();
 
   await staff.goto(`/admin/orders?q=${orderNo}`, { waitUntil: "networkidle" });

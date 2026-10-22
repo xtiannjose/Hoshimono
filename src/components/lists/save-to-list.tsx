@@ -7,9 +7,8 @@ import { useActionState, useState } from "react";
 import { type ListFormState } from "@/app/[lang]/account/lists/actions";
 import { formKey } from "@/components/form-key";
 import { Button } from "@/components/ui/button";
+import { FIELD } from "@/components/ui/field-classes";
 
-const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 text-base";
 const initial: ListFormState = { errors: {} };
 
 /**

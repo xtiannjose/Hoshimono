@@ -1,22 +1,18 @@
-import { ArrowRightIcon, BasketIcon } from "@phosphor-icons/react/ssr";
+import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
-import Link from "@/components/link";
 import { Suspense } from "react";
 
-import {
-  CategoryMosaic,
-  CategoryMosaicSkeleton,
-} from "@/components/home/category-mosaic";
+import { CategoryRow } from "@/components/home/category-row";
 import { BuyAgain } from "@/components/home/buy-again";
+import { DeliveryStrip } from "@/components/home/delivery-strip";
 import {
   FeaturedRecipe,
   FeaturedRecipeSkeleton,
 } from "@/components/home/featured-recipe";
 import { FreshPicks } from "@/components/home/fresh-picks";
 import { OnSale } from "@/components/home/on-sale";
-import { ServiceStrip } from "@/components/home/service-strip";
+import Link from "@/components/link";
 import { ProductGridSkeleton } from "@/components/product/product-grid";
-import { buttonVariants } from "@/components/ui/button";
 import { FRESH_PICKS_CATEGORY } from "@/config/home";
 import { localPath } from "@/i18n/lang";
 import { getLang, getMessages } from "@/i18n/server";
@@ -32,58 +28,26 @@ export async function generateMetadata(): Promise<Metadata> {
 const SECTION_LINK =
   "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";
 
-// Home v1 (docs/mockup-v2/home.html): hero, service strip, Category mosaic
-// fresh picks, the featured Recipe (ADR 0013) and what is on sale (ADR 0015).
+// Home opens on the shop (ADR 0018): where and when we deliver, the
+// Categories, then Products. No hero: the shopper came to buy groceries.
 export default async function Home() {
+  const lang = await getLang();
   const t = (await getMessages()).home;
   return (
     <>
-      <section
-        aria-labelledby="hero-h"
-        className="wrap grid items-center gap-6 pt-8 md:pt-10 lg:grid-cols-12"
-      >
-        <div className="grid content-center gap-[22px] lg:col-span-6 lg:pr-6">
-          <h1 id="hero-h" className="type-display">
-            {t.hero} <span className="hl">{t.heroToday}</span>
-          </h1>
-          <p className="type-lead">{t.lead}</p>
-          <div>
-            <Link
-              href={categoryHref([FRESH_PICKS_CATEGORY])}
-              className={buttonVariants({ size: "lg" })}
-            >
-              {t.startShopping}
-            </Link>
-          </div>
-        </div>
-        {/* Phones skip the photo so Products appear above the fold (mockup decision 5). */}
-        <div
-          aria-hidden
-          className="rounded-card photo-slot relative hidden aspect-[5/4] lg:col-span-6 lg:grid"
-        >
-          <BasketIcon size={48} className="opacity-70" aria-hidden />
-        </div>
-      </section>
+      <DeliveryStrip lang={lang} />
 
-      <div className="wrap">
-        <ServiceStrip />
+      <div className="wrap pt-6">
+        <h1 className="type-h2">{t.title}</h1>
       </div>
+      <CategoryRow lang={lang} />
 
       {/* Signed-in Customers only; nothing to hold space for otherwise. */}
       <Suspense fallback={null}>
         <BuyAgain />
       </Suspense>
 
-      <section aria-labelledby="cat-h" className="wrap pt-14">
-        <h2 id="cat-h" className="type-h2 mb-5">
-          {t.byCategory}
-        </h2>
-        <Suspense fallback={<CategoryMosaicSkeleton />}>
-          <CategoryMosaic />
-        </Suspense>
-      </section>
-
-      <section aria-labelledby="fresh-h" className="wrap pt-14">
+      <section aria-labelledby="fresh-h" className="wrap pt-10">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4">
           <h2 id="fresh-h" className="type-h2">
             {t.freshPicks}
@@ -100,12 +64,12 @@ export default async function Home() {
         </Suspense>
       </section>
 
-      <Suspense fallback={<FeaturedRecipeSkeleton />}>
-        <FeaturedRecipe />
-      </Suspense>
-
       <Suspense fallback={null}>
         <OnSale />
+      </Suspense>
+
+      <Suspense fallback={<FeaturedRecipeSkeleton />}>
+        <FeaturedRecipe />
       </Suspense>
     </>
   );

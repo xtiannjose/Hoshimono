@@ -54,7 +54,7 @@ export function CartLine({
           />
         ) : (
           <CategoryIcon
-            slug={product.category.slug}
+            slug={product.category.topSlug}
             size={24}
             className="opacity-70"
           />
@@ -64,18 +64,18 @@ export function CartLine({
         <Link
           href={productHref(product)}
           onClick={onNavigate}
-          className="block text-[15px] leading-5 font-semibold hover:underline"
+          className="text-label block font-semibold hover:underline"
         >
           {name}
         </Link>
-        <small className="text-muted-foreground block text-[13px] leading-[18px]">
+        <small className="text-muted-foreground text-fine block">
           {t.cart.each(
             formatPackSize(product.packSize, product.isWeighed, lang),
             formatMoney(product.priceCents)
           )}
         </small>
         {product.isWeighed && (
-          <small className="text-muted-foreground block text-[13px] leading-[18px]">
+          <small className="text-muted-foreground text-fine block">
             {t.cart.finalByWeight}
           </small>
         )}
@@ -126,9 +126,7 @@ export function CartLine({
           </span>
         </div>
         {notice && (
-          <p className="text-warn mt-1.5 text-[13px] leading-[18px] font-semibold">
-            {notice}
-          </p>
+          <p className="text-warn text-fine mt-1.5 font-semibold">{notice}</p>
         )}
       </div>
     </li>
@@ -153,7 +151,7 @@ function Flags({ line }: { line: CartLineView }) {
   }
   if (flags.length === 0) return null;
   return (
-    <div className="rounded-field bg-warn-soft text-warn mt-1.5 grid gap-0.5 px-2.5 py-1.5 text-[13px] leading-[18px] font-semibold">
+    <div className="rounded-field bg-warn-soft text-warn text-fine mt-1.5 grid gap-0.5 px-2.5 py-1.5 font-semibold">
       {flags.map((flag) => (
         <p key={flag}>{flag}</p>
       ))}
@@ -193,7 +191,7 @@ function PickerNote({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground mt-1 block min-h-11 text-left text-[13px] font-semibold underline underline-offset-[3px]"
+        className="text-muted-foreground text-fine mt-1 block min-h-11 text-left font-semibold underline underline-offset-[3px]"
       >
         {note ? t.noteShown(note) : t.notePrompt}
       </button>

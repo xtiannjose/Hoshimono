@@ -11,8 +11,8 @@ import { MESSAGES } from "@/i18n/messages";
 
 import "./globals.css";
 
-// The page frame shared by the two root layouts: the shop under app/[lang]
-// and the staff screens under app/admin (ADR 0017).
+// The page frame of the two root layouts: the shop under app/[lang] and
+// the staff screens under app/admin (ADR 0017, ADR 0018).
 
 // latin-ext carries the peso sign (U+20B1).
 const epilogue = Epilogue({
@@ -34,7 +34,12 @@ const geistMono = Geist_Mono({
   preload: false,
 });
 
-export function RootShell({
+/**
+ * The document both root layouts share: fonts, theme, language, the skip
+ * link and the screen-reader announcer. The shop adds its header and
+ * footer (RootShell); the staff screens add their own frame.
+ */
+export function Document({
   lang,
   children,
 }: {
@@ -57,15 +62,30 @@ export function RootShell({
             >
               {t.skipToContent}
             </a>
-            <Header lang={lang} />
-            <main id="main" className="flex-1">
-              {children}
-            </main>
-            <Footer lang={lang} />
+            {children}
             <LiveRegion />
           </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+/** The shop's frame: header, the page, footer. */
+export function RootShell({
+  lang,
+  children,
+}: {
+  lang: Lang;
+  children: ReactNode;
+}) {
+  return (
+    <Document lang={lang}>
+      <Header lang={lang} />
+      <main id="main" className="flex-1">
+        {children}
+      </main>
+      <Footer lang={lang} />
+    </Document>
   );
 }

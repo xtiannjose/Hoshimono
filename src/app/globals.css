@@ -31,7 +31,6 @@
   --err: #b3261e;
   --ring: #10261a;
   --scrim: rgb(16 38 26 / 0.48);
-  --hatch: rgb(16 38 26 / 0.045);
   --float-shadow:
     0 1px 2px rgb(16 38 26 / 0.06), 0 12px 32px rgb(16 38 26 / 0.14);
 
@@ -78,7 +77,6 @@
   --err: #ff8f85;
   --ring: #d3ee62;
   --scrim: rgb(0 0 0 / 0.6);
-  --hatch: rgb(237 243 227 / 0.05);
   --float-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px rgb(0 0 0 / 0.5);
 }
 
@@ -139,6 +137,17 @@
     sans-serif;
   --font-heading: var(--font-display);
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Type steps between Tailwind's (docs/05 section 4): 13/18 fine print,
+     15/20 for names and labels on cards. */
+  --text-fine: 0.8125rem;
+  --text-fine--line-height: 1.125rem;
+  --text-label: 0.9375rem;
+  --text-label--line-height: 1.25rem;
+
+  /* Sticky asides start under the header and the aisle bar (72 + 48 px)
+     with 16 px to spare. */
+  --spacing-sticky: 8.5rem;
 
   /* Skeleton pulse: opacity only, 1.2 s (docs/05 section 7). */
   --animate-pulse: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -262,12 +271,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background:
-    repeating-linear-gradient(
-      135deg,
-      transparent 0 11px,
-      var(--hatch) 11px 12px
-    ),
-    var(--surface-2);
+  /* A plain tint until real photos arrive (ADR 0018): no stripes. */
+  background: var(--surface-2);
   color: var(--muted);
 }

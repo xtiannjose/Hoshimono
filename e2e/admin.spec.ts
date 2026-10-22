@@ -150,7 +150,7 @@ test("Customers cannot open the admin", async ({ page }) => {
   await signIn(page, freshEmail("not-staff"), "/account");
   await page.goto("/admin/products");
   await expect(
-    page.getByRole("heading", { name: "We could not find that page" })
+    page.getByRole("heading", { name: "We couldn't find that page" })
   ).toBeVisible();
   const csv = await page.request.get("/admin/export");
   expect(csv.status()).toBe(404);

@@ -47,13 +47,13 @@ test("a Customer asks to hear when a sold-out Product is back, then stops it", a
     .getByRole("link", { name: /Ube Roll/ })
     .first()
     .click();
-  await page.getByRole("button", { name: "Tell me when it is back" }).click();
-  await expect(
-    page.getByText("We will message you when it is back.")
-  ).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "Tell me when it's back" }).click();
+  await expect(page.getByText("We'll message you when it's back.")).toBeVisible(
+    { timeout: 30_000 }
+  );
   await page.getByRole("button", { name: "No need, stop the alert" }).click();
   await expect(
-    page.getByRole("button", { name: "Tell me when it is back" })
+    page.getByRole("button", { name: "Tell me when it's back" })
   ).toBeVisible({ timeout: 30_000 });
 });
 

@@ -14,10 +14,17 @@ test("home page loads", async ({ page }) => {
   ).toHaveCount(0);
 });
 
-test("home shows the Category mosaic and fresh picks", async ({ page }) => {
+test("home opens on the shop: delivery, Categories and fresh picks", async ({
+  page,
+}) => {
   await page.goto("/");
-  const mosaic = page.getByRole("region", { name: "Shop by category" });
-  await expect(mosaic.getByRole("link")).toHaveCount(8);
+  // No hero (ADR 0018): where we deliver, then every Category and Recipes.
+  await expect(page.getByRole("region", { name: "Delivery" })).toContainText(
+    "Same-day delivery"
+  );
+  await expect(
+    page.getByRole("navigation", { name: "Shop by category" }).getByRole("link")
+  ).toHaveCount(10);
   const picks = page.getByRole("region", { name: "Fresh picks today" });
   await expect(picks.getByRole("article")).toHaveCount(6);
 });
@@ -48,4 +55,18 @@ test("Add becomes a stepper, keeps focus, and goes back at zero", async ({
   const add = card.getByRole("button", { name: `Add ${name} to cart` });
   await expect(add).toBeVisible();
   await expect(add).toBeFocused();
+});
+
+test("the footer leads to short answers on delivery and refunds", async ({
+  page,
+}) => {
+  await page.goto("/", { waitUntil: "networkidle" });
+  await page
+    .getByRole("contentinfo")
+    .getByRole("link", { name: "Help" })
+    .click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Help" })
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText("Can I cancel an order?")).toBeVisible();
 });

@@ -99,9 +99,7 @@ export default function LiveAddToCart({
           )}
         </m.div>
         {notice && (
-          <p className="text-warn text-[13px] leading-[18px] font-semibold">
-            {notice}
-          </p>
+          <p className="text-warn text-fine font-semibold">{notice}</p>
         )}
       </div>
     </Motion>

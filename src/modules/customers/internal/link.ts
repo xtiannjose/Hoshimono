@@ -51,7 +51,8 @@ export async function customerForUser(db: PrismaClient, user: AuthUserInfo) {
       authUserId: user.id,
       email,
       phone: phoneTaken ? null : phone,
-      name: phone ? "Hoshimono shopper" : user.name || user.email.split("@")[0],
+      // A real name or none: never one made from the email or a placeholder.
+      name: phone ? "" : user.name,
     },
     update: {},
   });

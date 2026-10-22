@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { testMailboxEnabled } from "@/lib/test-mode";
 
@@ -48,14 +48,13 @@ async function Accounts() {
               <span className="text-muted-foreground text-sm">{a.email}</span>
             </span>
             {/* A plain link: the browser follows the magic link itself. */}
-            <Button asChild variant="secondary">
-              <a
-                href={`/dev/sign-in/go?as=${encodeURIComponent(a.email)}`}
-                aria-label={`Sign in as ${a.label}`}
-              >
-                Sign in
-              </a>
-            </Button>
+            <a
+              href={`/dev/sign-in/go?as=${encodeURIComponent(a.email)}`}
+              aria-label={`Sign in as ${a.label}`}
+              className={buttonVariants({ variant: "secondary" })}
+            >
+              Sign in
+            </a>
           </li>
         ))}
       </ul>

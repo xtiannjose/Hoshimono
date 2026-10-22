@@ -4,7 +4,13 @@ import { useActionState } from "react";
 
 import { Button } from "@/components/ui/button";
 
-import { FIELD, FieldError, Labeled } from "../content/editor-parts";
+import {
+  FIELD,
+  FieldError,
+  INLINE_FIELD,
+  Labeled,
+  TEXTAREA,
+} from "../content/editor-parts";
 import { decideClaimAction, type DecisionState } from "./actions";
 
 const initial: DecisionState = { errors: {} };
@@ -39,7 +45,7 @@ export function ApproveForm({
           name="amount"
           inputMode="decimal"
           defaultValue={claimed}
-          className={`${FIELD} w-40`}
+          className={`${INLINE_FIELD} w-40`}
         />
       </Labeled>
       <Labeled
@@ -76,12 +82,7 @@ export function RejectForm({ claimId }: { claimId: string }) {
         htmlFor="reject-note"
         error={state.errors.note}
       >
-        <textarea
-          id="reject-note"
-          name="note"
-          rows={3}
-          className={`${FIELD} py-2`}
-        />
+        <textarea id="reject-note" name="note" rows={3} className={TEXTAREA} />
       </Labeled>
       <FieldError message={state.errors.form} />
       <div>

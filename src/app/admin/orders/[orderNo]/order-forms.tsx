@@ -11,10 +11,9 @@ import {
   moveOrderAction,
   type OrderFormState,
 } from "../actions";
+import { FIELD, TEXTAREA } from "@/components/ui/field-classes";
 
 const initial: OrderFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 py-2 text-base";
 
 /** Move the Order to one of the next statuses its lifecycle allows. */
 export function MoveForm({
@@ -90,7 +89,7 @@ export function NoteForm({
           maxLength={maxLength}
           aria-invalid={state.errors.text ? true : undefined}
           aria-describedby={state.errors.text ? "note-error" : undefined}
-          className={FIELD}
+          className={TEXTAREA}
         />
       </label>
       {state.errors.text && (

@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button";
 
 import { FormMessage } from "../form-message";
 import { stockAction, type StockFormState, type StockMove } from "./actions";
+import { INLINE_FIELD as FIELD } from "@/components/ui/field-classes";
 
 const initial: StockFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal";
 
 const FORMS: Record<
   StockMove,

@@ -5,7 +5,7 @@ import { useLocalPath, useShopPath } from "@/i18n/client";
 export type CategoryLink = { slug: string; name: string; href: string };
 
 const LINK =
-  "rounded-pill border-input bg-card hover:bg-muted md:text-muted-foreground md:hover:text-foreground inline-flex min-h-11 shrink-0 items-center border px-4 text-[15px] font-medium whitespace-nowrap md:min-h-0 md:rounded-none md:border-0 md:border-b-2 md:border-transparent md:bg-transparent md:px-3 md:hover:bg-transparent aria-[current=page]:border-ink aria-[current=page]:font-semibold md:aria-[current=page]:border-ink md:aria-[current=page]:text-foreground";
+  "rounded-pill border-input bg-card hover:bg-muted md:text-muted-foreground md:hover:text-foreground inline-flex min-h-11 shrink-0 items-center border px-4 text-label font-medium whitespace-nowrap md:min-h-0 md:rounded-none md:border-0 md:border-b-2 md:border-transparent md:bg-transparent md:px-3 md:hover:bg-transparent aria-[current=page]:border-ink aria-[current=page]:font-semibold md:aria-[current=page]:border-ink md:aria-[current=page]:text-foreground";
 
 /** The links, the one under the current Category marked (mockup-v2 catnav). */
 export function CategoryLinks({

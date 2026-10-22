@@ -51,7 +51,7 @@ export function SignInForm({
         ).map(([value, label]) => (
           <label
             key={value}
-            className="rounded-pill has-[:checked]:bg-card has-[:focus-visible]:outline-ring relative grid min-h-11 cursor-pointer place-items-center text-[15px] font-semibold has-[:checked]:shadow-sm has-[:focus-visible]:outline-2"
+            className="rounded-pill has-[:checked]:bg-card has-[:focus-visible]:outline-ring text-label relative grid min-h-11 cursor-pointer place-items-center font-semibold has-[:checked]:shadow-sm has-[:focus-visible]:outline-2"
           >
             <input
               type="radio"

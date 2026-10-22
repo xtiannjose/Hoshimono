@@ -14,14 +14,13 @@ import {
   sendOutAction,
   type DispatchFormState,
 } from "./actions";
+import { INLINE_FIELD } from "@/components/ui/field-classes";
 
 const initial: DispatchFormState = { errors: {} };
 // 56 px for a Rider on a phone (docs/05 section 9).
 const BIG = "min-h-14 px-5 text-base";
 const FIELD =
   "rounded-field border-input bg-card h-14 border px-3 text-lg tabular-nums";
-const SMALL_FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base";
 
 /** Choose a Rider and send the Order out. */
 export function SendOutForm({
@@ -41,7 +40,7 @@ export function SendOutForm({
     <form action={action} className="flex flex-wrap items-end gap-2">
       <label className="grid gap-1 text-sm font-semibold">
         Rider
-        <select name="riderId" className={SMALL_FIELD} defaultValue="">
+        <select name="riderId" className={INLINE_FIELD} defaultValue="">
           <option value="" disabled>
             Choose a Rider
           </option>
@@ -83,7 +82,7 @@ export function WithoutPinForm({
       <form key={formKey(state)} action={action} className="grid gap-2 pt-1">
         <label className="grid gap-1 font-semibold">
           Why was the PIN not used?
-          <input name="reason" className={SMALL_FIELD} />
+          <input name="reason" className={INLINE_FIELD} />
         </label>
         {dueCents !== null && (
           <label className="grid gap-1 font-semibold">
@@ -92,7 +91,7 @@ export function WithoutPinForm({
               name="cash"
               inputMode="decimal"
               defaultValue={(dueCents / 100).toFixed(2)}
-              className={SMALL_FIELD}
+              className={INLINE_FIELD}
             />
           </label>
         )}
@@ -148,7 +147,7 @@ export function DeliveredForm({
       {cod && (
         <label className="grid gap-1 text-sm font-semibold">
           If the cash is different, why?
-          <input name="note" className={SMALL_FIELD} />
+          <input name="note" className={INLINE_FIELD} />
         </label>
       )}
       <Button type="submit" disabled={pending} className={BIG}>
@@ -182,7 +181,7 @@ export function FailedForm({ orderId }: { orderId: string }) {
           What happened?
           <select
             name="reason"
-            className={SMALL_FIELD}
+            className={INLINE_FIELD}
             defaultValue={MISSED[0]}
           >
             {MISSED.map((m) => (
@@ -192,7 +191,7 @@ export function FailedForm({ orderId }: { orderId: string }) {
         </label>
         <label className="grid gap-1 font-semibold">
           More detail (optional)
-          <input name="detail" className={SMALL_FIELD} />
+          <input name="detail" className={INLINE_FIELD} />
         </label>
         <Button
           type="submit"
@@ -234,12 +233,12 @@ export function CountCashForm({
           name="counted"
           inputMode="decimal"
           defaultValue={(recordedCents / 100).toFixed(2)}
-          className={`${SMALL_FIELD} w-36 tabular-nums`}
+          className={`${INLINE_FIELD} w-36 tabular-nums`}
         />
       </label>
       <label className="grid gap-1 text-sm font-semibold">
         Note (needed if cash is missing)
-        <input name="note" className={`${SMALL_FIELD} w-64`} />
+        <input name="note" className={`${INLINE_FIELD} w-64`} />
       </label>
       <Button type="submit" disabled={pending}>
         Record count

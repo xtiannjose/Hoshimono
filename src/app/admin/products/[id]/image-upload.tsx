@@ -30,7 +30,7 @@ export function ImageUpload({ productId }: { productId: string }) {
           aria-describedby="image-help"
           className="text-sm"
         />
-        <p id="image-help" className="text-muted-foreground text-[13px]">
+        <p id="image-help" className="text-muted-foreground text-fine">
           At least 1000 x 1000 pixels, neutral background. Square works best;
           other shapes get white edges, never cropped. JPEG, PNG or WebP under
           10 MB.

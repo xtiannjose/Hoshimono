@@ -7,12 +7,12 @@ for (const { label, landing, check } of [
   {
     label: "Admin",
     landing: /\/admin$/,
-    check: "Signed in as Rafael Cruz (admin)",
+    check: "Hello, Rafael",
   },
   {
     label: "Technical",
     landing: /\/admin$/,
-    check: "Signed in as Hoshimono Tech (admin)",
+    check: "Hello, Hoshimono",
   },
 ] as const) {
   test(`${label} signs in in one click and lands in the admin`, async ({
@@ -21,7 +21,8 @@ for (const { label, landing, check } of [
     await page.goto("/dev/sign-in", { waitUntil: "networkidle" });
     await page.getByRole("link", { name: `Sign in as ${label}` }).click();
     await expect(page).toHaveURL(landing, { timeout: 30_000 });
-    await expect(page.getByText(check)).toBeVisible();
+    await expect(page.getByRole("heading", { name: check })).toBeVisible();
+    await expect(page.getByText("Signed in as Admin.")).toBeVisible();
   });
 }
 

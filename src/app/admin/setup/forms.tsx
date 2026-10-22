@@ -14,10 +14,10 @@ import {
   zoneFeesAction,
   type SetupFormState,
 } from "./actions";
+import { INLINE_FIELD } from "@/components/ui/field-classes";
 
 const initial: SetupFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal tabular-nums";
+const FIELD = `${INLINE_FIELD} tabular-nums`;
 const pesos = (cents: number | null) =>
   cents === null ? "" : (cents / 100).toFixed(2);
 

@@ -6,7 +6,10 @@ import { Suspense } from "react";
 
 import { readCartOwner } from "@/app/[lang]/cart/owner";
 import { CartSync } from "@/components/cart/cart-button";
-import { CheckoutForm } from "@/components/checkout/checkout-form";
+import {
+  CheckoutForm,
+  SummaryPreview,
+} from "@/components/checkout/checkout-form";
 import { CountStep } from "@/components/count-step";
 import { localPath } from "@/i18n/lang";
 import { getLang, getMessages } from "@/i18n/server";
@@ -65,6 +68,7 @@ async function Checkout({
       next={localPath(lang, "/checkout?address={id}")}
       areas={areas}
       submitLabel={t.deliverHere}
+      first={addresses.length === 0}
       values={{
         label: addresses.length === 0 ? t.firstLabel : "",
         line1: "",
@@ -72,21 +76,31 @@ async function Checkout({
         city: "",
         landmark: "",
         notes: "",
-        isDefault: addresses.length === 0,
+        isDefault: false,
       }}
     />
   );
   if (addresses.length === 0) {
+    // No address yet: show what is being bought beside the form (ADR 0018).
+    const cart = await getCart(owner, {
+      hubId: await getDefaultHubId(),
+      zone: null,
+    });
+    if (cart.lines.length === 0) redirect(localPath(lang, "/cart"));
     return (
-      <section
-        aria-labelledby="h-where"
-        className="rounded-card border-border bg-card mt-6 grid max-w-2xl gap-4 border p-5 md:p-7"
-      >
-        <h2 id="h-where" className="type-h3">
-          {t.whereTo}
-        </h2>
-        {addressForm}
-      </section>
+      <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <CartSync view={cart} />
+        <section
+          aria-labelledby="h-where"
+          className="rounded-card border-border bg-card grid gap-4 border p-5 md:p-7"
+        >
+          <h2 id="h-where" className="type-h3">
+            {t.whereTo}
+          </h2>
+          {addressForm}
+        </section>
+        <SummaryPreview cart={cart} />
+      </div>
     );
   }
   const address = addresses.find((a) => a.id === chosen) ?? addresses[0];

@@ -1,3 +1,4 @@
+import { TruckIcon } from "@phosphor-icons/react/ssr";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -13,7 +14,8 @@ import {
 } from "@/app/_data/storefront";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { CountStep } from "@/components/count-step";
-import { AddToCart } from "@/components/product/add-to-cart";
+import { DeliveryLine } from "@/components/home/delivery-strip";
+import { ProductBuy } from "@/components/product/product-buy";
 import { CategoryIcon } from "@/components/product/category-icon";
 import { formatPackSize } from "@/components/product/format";
 import { PriceTag } from "@/components/product/price-tag";
@@ -157,7 +159,9 @@ async function ProductView({
 
       <div className="grid items-start gap-8 pt-2 lg:grid-cols-[7fr_5fr] lg:gap-10">
         <div
-          className={`rounded-card photo-slot relative aspect-square ${state === "out" ? "opacity-60 grayscale" : ""}`}
+          // Without a photo the tile stays short on phones, so the name, price
+          // and Add show first (ADR 0018).
+          className={`rounded-card photo-slot relative ${found.primaryImage ? "aspect-square" : "aspect-[2/1] sm:aspect-[4/3] lg:aspect-square"} ${state === "out" ? "opacity-60 grayscale" : ""}`}
         >
           {found.primaryImage ? (
             <Image
@@ -170,14 +174,14 @@ async function ProductView({
             />
           ) : (
             <CategoryIcon
-              slug={found.category.slug}
+              slug={found.category.topSlug}
               size={72}
               className="opacity-70"
             />
           )}
         </div>
 
-        <div className="rounded-card border-border bg-card grid gap-[22px] border p-6 md:p-7 lg:sticky lg:top-[136px]">
+        <div className="rounded-card border-border bg-card lg:top-sticky grid gap-[22px] border p-6 md:p-7 lg:sticky">
           <div>
             {found.brand && (
               <p className="text-muted-foreground text-sm font-semibold">
@@ -224,8 +228,12 @@ async function ProductView({
               </Suspense>
             </div>
           ) : (
-            <AddToCart productId={found.id} name={found.name} />
+            <ProductBuy productId={found.id} name={found.name} />
           )}
+          <div className="border-border flex items-start gap-3 border-t pt-4">
+            <TruckIcon size={22} aria-hidden className="mt-px shrink-0" />
+            <DeliveryLine lang={lang} />
+          </div>
           <Suspense fallback={null}>
             <SaveToListSlot productId={found.id} />
           </Suspense>

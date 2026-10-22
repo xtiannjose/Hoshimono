@@ -63,7 +63,7 @@ export function OrderDetails({
             >
               <span>
                 {line.name}
-                <small className="text-muted-foreground block text-[13px]">
+                <small className="text-muted-foreground text-fine block">
                   {t.lineDetail(
                     line.quantity,
                     formatMoney(line.unitPriceCents),
@@ -116,7 +116,7 @@ export function OrderDetails({
             </div>
           )}
         </dl>
-        <p className="text-muted-foreground mt-2 text-[13px]">
+        <p className="text-muted-foreground text-fine mt-2">
           {t.vat(formatMoney(order.vatCents))}
           {estimated && order.finalTotalCents === null && t.weighedNote}
         </p>

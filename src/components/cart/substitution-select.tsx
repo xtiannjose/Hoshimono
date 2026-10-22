@@ -7,6 +7,7 @@ import {
   chooseSubstitution,
   listAlternatives,
 } from "@/app/[lang]/cart/actions";
+import { RADIO_CARD } from "@/components/ui/field-classes";
 import { useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import type { CartLineView } from "@/modules/cart";
@@ -77,7 +78,7 @@ export function SubstitutionSelect({
         onClick={toggle}
         aria-expanded={open}
         aria-controls={`${id}-panel`}
-        className="decoration-border-strong mt-1 inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold underline underline-offset-[3px]"
+        className="decoration-border-strong text-fine mt-1 inline-flex min-h-11 items-center gap-1 font-semibold underline underline-offset-[3px]"
       >
         <SwapIcon size={15} aria-hidden />
         {current.label}
@@ -89,13 +90,13 @@ export function SubstitutionSelect({
           aria-busy={saving}
           className="mt-2 grid gap-2"
         >
-          <legend className="mb-2 text-[13px] font-semibold">
+          <legend className="text-fine mb-2 font-semibold">
             {words.legend}
           </legend>
           {OPTIONS.map((option) => (
             <label
               key={option}
-              className="rounded-field border-border-strong bg-card has-[:checked]:border-ink has-[:focus-visible]:outline-ring flex cursor-pointer items-start gap-3 border px-3.5 py-3 has-[:checked]:border-2 has-[:checked]:px-[13px] has-[:checked]:py-[11px] has-[:focus-visible]:outline-2"
+              className={`${RADIO_CARD} items-start gap-3 px-3.5 py-3`}
             >
               <input
                 type="radio"
@@ -109,7 +110,7 @@ export function SubstitutionSelect({
                 <span className="block text-sm font-bold">
                   {words[option].label}
                 </span>
-                <span className="text-muted-foreground block text-[13px] leading-[18px]">
+                <span className="text-muted-foreground text-fine block">
                   {words[option].hint}
                 </span>
               </span>

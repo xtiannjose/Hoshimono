@@ -30,7 +30,7 @@ export function SortSelect({
       {keep.map(([name, v], i) => (
         <input key={`${name}-${i}`} type="hidden" name={name} value={v} />
       ))}
-      <label htmlFor="sort" className="text-sm font-semibold">
+      <label htmlFor="sort" className="text-sm font-semibold max-sm:sr-only">
         {t.sort}
       </label>
       <select

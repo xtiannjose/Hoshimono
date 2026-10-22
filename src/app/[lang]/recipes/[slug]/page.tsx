@@ -133,7 +133,7 @@ async function RecipeArticle({ recipe }: { recipe: RecipeView }) {
 
         <aside
           aria-label="Ingredients"
-          className="rounded-card border-border bg-card border p-6 md:p-7 lg:sticky lg:top-[136px] lg:col-start-2 lg:row-span-2 lg:row-start-1"
+          className="rounded-card border-border bg-card lg:top-sticky border p-6 md:p-7 lg:sticky lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           <RecipeCart
             slug={recipe.slug}

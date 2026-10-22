@@ -8,6 +8,8 @@ import {
 } from "@/app/[lang]/account/addresses/actions";
 import { formKey } from "@/components/form-key";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { FIELD } from "@/components/ui/field-classes";
+import { TEXTAREA } from "@/components/ui/field-classes";
 
 export type AddressFormValues = {
   id?: string;
@@ -22,8 +24,6 @@ export type AddressFormValues = {
 
 export type ServiceArea = { city: string; barangays: string[] | null };
 
-const FIELD =
-  "h-11 w-full rounded-field border border-input bg-card px-3 text-base aria-invalid:border-err";
 const initial: AddressFormState = { errors: {} };
 
 function Field({
@@ -46,7 +46,7 @@ function Field({
       </label>
       {children}
       {hint && !error && (
-        <p id={`${id}-hint`} className="text-muted-foreground text-[13px]">
+        <p id={`${id}-hint`} className="text-muted-foreground text-fine">
           {hint}
         </p>
       )}
@@ -69,11 +69,14 @@ export function AddressForm({
   areas,
   next,
   submitLabel = "Save address",
+  first = false,
 }: {
   values: AddressFormValues;
   areas: ServiceArea[];
   next: string;
   submitLabel?: string;
+  /** The Customer's first address: it becomes the default, so do not ask. */
+  first?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveAddressAction, initial);
   // React resets the form after an action; refill it with what was sent.
@@ -141,14 +144,21 @@ export function AddressForm({
         />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="a-city" label="City" error={e.city}>
+        <Field
+          id="a-city"
+          label="City"
+          error={e.city}
+          hint={`We deliver to ${areas.map((a) => a.city).join(", ")} for now.`}
+        >
           <select
             id="a-city"
             name="city"
             defaultValue={v.city}
             onChange={(event) => setPicked(event.target.value)}
             className={FIELD}
-            {...described("city")}
+            {...(e.city
+              ? described("city")
+              : { "aria-describedby": "a-city-hint" })}
           >
             <option value="">Choose a city</option>
             {areas.map((area) => (
@@ -218,22 +228,21 @@ export function AddressForm({
           defaultValue={v.notes}
           maxLength={200}
           rows={3}
-          className="rounded-field border-input bg-card w-full border px-3 py-2 text-base"
+          className={TEXTAREA}
           {...described("notes")}
         />
       </Field>
-      <label className="flex items-center gap-3 text-[15px]">
-        <input
-          type="checkbox"
-          name="isDefault"
-          defaultChecked={v.isDefault}
-          className="accent-ink size-5"
-        />
-        Use this address by default
-      </label>
-      <p className="text-muted-foreground text-[13px]">
-        We deliver to {areas.map((a) => a.city).join(", ")} for now.
-      </p>
+      {!first && (
+        <label className="text-label flex items-center gap-3">
+          <input
+            type="checkbox"
+            name="isDefault"
+            defaultChecked={v.isDefault}
+            className="accent-ink size-5"
+          />
+          Use this address by default
+        </label>
+      )}
       <div>
         <button type="submit" disabled={pending} className={PRIMARY_BUTTON}>
           {pending ? "Saving..." : submitLabel}

@@ -24,7 +24,7 @@ export function CartLines({
   return (
     <>
       {view.unavailableCount > 0 && (
-        <p className="rounded-field bg-muted mt-2 px-3 py-2 text-[13px] leading-[18px]">
+        <p className="rounded-field bg-muted text-fine mt-2 px-3 py-2">
           {t.unavailable(view.unavailableCount)}
         </p>
       )}

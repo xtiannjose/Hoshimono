@@ -129,3 +129,15 @@ export const AREA_LINKS: Record<
     },
   ],
 };
+
+/** The admin menu, grouped by job (ADR 0018); every area appears once. */
+export const AREA_GROUPS: { label: string; areas: StaffArea[] }[] = [
+  {
+    label: "Orders and delivery",
+    areas: ["orders", "picking", "dispatch", "delivery", "claims", "refunds"],
+  },
+  { label: "Stock and Slots", areas: ["stock", "setup"] },
+  { label: "Catalogue", areas: ["catalog"] },
+  { label: "Offers and content", areas: ["promotions", "content"] },
+  { label: "People and reports", areas: ["reports", "staff", "audit"] },
+];

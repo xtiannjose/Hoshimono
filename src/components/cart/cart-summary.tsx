@@ -60,7 +60,7 @@ export function CartNotes({ priced }: { priced: PricedCart }) {
   if (priced.weighedSubtotalCents > 0) notes.push(t.weighedNote);
   if (notes.length === 0) return null;
   return (
-    <div className="text-muted-foreground grid gap-1 text-[13px] leading-[18px]">
+    <div className="text-muted-foreground text-fine grid gap-1">
       {notes.map((note) => (
         <p key={note}>{note}</p>
       ))}

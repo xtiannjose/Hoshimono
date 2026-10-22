@@ -71,9 +71,7 @@ export function ImportForm() {
                 {state.errors.map((e, i) => (
                   <tr key={i} className="border-border border-t">
                     <td className="px-4 py-2 tabular-nums">{e.row}</td>
-                    <td className="px-4 py-2 font-mono text-[13px]">
-                      {e.field}
-                    </td>
+                    <td className="text-fine px-4 py-2 font-mono">{e.field}</td>
                     <td className="px-4 py-2">{e.message}</td>
                   </tr>
                 ))}

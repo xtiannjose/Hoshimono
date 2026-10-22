@@ -61,7 +61,7 @@ export function PhotoForm({
             aria-describedby="photo-help"
             className="text-sm"
           />
-          <p id="photo-help" className="text-muted-foreground text-[13px]">
+          <p id="photo-help" className="text-muted-foreground text-fine">
             At least 1000 pixels wide; landscape works best. Pages crop it to
             fit. JPEG, PNG or WebP under 10 MB.
           </p>
