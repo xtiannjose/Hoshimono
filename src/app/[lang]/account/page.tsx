@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { displayPhone } from "@/lib/phone";
 import { getProfile } from "@/modules/customers";
 import { requireCustomer } from "@/modules/identity";
 
@@ -38,7 +39,9 @@ async function Account() {
         <NameForm name={profile.name} />
         <p className="text-muted-foreground text-sm">
           Signed in with{" "}
-          <b className="text-foreground">{profile.email ?? profile.phone}</b>
+          <b className="text-foreground">
+            {profile.email ?? (profile.phone && displayPhone(profile.phone))}
+          </b>
         </p>
       </div>
       <nav aria-label="Your account" className="grid gap-3 sm:grid-cols-2">

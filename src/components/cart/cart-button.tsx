@@ -96,6 +96,7 @@ function FloatingCartBar({ count, total }: { count: number; total: number }) {
   return createPortal(
     <div
       style={{ zIndex: z.sticky }}
+      data-cart-bar
       className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden"
     >
       <button

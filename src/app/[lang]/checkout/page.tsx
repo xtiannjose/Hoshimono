@@ -11,6 +11,7 @@ import { CountStep } from "@/components/count-step";
 import { localPath } from "@/i18n/lang";
 import { getLang, getMessages } from "@/i18n/server";
 import { slotParts } from "@/lib/dates";
+import { displayPhone } from "@/lib/phone";
 import { getCart, getCartId } from "@/modules/cart";
 import { AddressForm } from "@/components/address/address-form";
 import { listAddresses } from "@/modules/customers";
@@ -139,7 +140,7 @@ async function Checkout({
         }))}
         heldSlotId={hold?.slotId ?? null}
         heldExpiresAt={hold?.expiresAt ?? null}
-        phone={customer.phone ?? ""}
+        phone={customer.phone ? displayPhone(customer.phone) : ""}
         onlinePayments={paymentProvider() !== null}
       />
     </>

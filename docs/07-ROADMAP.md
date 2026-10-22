@@ -34,9 +34,9 @@ Resume here: read this section, then the batch named first under Next.
 
 **Next, in order**
 
-1. A general checkup of the app (asked for on 21 Oct), with the Phase 5 exit criteria, and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help. Local e2e runs are steadier on a production build (`E2E_PROD=1`); the dev server compiles routes under load and times some tests out.
-2. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
-3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
+1. The design pass (section 9, "Review: what reads as AI-made"): Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy. The owner chose on 22 Oct to do it right after the general checkup (done 22 Oct, section 9, branch `checkup/general`).
+2. The Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
+3. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
 **Waiting on the owner**
@@ -307,6 +307,17 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
 - [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
+
+**General checkup** (22 Oct, branch `checkup/general`). The main flows were walked on a production build (phone and desktop, light and dark, English and Filipino, Customer and Admin), the full test suites run, and the code and dependencies swept.
+
+- [x] Phase 5 exit criteria, on the running app through the e2e suite (71 of 71 on a production build): a Recipe goes into the Cart with one button after unticking; a Voucher's rules and last use hold (Vitest and e2e); a Claim is filed, approved and refunded end to end
+- [x] JavaScript per page was over the 170 KB budget after Phase 5. The not-found page had become a Client Component and shipped on every page (13 KB), and the servings stepper of Home's Recipe brought Motion (15 KB); now a Server Component and a CSS count bump. Measured on a production build, gzipped, without the polyfills modern browsers skip: Home 182, Category 166, Product 181, Search 166 KB. Still over on Home and Product: both dictionaries ship to every page (8 KB; only the page's language would need words without functions), and the Product page's list and alert buttons bring `tailwind-merge` through `Button` (the one-button-system item below)
+- [ ] Lighthouse on the CI runner once GitHub is back: laptop runs swing from 66 to 82 on the same build, so they settle nothing
+- [x] Stored phone numbers showed as `+639171234504` in Checkout, the Order and the account; now `0917 123 4504`
+- [x] On phones the floating "View cart" bar covered the footer's last row; the footer makes room while the bar shows
+- [x] `next dev` reloaded pages in a loop ("HMR hash mismatch") after a production build in the same folder. Delete `.next/dev` after building; a likely cause of the dev-only e2e flakes above
+- [x] Dependencies: runtime audit clean. Nine "high" advisories are one `braces` issue inside lint and the shadcn CLI (dev only, our own patterns); no fixed version exists, npm's suggestion is a downgrade
+- [ ] Still open from before: a missing Product or Category answers 200 (Next 16); uploaded photos under `next start` (R2); the admin wears the shop header (design pass)
 
 **Review: what reads as AI-made** (18 Oct). Senior engineer, senior frontend and UI/UX reviewers looked at the running app (desktop, phone, dark mode, admin) and the code for signs a human expert would not leave. The core is senior-grade: stock and Slot races, idempotent `placeOrder`, money in centavos, enforced module boundaries, forms that work without JavaScript. The tells are on the surface: build-process comments, near-duplicate copies, fixes layered on fixes, and a placeholder-heavy template look.
 

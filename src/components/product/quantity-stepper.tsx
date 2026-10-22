@@ -1,14 +1,11 @@
 "use client";
 
 import { MinusIcon, PlusIcon } from "@phosphor-icons/react";
-import { useReducedMotion } from "motion/react";
-import * as m from "motion/react-m";
 import { useEffect, useRef, useState, type Ref } from "react";
 
 import { useMessages } from "@/i18n/client";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-limits";
 
-const SNAP = { type: "spring", visualDuration: 0.2, bounce: 0.1 } as const;
 // Long-press repeat (docs/05 section 6): wait, then step steadily.
 const REPEAT_DELAY = 400;
 const REPEAT_EVERY = 100;
@@ -43,7 +40,6 @@ export function QuantityStepper({
   increaseLabel,
 }: Props) {
   const words = useMessages().product;
-  const reduce = useReducedMotion();
   // A hold counts here and tells the parent once, on release: one server
   // update and one announcement instead of one every REPEAT_EVERY ms.
   const [draft, setDraft] = useState<number | null>(null);
@@ -126,19 +122,16 @@ export function QuantityStepper({
       >
         <MinusIcon size={20} aria-hidden />
       </button>
-      {/* Count bump confirms the change (motion table, docs/05 section 7). */}
+      {/* Count bump confirms the change (motion table, docs/05 section 7):
+          keyed, so each new count mounts enlarged and settles. */}
       {/* Not a live region: the Cart announces "Name, 2 in cart" itself. */}
-      <m.output
+      <output
         key={shown}
         aria-live="off"
-        // Springs take two keyframes: mount enlarged, settle to normal size.
-        initial={reduce ? false : { scale: 1.18 }}
-        animate={{ scale: 1 }}
-        transition={SNAP}
-        className="font-display text-center text-lg font-semibold tabular-nums"
+        className="font-display animate-bump text-center text-lg font-semibold tabular-nums motion-reduce:animate-none"
       >
         {shown}
-      </m.output>
+      </output>
       <button
         ref={plusRef}
         type="button"

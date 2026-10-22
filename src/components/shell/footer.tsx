@@ -16,7 +16,8 @@ const LINK = "inline-flex min-h-11 items-center font-semibold hover:underline";
 export function Footer({ lang }: { lang: Lang }) {
   const t = MESSAGES[lang].shell;
   return (
-    <footer className="bg-surface-2 mt-24 print:hidden">
+    // Room below the last links for the phone's floating Cart bar.
+    <footer className="bg-surface-2 mt-24 print:hidden max-md:[body:has([data-cart-bar])_&]:pb-[calc(88px+env(safe-area-inset-bottom))]">
       <div className="wrap flex flex-col gap-3 py-10">
         <BrandLogo className="text-[22px]" />
         <p className="type-small text-muted-foreground max-w-[44ch]">

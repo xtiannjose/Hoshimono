@@ -2,6 +2,7 @@ import type { Lang } from "@/i18n/lang";
 import { MESSAGES } from "@/i18n/messages";
 import { formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { displayPhone } from "@/lib/phone";
 import type { OrderDetail } from "@/modules/orders";
 
 /** Delivery, items and totals of an Order, as stored at checkout. */
@@ -48,7 +49,7 @@ export function OrderDetails({
         </div>
         <div>
           <dt className="text-muted-foreground text-sm">{t.mobile}</dt>
-          <dd className="tabular-nums">{order.contactPhone}</dd>
+          <dd className="tabular-nums">{displayPhone(order.contactPhone)}</dd>
         </div>
       </dl>
 

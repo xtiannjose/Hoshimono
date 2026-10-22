@@ -1,23 +1,23 @@
-"use client";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 
-import { MagnifyingGlassIcon } from "@phosphor-icons/react";
-
-import { useLocalPath, useMessages } from "@/i18n/client";
+import { localPath, type Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 
 /** Plain GET form that works without JavaScript; the header SearchBox adds suggestions. */
 export function SearchForm({
   id,
+  lang,
   className = "",
 }: {
   id: string;
+  lang: Lang;
   className?: string;
 }) {
-  const t = useMessages().shell;
-  const local = useLocalPath();
+  const t = MESSAGES[lang].shell;
   return (
     <form
       role="search"
-      action={local("/search")}
+      action={localPath(lang, "/search")}
       className={`rounded-pill border-input bg-card focus-within:outline-ring flex h-12 items-center gap-2.5 border px-[18px] focus-within:outline-2 focus-within:outline-offset-2 ${className}`}
     >
       <MagnifyingGlassIcon

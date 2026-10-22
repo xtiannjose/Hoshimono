@@ -142,6 +142,16 @@
 
   /* Skeleton pulse: opacity only, 1.2 s (docs/05 section 7). */
   --animate-pulse: pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* Count bump: scale 1.18 to 1 with a little settle (docs/05 section 7).
+     The count remounts on each change, so the curve restarts as a spring
+     would, without Motion on the first load. */
+  --animate-bump: bump 0.2s cubic-bezier(0.3, 1.3, 0.6, 1);
+  @keyframes bump {
+    from {
+      transform: scale(1.18);
+    }
+  }
 }
 
 /* ---------- Base ---------- */
