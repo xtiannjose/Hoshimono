@@ -318,7 +318,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [x] On phones the floating "View cart" bar covered the footer's last row; the footer makes room while the bar shows
 - [x] `next dev` reloaded pages in a loop ("HMR hash mismatch") after a production build in the same folder. Delete `.next/dev` after building; a likely cause of the dev-only e2e flakes above
 - [x] Dependencies: runtime audit clean. Nine "high" advisories are one `braces` issue inside lint and the shadcn CLI (dev only, our own patterns); no fixed version exists, npm's suggestion is a downgrade
-- [ ] Still open from before: a missing Product or Category answers 200 (Next 16); uploaded photos under `next start` (R2); the admin wears the shop header (design pass)
+- [ ] Still open from before: a missing Product or Category answers 200 (Next 16); uploaded photos under `next start` (R2) (the admin shell was done in the design pass)
 
 **Review: what reads as AI-made** (18 Oct). Senior engineer, senior frontend and UI/UX reviewers looked at the running app (desktop, phone, dark mode, admin) and the code for signs a human expert would not leave. The core is senior-grade: stock and Slot races, idempotent `placeOrder`, money in centavos, enforced module boundaries, forms that work without JavaScript. The tells are on the surface: build-process comments, near-duplicate copies, fixes layered on fixes, and a placeholder-heavy template look.
 
