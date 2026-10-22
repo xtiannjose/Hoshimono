@@ -22,17 +22,6 @@ export type VoucherCheck =
   | { ok: true; voucherId: string; terms: VoucherTerms }
   | { ok: false; reason: VoucherRefusal };
 
-/** What to tell the Customer when a Voucher does not apply. */
-export const VOUCHER_REFUSAL: Record<VoucherRefusal, string> = {
-  not_found: "We do not know that code. Check it and try again.",
-  not_started: "This Voucher has not started yet.",
-  ended: "This Voucher has ended.",
-  not_yours: "This Voucher belongs to another account.",
-  first_order_only: "This Voucher is for a first order only.",
-  used_up: "This Voucher has been fully used.",
-  used_by_you: "You have already used this Voucher.",
-};
-
 /** Codes are kept upper case without spaces: "save 10" is "SAVE10". */
 export const normalizeCode = (code: string) =>
   code.toUpperCase().replace(/\s+/g, "");

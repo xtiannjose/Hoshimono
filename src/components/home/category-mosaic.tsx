@@ -1,5 +1,5 @@
 import { ArrowRightIcon } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
+import Link from "@/components/link";
 
 import {
   categoryPaths,
@@ -8,6 +8,8 @@ import {
 } from "@/app/_data/storefront";
 import { CategoryIcon } from "@/components/product/category-icon";
 import { HOME_MOSAIC } from "@/config/home";
+import type { Messages } from "@/i18n/messages";
+import { getMessages } from "@/i18n/server";
 import type { CategoryNode } from "@/modules/catalog";
 import { categoryHref } from "@/lib/routes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,12 +23,14 @@ function find(tree: CategoryNode[], slug: string): CategoryNode | undefined {
 }
 
 /** "Avocado, Calamansi and 7 more", from the Category's real Products. */
-async function sampleLine(slug: string): Promise<string | null> {
+async function sampleLine(
+  slug: string,
+  t: Messages["home"]
+): Promise<string | null> {
   const list = await productList({ categorySlug: slug, limit: 2 });
   if (!list || list.total === 0) return null;
   const names = list.items.map((p) => p.name).join(", ");
-  const more = list.total - list.items.length;
-  return more > 0 ? `${names} and ${more} more` : names;
+  return t.sample(names, list.total - list.items.length);
 }
 
 const NAME =
@@ -43,9 +47,10 @@ export async function CategoryMosaic() {
     .map((slug) => find(tree, slug))
     .filter((c): c is CategoryNode => c !== undefined);
   const [big, wide, ...small] = tiles;
+  const t = (await getMessages()).home;
   const [bigLine, wideLine] = await Promise.all([
-    big ? sampleLine(big.slug) : null,
-    wide ? sampleLine(wide.slug) : null,
+    big ? sampleLine(big.slug, t) : null,
+    wide ? sampleLine(wide.slug, t) : null,
   ]);
   const href = (c: CategoryNode) => categoryHref(paths.get(c.slug) ?? [c.slug]);
 

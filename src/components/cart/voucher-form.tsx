@@ -7,9 +7,10 @@ import {
   applyVoucherAction,
   removeVoucherAction,
   type CartResult,
-} from "@/app/cart/actions";
+} from "@/app/[lang]/cart/actions";
 import { announce } from "@/components/live-region";
 import { Button } from "@/components/ui/button";
+import { useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import type { CartView } from "@/modules/cart";
 
@@ -21,6 +22,7 @@ import { setCartView } from "./cart-store";
  * own, so Enter applies the code here instead of placing the Order.
  */
 export function VoucherForm({ view }: { view: CartView }) {
+  const t = useMessages().cart;
   const [code, setCode] = useState("");
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
@@ -29,11 +31,12 @@ export function VoucherForm({ view }: { view: CartView }) {
       try {
         const result = await action();
         setCartView(result.cart);
-        setMessage(result.message ?? "");
-        if (result.message) announce(result.message);
+        const notice = result.notice ? t.notices[result.notice] : "";
+        setMessage(notice);
+        if (notice) announce(notice);
         else setCode("");
       } catch {
-        setMessage("That did not work. Please try again.");
+        setMessage(t.failed.generic);
       }
     });
   const voucher = view.voucher;
@@ -41,17 +44,17 @@ export function VoucherForm({ view }: { view: CartView }) {
 
   if (voucher) {
     const status = voucher.problem
-      ? voucher.problem
+      ? t.notices[voucher.problem]
       : applied && !applied.applied
-        ? `Add ${formatMoney(applied.shortByCents)} more to use it.`
+        ? t.voucher.short(formatMoney(applied.shortByCents))
         : applied?.freeDelivery
-          ? "Free delivery."
-          : `${formatMoney(applied?.discountCents ?? 0)} off.`;
+          ? t.voucher.freeDelivery
+          : t.voucher.off(formatMoney(applied?.discountCents ?? 0));
     return (
       <div className="rounded-field bg-muted flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
         <span>
           <TicketIcon size={16} aria-hidden className="mr-1 inline" />
-          Voucher <b className="font-mono">{voucher.code}</b>:{" "}
+          {t.voucher.label} <b className="font-mono">{voucher.code}</b>:{" "}
           <span role="status">{status}</span>
         </span>
         <button
@@ -60,7 +63,7 @@ export function VoucherForm({ view }: { view: CartView }) {
           onClick={() => run(removeVoucherAction)}
           className="decoration-border-strong font-semibold underline decoration-[1.5px] underline-offset-4 hover:decoration-current"
         >
-          Remove
+          {t.voucher.remove}
         </button>
       </div>
     );
@@ -70,7 +73,7 @@ export function VoucherForm({ view }: { view: CartView }) {
   return (
     <div className="grid gap-1.5">
       <label htmlFor="voucher-code" className="text-sm font-semibold">
-        Have a Voucher code?
+        {t.voucher.prompt}
       </label>
       <div className="flex gap-2">
         <input
@@ -94,7 +97,7 @@ export function VoucherForm({ view }: { view: CartView }) {
           disabled={pending || !code.trim()}
           onClick={apply}
         >
-          Apply
+          {t.voucher.apply}
         </Button>
       </div>
       {message && (

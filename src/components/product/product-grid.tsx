@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { getMessages } from "@/i18n/server";
 import type { ProductSummary } from "@/modules/catalog";
 import type { StockState } from "@/modules/inventory";
 
@@ -43,14 +44,10 @@ export function ProductGrid({
   );
 }
 
-export function ProductGridSkeleton({ count = 6 }: { count?: number }) {
+export async function ProductGridSkeleton({ count = 6 }: { count?: number }) {
+  const t = (await getMessages()).product;
   return (
-    <div
-      role="status"
-      className={GRID}
-      aria-busy="true"
-      aria-label="Loading products"
-    >
+    <div role="status" className={GRID} aria-busy="true" aria-label={t.loading}>
       {Array.from({ length: count }, (_, i) => (
         <ProductCardSkeleton key={i} />
       ))}

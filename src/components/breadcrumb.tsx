@@ -1,13 +1,15 @@
 import { CaretRightIcon } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
+import Link from "@/components/link";
+import { getMessages } from "@/i18n/server";
 
 export type Crumb = { name: string; href: string };
 
 /** Home, then each step; the last item is the current page. */
-export function Breadcrumb({ items }: { items: Crumb[] }) {
-  const all = [{ name: "Home", href: "/" }, ...items];
+export async function Breadcrumb({ items }: { items: Crumb[] }) {
+  const t = (await getMessages()).breadcrumb;
+  const all = [{ name: t.home, href: "/" }, ...items];
   return (
-    <nav aria-label="Breadcrumb" className="pt-5 pb-2">
+    <nav aria-label={t.label} className="pt-5 pb-2">
       <ol className="text-muted-foreground flex flex-wrap items-center gap-1.5 text-sm">
         {all.map((c, i) => {
           const last = i === all.length - 1;

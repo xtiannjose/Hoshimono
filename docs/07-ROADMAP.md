@@ -4,7 +4,7 @@ Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order,
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
 
-## 0. Where we are (updated 2026-10-21, evening)
+## 0. Where we are (updated 2026-10-22)
 
 Resume here: read this section, then the batch named first under Next.
 
@@ -21,20 +21,21 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- Batch 5.5 (branch `phase-5/pwa-language-analytics`, committed locally, not yet pushed): Filipino pages at `/fil`, the installable app with offline basics, and a privacy-first shopping funnel in the daily report ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). Every Phase 5 batch is built.
 - Batch 5.4 (branch `phase-5/claims`, committed locally, not yet pushed): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
 - Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
 - Batch 5.2 (PR #20): Reorder, Shopping Lists, "Buy again", Cart Reminders with consent and Stock Alerts ([ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so `phase-5/claims` (Batch 5.4) and later branches wait locally. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
+**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so `phase-5/claims` (Batch 5.4) and `phase-5/pwa-language-analytics` (Batch 5.5, built on 5.4) wait locally. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
 
-**Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
+**Current phase:** 5, Growth: built, exit criteria to check in the checkup. Phase 4 waits on its dry run. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 5 (section 10): Batch 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
-2. A general checkup of the app (asked for on 21 Oct), and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
+1. A general checkup of the app (asked for on 21 Oct), with the Phase 5 exit criteria, and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help. Local e2e runs are steadier on a production build (`E2E_PROD=1`); the dev server compiles routes under load and times some tests out.
+2. A native speaker checks the Filipino in `src/i18n/fil.ts` before launch (ADR 0017).
 3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
@@ -118,21 +119,21 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 
 ## 4. Decisions due along the way
 
-| Decision                                                        | Options                                                                                       | Decide in   |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- |
-| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                             | Done        |
-| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4   |
-| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                | Batch 2.3   |
-| SMS provider                                                    | Semaphore or Twilio                                                                           | Batch 2.5   |
-| Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6   |
-| Payment provider                                                | **Decided: PayMongo**, see [ADR 0003](adr/0003-payment-provider-interface.md)                 | Done        |
-| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3   |
-| Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)         | Done        |
-| VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                        | Batch 4.4   |
-| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts, ADR 0007 item 3                                              | Soft launch |
-| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0007 item 4                              | Phase 6     |
-| PWA tooling and push                                            | Service worker library; whether to send web push                                              | Batch 5.5   |
-| Load-test tool                                                  | k6, Artillery or similar                                                                      | Batch 6.1   |
+| Decision                                                        | Options                                                                                                      | Decide in   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------- |
+| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                                            | Done        |
+| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront                | Batch 1.4   |
+| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                               | Batch 2.3   |
+| SMS provider                                                    | Semaphore or Twilio                                                                                          | Batch 2.5   |
+| Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                                 | Batch 2.6   |
+| Payment provider                                                | **Decided: PayMongo**, see [ADR 0003](adr/0003-payment-provider-interface.md)                                | Done        |
+| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                                            | Batch 3.3   |
+| Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)                        | Done        |
+| VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                                       | Batch 4.4   |
+| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts, ADR 0007 item 3                                                             | Soft launch |
+| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0007 item 4                                             | Phase 6     |
+| PWA tooling and push                                            | **Decided**: our own small service worker, no web push yet ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)) | Done        |
+| Load-test tool                                                  | k6, Artillery or similar                                                                                     | Batch 6.1   |
 
 Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
@@ -403,9 +404,9 @@ Frontend:
 
 **Batch 5.5 PWA, Filipino and analytics** (W17). Stack: web manifest, service worker, `next-intl`, Vercel Analytics. Skills: `dataviz`.
 
-- [ ] PWA: manifest, install prompt, offline-friendly cart and browse shell
-- [ ] Filipino translation pass (`next-intl` or equivalent)
-- [ ] Analytics events and funnel dashboard
+- [x] PWA: manifest, install prompt, offline-friendly cart and browse shell. 22 Oct ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)): a web manifest and the lime "h" icon; "Install the app" in the footer when Android offers it; our own service worker (`public/sw.js`) keeps shop pages and pictures already seen for a weak or no connection, with an offline page and a note that prices may have changed; Cart, Checkout, payments, Orders, account and staff screens always use the network
+- [x] Filipino translation pass. Our own two dictionaries (`src/i18n/en.ts`, `fil.ts`, same keys checked by TypeScript) rather than `next-intl`; Filipino pages at `/fil/...`, English addresses unchanged; the shell, Cart, Home, Categories, search, Product pages, Checkout and the Order pages are translated; a switch in the header and footer, and `hreflang` in a `Link` header. Account, Recipes, Articles, lists, claims, the address form and messages stay English for now. The Filipino is Claude's draft for a native speaker to check
+- [x] Analytics events and funnel dashboard. Our own counts per Manila day (Product pages viewed, added to a Cart, Checkouts started, Orders placed) in `funnel_counts`, with no identifier, cookie or third party; the daily report shows each step and the share that went on
 
 **Exit criteria:** a Customer cooks from a Recipe in under a minute of cart-building; a Voucher cannot be applied twice or outside its rules; a Claim is filed, resolved and refunded end to end.
 

@@ -9,6 +9,7 @@ import {
   useCart,
 } from "@/components/cart/cart-store";
 import { ADD_BUTTON } from "@/components/ui/button-classes";
+import { useLang, useMessages } from "@/i18n/client";
 
 // The stepper and Motion load on the first tap, or once the Cart holds this
 // Product, so a grid of Add buttons ships no animation code (docs/05
@@ -27,6 +28,8 @@ export function AddToCart({
 }) {
   const quantity = useCart((s) => quantityIn(s, productId));
   const [woke, setWoke] = useState(false);
+  const lang = useLang();
+  const t = useMessages().product;
 
   // The same markup LiveAddToCart starts from, so the swap does not shift.
   const add = (busy: boolean) => (
@@ -37,13 +40,13 @@ export function AddToCart({
           disabled={busy}
           onClick={() => {
             setWoke(true);
-            void changeQuantity(productId, name, 1);
+            void changeQuantity(productId, name, 1, lang);
           }}
-          aria-label={`Add ${name} to cart`}
+          aria-label={t.addToCart(name)}
           className={ADD_BUTTON}
         >
           <PlusIcon size={18} aria-hidden />
-          Add
+          {t.add}
         </button>
       </div>
     </div>

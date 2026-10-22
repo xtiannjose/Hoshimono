@@ -1,0 +1,112 @@
+import { ArrowRightIcon, BasketIcon } from "@phosphor-icons/react/ssr";
+import type { Metadata } from "next";
+import Link from "@/components/link";
+import { Suspense } from "react";
+
+import {
+  CategoryMosaic,
+  CategoryMosaicSkeleton,
+} from "@/components/home/category-mosaic";
+import { BuyAgain } from "@/components/home/buy-again";
+import {
+  FeaturedRecipe,
+  FeaturedRecipeSkeleton,
+} from "@/components/home/featured-recipe";
+import { FreshPicks } from "@/components/home/fresh-picks";
+import { OnSale } from "@/components/home/on-sale";
+import { ServiceStrip } from "@/components/home/service-strip";
+import { ProductGridSkeleton } from "@/components/product/product-grid";
+import { buttonVariants } from "@/components/ui/button";
+import { FRESH_PICKS_CATEGORY } from "@/config/home";
+import { localPath } from "@/i18n/lang";
+import { getLang, getMessages } from "@/i18n/server";
+import { categoryHref } from "@/lib/routes";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    description: (await getMessages()).home.description,
+    alternates: { canonical: localPath(await getLang(), "/") },
+  };
+}
+
+const SECTION_LINK =
+  "inline-flex min-h-11 items-center gap-1.5 font-semibold underline decoration-border-strong decoration-[1.5px] underline-offset-4 hover:decoration-current";
+
+// Home v1 (docs/mockup-v2/home.html): hero, service strip, Category mosaic
+// fresh picks, the featured Recipe (ADR 0013) and what is on sale (ADR 0015).
+export default async function Home() {
+  const t = (await getMessages()).home;
+  return (
+    <>
+      <section
+        aria-labelledby="hero-h"
+        className="wrap grid items-center gap-6 pt-8 md:pt-10 lg:grid-cols-12"
+      >
+        <div className="grid content-center gap-[22px] lg:col-span-6 lg:pr-6">
+          <h1 id="hero-h" className="type-display">
+            {t.hero} <span className="hl">{t.heroToday}</span>
+          </h1>
+          <p className="type-lead">{t.lead}</p>
+          <div>
+            <Link
+              href={categoryHref([FRESH_PICKS_CATEGORY])}
+              className={buttonVariants({ size: "lg" })}
+            >
+              {t.startShopping}
+            </Link>
+          </div>
+        </div>
+        {/* Phones skip the photo so Products appear above the fold (mockup decision 5). */}
+        <div
+          aria-hidden
+          className="rounded-card photo-slot relative hidden aspect-[5/4] lg:col-span-6 lg:grid"
+        >
+          <BasketIcon size={48} className="opacity-70" aria-hidden />
+        </div>
+      </section>
+
+      <div className="wrap">
+        <ServiceStrip />
+      </div>
+
+      {/* Signed-in Customers only; nothing to hold space for otherwise. */}
+      <Suspense fallback={null}>
+        <BuyAgain />
+      </Suspense>
+
+      <section aria-labelledby="cat-h" className="wrap pt-14">
+        <h2 id="cat-h" className="type-h2 mb-5">
+          {t.byCategory}
+        </h2>
+        <Suspense fallback={<CategoryMosaicSkeleton />}>
+          <CategoryMosaic />
+        </Suspense>
+      </section>
+
+      <section aria-labelledby="fresh-h" className="wrap pt-14">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-x-4">
+          <h2 id="fresh-h" className="type-h2">
+            {t.freshPicks}
+          </h2>
+          <Link
+            href={categoryHref([FRESH_PICKS_CATEGORY])}
+            className={SECTION_LINK}
+          >
+            {t.seeAllFresh} <ArrowRightIcon size={18} aria-hidden />
+          </Link>
+        </div>
+        <Suspense fallback={<ProductGridSkeleton />}>
+          <FreshPicks />
+        </Suspense>
+      </section>
+
+      <Suspense fallback={<FeaturedRecipeSkeleton />}>
+        <FeaturedRecipe />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <OnSale />
+      </Suspense>
+    </>
+  );
+}

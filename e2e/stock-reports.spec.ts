@@ -104,6 +104,6 @@ test("the daily report shows a day's numbers and the week before", async ({
       page.getByRole("term").filter({ hasText: tile })
     ).toBeVisible();
   }
-  await expect(page.getByRole("table").getByRole("row")).toHaveCount(8);
+  await expect(page.getByRole("table").first().getByRole("row")).toHaveCount(8);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
 });

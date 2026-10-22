@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import type { CartView } from "@/modules/cart";
 
@@ -15,6 +16,7 @@ import { VoucherForm } from "./voucher-form";
 export function CartPageBody({ initial }: { initial: CartView }) {
   // The store takes over once CartSync hands it this same view.
   const view = useCart((s) => s.view) ?? initial;
+  const t = useMessages().cart;
   if (view.lines.length === 0) return <EmptyCart />;
   const canCheckout = view.priced.lines.length > 0;
   return (
@@ -23,7 +25,7 @@ export function CartPageBody({ initial }: { initial: CartView }) {
         <CartLines view={view} />
       </div>
       <aside
-        aria-label="Order summary"
+        aria-label={t.orderSummary}
         className="rounded-card border-border bg-card grid gap-4 border p-6 lg:sticky lg:top-28"
       >
         <CartSummary priced={view.priced} size="page" />
@@ -34,7 +36,7 @@ export function CartPageBody({ initial }: { initial: CartView }) {
           aria-disabled={!canCheckout}
           className={`${PRIMARY_BUTTON} w-full ${canCheckout ? "" : "pointer-events-none opacity-50"}`}
         >
-          Checkout, {formatMoney(view.priced.totalCents)}
+          {t.checkout(formatMoney(view.priced.totalCents))}
         </Link>
       </aside>
     </div>

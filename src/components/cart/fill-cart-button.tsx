@@ -3,11 +3,24 @@
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import { useState, useTransition } from "react";
 
-import type { FillResult } from "@/app/cart/fill";
+import type { FillResult } from "@/app/[lang]/cart/fill";
 import { Button } from "@/components/ui/button";
 import { announce } from "@/components/live-region";
+import { useMessages } from "@/i18n/client";
+import type { Messages } from "@/i18n/messages";
 
 import { setCartOpen, setCartView } from "./cart-store";
+
+/** What filling the Cart did, in the page's language. */
+export function filledText(t: Messages["cart"], result: FillResult): string {
+  if (result.notice) return t.notices[result.notice];
+  const name = (n: string | null) => n ?? t.unknownItem;
+  return t.filled(
+    result.added,
+    result.soldOut.map(name),
+    result.capped.map(name)
+  );
+}
 
 /**
  * One button that adds several Products to the Cart on the server, then
@@ -23,6 +36,7 @@ export function FillCartButton({
   label: string;
   variant?: "default" | "secondary";
 }) {
+  const t = useMessages();
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   return (
@@ -35,17 +49,18 @@ export function FillCartButton({
           startTransition(async () => {
             try {
               const result = await fill();
+              const text = filledText(t.cart, result);
               setCartView(result.cart);
-              setMessage(result.message);
-              announce(result.message);
+              setMessage(text);
+              announce(text);
             } catch {
-              setMessage("We could not add these. Please try again.");
+              setMessage(t.cart.failed.fill);
             }
           })
         }
       >
         <ShoppingCartIcon aria-hidden />
-        {pending ? "Adding..." : label}
+        {pending ? t.cart.adding : label}
       </Button>
       {message && (
         <p role="status" className="text-sm font-semibold">
@@ -55,7 +70,7 @@ export function FillCartButton({
             onClick={() => setCartOpen(true)}
             className="decoration-border-strong underline decoration-[1.5px] underline-offset-4 hover:decoration-current"
           >
-            View cart
+            {t.shell.viewCart}
           </button>
         </p>
       )}

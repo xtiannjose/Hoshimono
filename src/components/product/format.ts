@@ -1,4 +1,6 @@
 // Display rules for Product cards and pages (docs/05-DESIGN-SYSTEM.md section 8).
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import type { UnitPrice } from "@/modules/catalog";
 import { formatMoney } from "@/lib/money";
 
@@ -9,7 +11,12 @@ function decimal(value: number): string {
 }
 
 /** "1 kg", "450 g", "1.5 L", "12 pcs"; Weighed Products get "approx.". */
-export function formatPackSize(size: PackSize, isWeighed: boolean): string {
+export function formatPackSize(
+  size: PackSize,
+  isWeighed: boolean,
+  lang: Lang = "en"
+): string {
+  const t = MESSAGES[lang].product;
   const text =
     size.unit === "g"
       ? size.value >= 1000
@@ -19,18 +26,15 @@ export function formatPackSize(size: PackSize, isWeighed: boolean): string {
         ? size.value >= 1000
           ? `${decimal(size.value)} L`
           : `${size.value} ml`
-        : `${size.value} ${size.value === 1 ? "pc" : "pcs"}`;
-  return isWeighed ? `approx. ${text}` : text;
+        : t.pieces(size.value);
+  return isWeighed ? t.approx(text) : text;
 }
 
-const BASIS: Record<UnitPrice["basis"], string> = {
-  per_100g: "per 100 g",
-  per_litre: "per litre",
-  per_piece: "per piece",
-};
-
-export function unitPriceLabel(unitPrice: UnitPrice): string {
-  return `${formatMoney(unitPrice.cents)} ${BASIS[unitPrice.basis]}`;
+export function unitPriceLabel(
+  unitPrice: UnitPrice,
+  lang: Lang = "en"
+): string {
+  return `${formatMoney(unitPrice.cents)} ${MESSAGES[lang].product.basis[unitPrice.basis]}`;
 }
 
 /** Whole percent saved, rounded down; null when there is no compare-at price. */

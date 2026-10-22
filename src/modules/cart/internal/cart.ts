@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
 import type { SubstitutionPreference } from "@/generated/prisma/enums";
+import { MAX_NOTE_LENGTH } from "@/lib/cart-limits";
 import { addDays } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { getProductSummaries, type ProductSummary } from "@/modules/catalog";
@@ -14,7 +15,7 @@ import {
   MAX_LINE_QUANTITY,
   checkVoucher,
   priceCart,
-  VOUCHER_REFUSAL,
+  type VoucherRefusal,
   type VoucherTerms,
   type PricedCart,
   type ZoneFees,
@@ -22,6 +23,9 @@ import {
 
 /** A signed-in Customer, or a guest holding the token from their cookie. */
 export type CartOwner = { customerId: string } | { guestToken: string };
+
+/** Why the Cart's Voucher cannot be used; the shop words it (ADR 0009). */
+export type VoucherProblem = VoucherRefusal | "sign_in";
 
 export type CartContext = {
   hubId: string | null;
@@ -67,14 +71,14 @@ export type CartView = {
    * The Voucher kept on the Cart (ADR 0015) and, when it cannot be used,
    * why. Whether it met its minimum spend is in priced.voucher.
    */
-  voucher: { code: string; problem: string | null } | null;
+  voucher: { code: string; problem: VoucherProblem | null } | null;
 };
 
 export type SetQuantityResult =
   | { ok: true; quantity: number; capped: boolean }
   | { ok: false; reason: "not_found" | "out_of_stock" };
 
-export const MAX_NOTE_LENGTH = 200;
+export { MAX_NOTE_LENGTH };
 
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -316,38 +320,37 @@ async function cartVoucher(
   now: Date
 ): Promise<{
   code: string;
-  problem: string | null;
+  problem: VoucherProblem | null;
   terms: VoucherTerms | null;
 } | null> {
   if (!code) return null;
   if (!owner || !("customerId" in owner))
-    return { code, problem: "Sign in to use a Voucher.", terms: null };
+    return { code, problem: "sign_in", terms: null };
   const check = await checkVoucher(code, owner.customerId, now);
   return check.ok
     ? { code, problem: null, terms: check.terms }
-    : { code, problem: VOUCHER_REFUSAL[check.reason], terms: null };
+    : { code, problem: check.reason, terms: null };
 }
 
 /**
  * Keep a Voucher on the Customer's Cart, once it may be used now (ADR
- * 0015). A refusal says why, in words for the Customer.
+ * 0015). A refusal says why.
  */
 export async function setCartVoucher(
   owner: CartOwner,
   code: string,
   now = new Date()
-): Promise<{ ok: true } | { ok: false; message: string }> {
-  if (!("customerId" in owner))
-    return { ok: false, message: "Sign in to use a Voucher." };
+): Promise<
+  { ok: true } | { ok: false; reason: VoucherProblem | "empty_cart" }
+> {
+  if (!("customerId" in owner)) return { ok: false, reason: "sign_in" };
   const check = await checkVoucher(code, owner.customerId, now);
-  if (!check.ok) return { ok: false, message: VOUCHER_REFUSAL[check.reason] };
+  if (!check.ok) return { ok: false, reason: check.reason };
   const { count } = await db.cart.updateMany({
     where: { customerId: owner.customerId, checkedOutAt: null },
     data: { voucherCode: check.terms.code },
   });
-  return count > 0
-    ? { ok: true }
-    : { ok: false, message: "Add something to your cart first." };
+  return count > 0 ? { ok: true } : { ok: false, reason: "empty_cart" };
 }
 
 export async function clearCartVoucher(owner: CartOwner): Promise<void> {

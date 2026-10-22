@@ -26,6 +26,7 @@ export type {
   CartOwner,
   CartView,
   SetQuantityResult,
+  VoucherProblem,
 } from "./internal/cart";
 export { addLines } from "./internal/add";
 export type { AddLinesResult } from "./internal/add";

@@ -139,6 +139,10 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 **`staff`**, **`audit_log`**: staff identity with role; append-only record of admin writes.
 
+### reporting
+
+**`funnel_counts`** (Batch 5.5, ADR 0017, `src/lib/funnel.ts`): `day` (Manila date), `step` (`product_viewed`, `added_to_cart`, `checkout_started`, `order_placed`), `count`; primary key (`day`, `step`). One atomic upsert per step. No Customer, session, IP or cookie is stored.
+
 ## 4. Invariants the schema must enforce
 
 Prefer database constraints over application checks wherever possible.

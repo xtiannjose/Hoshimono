@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/link";
 
 import { Motion } from "@/components/motion";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { useMessages } from "@/i18n/client";
 import type { CartView } from "@/modules/cart";
 
 import { CartLine } from "./cart-line";
@@ -16,6 +17,7 @@ export function CartLines({
   view: CartView;
   onNavigate?: () => void;
 }) {
+  const t = useMessages().cart;
   const totals = new Map(
     view.priced.lines.map((l) => [l.productId, l.lineTotalCents])
   );
@@ -23,14 +25,12 @@ export function CartLines({
     <>
       {view.unavailableCount > 0 && (
         <p className="rounded-field bg-muted mt-2 px-3 py-2 text-[13px] leading-[18px]">
-          {view.unavailableCount === 1
-            ? "1 item in your cart is no longer sold, so we left it out."
-            : `${view.unavailableCount} items in your cart are no longer sold, so we left them out.`}
+          {t.unavailable(view.unavailableCount)}
         </p>
       )}
       {/* Cart Lines carry steppers, which animate. */}
       <Motion>
-        <ul aria-label="Items in your cart">
+        <ul aria-label={t.itemsInCart}>
           {view.lines.map((line) => (
             <CartLine
               key={line.product.id}
@@ -46,14 +46,13 @@ export function CartLines({
 }
 
 export function EmptyCart({ onNavigate }: { onNavigate?: () => void }) {
+  const t = useMessages().cart;
   return (
     <div className="grid justify-items-start gap-3 py-8">
-      <p className="type-h3">Your cart is empty</p>
-      <p className="text-muted-foreground">
-        Start with today&apos;s fresh picks.
-      </p>
+      <p className="type-h3">{t.empty}</p>
+      <p className="text-muted-foreground">{t.emptyHint}</p>
       <Link href="/" onClick={onNavigate} className={PRIMARY_BUTTON}>
-        Start shopping
+        {t.startShopping}
       </Link>
     </div>
   );

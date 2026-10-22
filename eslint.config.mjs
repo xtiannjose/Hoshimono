@@ -30,6 +30,26 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   { rules: moduleBoundary },
+  // Shop links keep the shopper's language (ADR 0017).
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/app/admin/**", "src/components/link.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          ...moduleBoundary["no-restricted-imports"][1],
+          paths: [
+            {
+              name: "next/link",
+              message:
+                "Use Link from @/components/link: it keeps the shopper's language.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     rules: {
       "@typescript-eslint/no-unused-vars": [

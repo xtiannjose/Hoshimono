@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { withParams } from "@/app/c/list-params";
+import { withParams } from "@/app/[lang]/c/list-params";
 import { Pagination } from "@/components/listing/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { listProductsForAdmin } from "@/modules/catalog";

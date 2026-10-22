@@ -7,7 +7,7 @@ import {
   MoneyIcon,
   ScalesIcon,
 } from "@phosphor-icons/react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useRouter } from "next/navigation";
 import {
   useActionState,
@@ -21,10 +21,11 @@ import {
   holdSlotAction,
   placeOrderAction,
   type CheckoutState,
-} from "@/app/checkout/actions";
+} from "@/app/[lang]/checkout/actions";
 import { CartSummary } from "@/components/cart/cart-summary";
 import { VoucherForm } from "@/components/cart/voucher-form";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { useLang, useLocalPath, useMessages } from "@/i18n/client";
 import { formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
@@ -45,35 +46,22 @@ const FIELD =
   "h-11 w-full rounded-field border border-input bg-card px-3 text-base";
 const CARD =
   "rounded-field border-border-strong bg-card has-[:checked]:border-ink has-[:focus-visible]:outline-ring flex cursor-pointer border has-[:checked]:border-2 has-[:focus-visible]:outline-2";
-const SUBSTITUTION = {
-  allow: "Pick a similar item",
-  preferred: "I'll choose",
-  none: "No substitute",
-} as const;
 const PAYMENT = [
-  {
-    value: "gcash",
-    Icon: DeviceMobileIcon,
-    name: "GCash",
-    hint: "You approve the payment in the GCash app",
-  },
-  {
-    value: "card",
-    Icon: CreditCardIcon,
-    name: "Credit or debit card",
-    hint: "Visa and Mastercard, entered on our payment partner's secure page",
-  },
-  {
-    value: "cod",
-    Icon: MoneyIcon,
-    name: "Cash on delivery",
-    hint: "Pay the Rider when your order arrives",
-  },
+  { value: "gcash", Icon: DeviceMobileIcon },
+  { value: "card", Icon: CreditCardIcon },
+  { value: "cod", Icon: MoneyIcon },
 ] as const;
 const initial: CheckoutState = {};
 
-function Panel({ title, children }: { title: string; children: ReactNode }) {
-  const id = `h-${title.toLowerCase().replaceAll(" ", "-")}`;
+function Panel({
+  id,
+  title,
+  children,
+}: {
+  id: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <section
       aria-labelledby={id}
@@ -114,6 +102,10 @@ export function CheckoutForm({
   onlinePayments: boolean;
 }) {
   const router = useRouter();
+  const lang = useLang();
+  const local = useLocalPath();
+  const m = useMessages();
+  const t = m.checkout;
   const [state, action, pending] = useActionState(placeOrderAction, initial);
   const address = addresses.find((a) => a.id === addressId)!;
   const [slotId, setSlotId] = useState<string>(
@@ -158,7 +150,7 @@ export function CheckoutForm({
       setHeldUntil(new Date(result.expiresAt));
     } else {
       setSlotId("");
-      setSlotMessage(result.message);
+      setSlotMessage(t.hold[result.reason]);
     }
   }
 
@@ -167,6 +159,7 @@ export function CheckoutForm({
       action={action}
       className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]"
     >
+      <input type="hidden" name="lang" value={lang} />
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <input type="hidden" name="addressId" value={addressId} />
       <input type="hidden" name="slotId" value={slotId} />
@@ -177,9 +170,9 @@ export function CheckoutForm({
       />
 
       <div className="grid min-w-0 gap-6">
-        <Panel title="Delivery address">
+        <Panel id="h-delivery-address" title={t.addressPanel}>
           <fieldset className="grid gap-2">
-            <legend className="sr-only">Deliver to</legend>
+            <legend className="sr-only">{t.deliverTo}</legend>
             {addresses.map((a) => (
               <label
                 key={a.id}
@@ -191,7 +184,7 @@ export function CheckoutForm({
                   value={a.id}
                   checked={a.id === addressId}
                   onChange={() =>
-                    router.replace(`/checkout?address=${a.id}`, {
+                    router.replace(local(`/checkout?address=${a.id}`), {
                       scroll: false,
                     })
                   }
@@ -203,7 +196,7 @@ export function CheckoutForm({
                     {a.line1}, {a.barangay}, {a.city}
                   </span>
                   <span className="text-muted-foreground block text-[13px]">
-                    Landmark: {a.landmark}
+                    {t.landmark(a.landmark)}
                   </span>
                 </span>
               </label>
@@ -211,18 +204,19 @@ export function CheckoutForm({
           </fieldset>
           {zone ? (
             <p className="text-muted-foreground text-sm">
-              Delivery to {zone.name}:{" "}
-              {priced.deliveryFeeCents === 0
-                ? "free for this order"
-                : formatMoney(zone.deliveryFeeCents)}
-              .
+              {t.zoneFee(
+                zone.name,
+                priced.deliveryFeeCents === 0
+                  ? t.freeForOrder
+                  : formatMoney(zone.deliveryFeeCents)
+              )}
             </p>
           ) : (
             <p
               role="alert"
               className="rounded-field bg-warn-soft text-warn px-4 py-3 text-sm font-semibold"
             >
-              We do not deliver to this address yet. Please choose another.
+              {t.outOfZone}
             </p>
           )}
           <div className="flex flex-wrap gap-x-5 text-sm font-semibold">
@@ -230,13 +224,13 @@ export function CheckoutForm({
               href={`/account/addresses/${address.id}`}
               className="underline underline-offset-[3px]"
             >
-              Edit {address.label}
+              {t.edit(address.label)}
             </Link>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid content-start gap-1.5">
               <label htmlFor="phone" className="text-sm font-semibold">
-                Mobile number
+                {t.mobile}
               </label>
               <input
                 id="phone"
@@ -249,12 +243,12 @@ export function CheckoutForm({
                 className={FIELD}
               />
               <p id="phone-hint" className="text-muted-foreground text-[13px]">
-                The Rider calls this number on arrival.
+                {t.mobileHint}
               </p>
             </div>
             <div className="grid content-start gap-1.5">
               <label htmlFor="riderNotes" className="text-sm font-semibold">
-                Note for the Rider (optional)
+                {t.riderNote}
               </label>
               <input
                 id="riderNotes"
@@ -267,14 +261,14 @@ export function CheckoutForm({
           </div>
         </Panel>
 
-        <Panel title="Delivery slot">
+        <Panel id="h-delivery-slot" title={t.slotPanel}>
           {slots.length === 0 ? (
-            <p>No delivery slots are open right now. Please check back soon.</p>
+            <p>{t.noSlots}</p>
           ) : (
             <>
               {/* Fieldsets default to min-content width; let the chips scroll. */}
               <fieldset className="min-w-0">
-                <legend className="sr-only">Delivery day</legend>
+                <legend className="sr-only">{t.day}</legend>
                 <div className="flex gap-2 overflow-x-auto p-0.5">
                   {days.map(([date, label]) => (
                     <label
@@ -295,7 +289,7 @@ export function CheckoutForm({
                 </div>
               </fieldset>
               <fieldset className="min-w-0">
-                <legend className="sr-only">Delivery time</legend>
+                <legend className="sr-only">{t.time}</legend>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2">
                   {slots
                     .filter((s) => s.date === day)
@@ -327,15 +321,15 @@ export function CheckoutForm({
                               <>
                                 <CheckCircleIcon size={16} aria-hidden />
                                 {holdLive && heldUntil
-                                  ? `Held for you until ${formatTime(heldUntil)}`
-                                  : "Chosen"}
+                                  ? m.cart.heldUntil(formatTime(heldUntil))
+                                  : t.chosen}
                               </>
                             ) : full ? (
-                              "Full"
+                              t.full
                             ) : s.state === "few" ? (
-                              "Only a few left"
+                              t.few
                             ) : (
-                              "Available"
+                              t.available
                             )}
                           </small>
                         </label>
@@ -352,20 +346,20 @@ export function CheckoutForm({
           )}
         </Panel>
 
-        <Panel title="Payment">
+        <Panel id="h-payment" title={t.paymentPanel}>
           <fieldset className="grid gap-2">
-            <legend className="sr-only">Payment method</legend>
+            <legend className="sr-only">{t.paymentMethod}</legend>
             {PAYMENT.filter((p) => onlinePayments || p.value === "cod").map(
-              ({ value, Icon, name, hint }) => (
+              ({ value, Icon }) => (
                 <label
                   key={value}
                   className={`${CARD} grid grid-cols-[28px_1fr_22px] items-center gap-3.5 px-4 py-3.5 has-[:checked]:px-[15px] has-[:checked]:py-[13px]`}
                 >
                   <Icon size={26} aria-hidden />
                   <span>
-                    <b className="block">{name}</b>
+                    <b className="block">{t.methods[value].name}</b>
                     <small className="text-muted-foreground block text-[13px] leading-[18px]">
-                      {hint}
+                      {t.methods[value].hint}
                     </small>
                   </span>
                   <input
@@ -381,9 +375,7 @@ export function CheckoutForm({
             )}
           </fieldset>
           {!onlinePayments && (
-            <p className="text-muted-foreground text-[13px]">
-              GCash and card payments are coming soon.
-            </p>
+            <p className="text-muted-foreground text-[13px]">{t.comingSoon}</p>
           )}
           {priced.weighedSubtotalCents > 0 && (
             <p className="rounded-field bg-warn-soft flex items-start gap-3 px-4 py-3.5 text-[15px] leading-[22px]">
@@ -392,9 +384,7 @@ export function CheckoutForm({
                 aria-hidden
                 className="text-warn mt-px shrink-0"
               />
-              {online
-                ? "Some items are sold by weight. You pay this estimate now; we charge the weight we actually pack and refund any difference within one day."
-                : "Some items are sold by weight. We charge the weight we actually pack, so your final total may change a little. You pay the final amount in cash."}
+              {online ? t.weighedOnline : t.weighedCash}
             </p>
           )}
         </Panel>
@@ -406,10 +396,10 @@ export function CheckoutForm({
       >
         <div className="flex items-baseline justify-between gap-3">
           <h2 id="h-summary" className="type-h3">
-            Order summary
+            {m.cart.orderSummary}
           </h2>
           <span className="text-muted-foreground text-sm">
-            {cart.itemCount} {cart.itemCount === 1 ? "item" : "items"}
+            {cart.itemCount} {m.items(cart.itemCount)}
           </span>
         </div>
         <ul className="grid">
@@ -428,9 +418,11 @@ export function CheckoutForm({
                     {name}
                   </b>
                   <small className="text-muted-foreground block text-[13px] leading-[18px]">
-                    Quantity {line.quantity}
-                    {line.product.isWeighed ? ", by weight" : ""}.{" "}
-                    {SUBSTITUTION[line.substitution.preference]}.
+                    {t.lineDetail(
+                      line.quantity,
+                      line.product.isWeighed,
+                      m.cart.substitution[line.substitution.preference].label
+                    )}
                   </small>
                 </span>
                 <span className="font-semibold tabular-nums">
@@ -438,7 +430,7 @@ export function CheckoutForm({
                     formatMoney(total.lineTotalCents)
                   ) : (
                     <span className="text-muted-foreground text-sm font-medium">
-                      Sold out
+                      {t.soldOut}
                     </span>
                   )}
                 </span>
@@ -448,11 +440,10 @@ export function CheckoutForm({
         </ul>
         <CartSummary priced={priced} size="page" />
         <VoucherForm view={cart} />
-        <p className="text-muted-foreground text-[13px]">VAT included.</p>
+        <p className="text-muted-foreground text-[13px]">{t.vat}</p>
         {priced.belowMinimumByCents > 0 && (
           <p className="rounded-field bg-warn-soft text-warn px-4 py-3 text-sm font-semibold">
-            Add {formatMoney(priced.belowMinimumByCents)} more to reach the
-            minimum order for this area.
+            {t.belowMinimum(formatMoney(priced.belowMinimumByCents))}
           </p>
         )}
         {state.message && (
@@ -470,25 +461,25 @@ export function CheckoutForm({
         >
           {pending
             ? online
-              ? "Opening payment page..."
-              : "Placing your order..."
-            : `Place order, ${formatMoney(priced.totalCents)}`}
+              ? t.opening
+              : t.placing
+            : t.place(formatMoney(priced.totalCents))}
         </button>
         {online && slotId && !blocked && (
           <p className="text-muted-foreground text-center text-[13px]">
-            Next, you pay on our payment partner&apos;s secure page.
+            {t.payNext}
           </p>
         )}
         {!slotId && !blocked && (
           <p className="text-muted-foreground text-center text-[13px]">
-            Choose a delivery slot to continue.
+            {t.chooseSlot}
           </p>
         )}
         <Link
           href="/cart"
           className="text-center text-sm font-semibold underline underline-offset-[3px]"
         >
-          Change items
+          {t.changeItems}
         </Link>
       </aside>
     </form>

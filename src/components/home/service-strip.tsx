@@ -1,32 +1,32 @@
 import { MoneyIcon, SealCheckIcon, TruckIcon } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
 
 import { deliveryCoverage } from "@/app/_data/storefront";
+import { getMessages } from "@/i18n/server";
 import { formatMoney } from "@/lib/money";
 
 /** Lime band under the hero (docs/05 section 6, ServiceStrip). */
 export async function ServiceStrip() {
   const zones = await deliveryCoverage();
+  const t = (await getMessages()).home;
   const lowestFee = Math.min(...zones.map((z) => z.deliveryFeeCents));
   const freeOver = zones
     .map((z) => z.freeDeliveryOverCents)
     .filter((c): c is number => c !== null);
   const areas = (
     <Link href="/delivery" className="underline underline-offset-[3px]">
-      See where we deliver
+      {t.whereWeDeliver}
     </Link>
   );
   const items: { Icon: typeof TruckIcon; title: string; text: ReactNode }[] = [
     {
       Icon: TruckIcon,
-      title: zones.length
-        ? `Delivery from ${formatMoney(lowestFee)}`
-        : "Same-day delivery",
+      title: zones.length ? t.deliveryFrom(formatMoney(lowestFee)) : t.sameDay,
       text: (
         <>
           {freeOver.length
-            ? `Free over ${formatMoney(Math.min(...freeOver))}. `
+            ? t.freeOver(formatMoney(Math.min(...freeOver)))
             : ""}
           {areas}
         </>
@@ -34,14 +34,14 @@ export async function ServiceStrip() {
     },
     {
       Icon: SealCheckIcon,
-      title: "Freshness checked",
-      text: "Every order inspected at pick",
+      title: t.freshness,
+      text: t.freshnessText,
     },
     {
       // shortcut: cash only until online payments (Phase 3); then add GCash and card.
       Icon: MoneyIcon,
-      title: "Cash on delivery",
-      text: "Pay the Rider when your order arrives",
+      title: t.cash,
+      text: t.cashText,
     },
   ];
   return (

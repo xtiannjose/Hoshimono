@@ -1,10 +1,10 @@
 "use client";
 
 import { ListPlusIcon } from "@phosphor-icons/react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useActionState, useState } from "react";
 
-import { type ListFormState } from "@/app/account/lists/actions";
+import { type ListFormState } from "@/app/[lang]/account/lists/actions";
 import { formKey } from "@/components/form-key";
 import { Button } from "@/components/ui/button";
 

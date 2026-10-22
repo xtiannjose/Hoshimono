@@ -16,7 +16,14 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  use: { baseURL: BASE_URL, trace: "on-first-retry" },
+  use: {
+    baseURL: BASE_URL,
+    trace: "on-first-retry",
+    // A production build registers the service worker (ADR 0017); pages it
+    // passes through never reach "networkidle" in Playwright. Only
+    // e2e/app.spec.ts turns it on.
+    serviceWorkers: "block",
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     // Migrate, reset and seed hoshimono_e2e, then start: every run is fresh.

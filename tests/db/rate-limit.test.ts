@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { takeOrderAttempt } from "@/app/checkout/order-limits";
+import { takeOrderAttempt } from "@/app/[lang]/checkout/order-limits";
 import { purgeRateLimits, takeToken } from "@/lib/rate-limit";
 
 import { createTestDb } from "./helpers";

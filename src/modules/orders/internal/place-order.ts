@@ -12,13 +12,14 @@ import {
   getCart,
   getCartId,
   readCartVersion,
+  type VoucherProblem,
 } from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
 import { bookSlot, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import { createCodPayment, createOnlinePayment } from "@/modules/payments";
-import { redeemVoucher, VOUCHER_REFUSAL } from "@/modules/pricing";
+import { redeemVoucher } from "@/modules/pricing";
 
 import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
 
@@ -52,7 +53,7 @@ export type PlaceOrderResult =
   | { ok: false; reason: "out_of_stock"; productIds: string[] }
   | { ok: false; reason: "over_cod_limit"; limitCents: number }
   /** The Cart's Voucher stopped applying, such as its last use going (ADR 0015). */
-  | { ok: false; reason: "voucher_unavailable"; message: string }
+  | { ok: false; reason: "voucher_unavailable"; problem: VoucherProblem }
   | {
       ok: false;
       reason:
@@ -190,7 +191,7 @@ export async function placeOrder(
     return {
       ok: false,
       reason: "voucher_unavailable",
-      message: cart.voucher.problem,
+      problem: cart.voucher.problem,
     };
   }
   if (priced.totalCents !== order.expectedTotalCents) {
@@ -274,7 +275,7 @@ export async function placeOrder(
         throw new Refused({
           ok: false,
           reason: "voucher_unavailable",
-          message: VOUCHER_REFUSAL[redeemed.reason],
+          problem: redeemed.reason,
         });
       }
       await tx.order.update({

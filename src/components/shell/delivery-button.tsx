@@ -1,7 +1,8 @@
 import { MapPinIcon } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
-
-import { readCartOwner } from "@/app/cart/owner";
+import { readCartOwner } from "@/app/[lang]/cart/owner";
+import Link from "@/components/link";
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import { formatSlot } from "@/lib/dates";
 import { getDefaultAddress } from "@/modules/customers";
 import { listSlots, resolveZone } from "@/modules/delivery";
@@ -32,8 +33,9 @@ function Pill({
 }
 
 /** Before we know the shopper: a link to the coverage page. */
-export function DeliveryButton() {
-  return <Pill href="/delivery" top="Deliver to" main="Choose your area" />;
+export function DeliveryButton({ lang }: { lang: Lang }) {
+  const t = MESSAGES[lang].shell;
+  return <Pill href="/delivery" top={t.deliverTo} main={t.chooseArea} />;
 }
 
 /**
@@ -41,29 +43,28 @@ export function DeliveryButton() {
  * in with a served address it names the place and the next open Slot, and
  * opens the address book; otherwise it opens the coverage page.
  */
-export async function DeliverySlot() {
+export async function DeliverySlot({ lang }: { lang: Lang }) {
+  const t = MESSAGES[lang].shell;
   const owner = await readCartOwner();
-  if (!owner || !("customerId" in owner)) return <DeliveryButton />;
+  if (!owner || !("customerId" in owner)) {
+    return <DeliveryButton lang={lang} />;
+  }
   const address = await getDefaultAddress(owner.customerId);
   const zone = address ? await resolveZone(address) : null;
   if (!address || !zone) {
     return (
-      <Pill
-        href="/account/addresses"
-        top="Deliver to"
-        main="Add your address"
-      />
+      <Pill href="/account/addresses" top={t.deliverTo} main={t.addAddress} />
     );
   }
   const next = (await listSlots(zone.hubId)).find((s) => s.state !== "full");
   return (
     <Pill
       href="/account/addresses"
-      top={`Deliver to ${address.label}, ${address.barangay}`}
+      top={t.deliverToPlace(address.label, address.barangay)}
       main={
         next
-          ? `Next: ${formatSlot(next.startsAt, next.endsAt)}`
-          : "No slots open"
+          ? t.nextSlot(formatSlot(next.startsAt, next.endsAt, undefined, lang))
+          : t.noSlots
       }
     />
   );

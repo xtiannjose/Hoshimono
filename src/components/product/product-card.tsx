@@ -1,7 +1,9 @@
 import { ScalesIcon } from "@phosphor-icons/react/ssr";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/link";
 
+import { MESSAGES } from "@/i18n/messages";
+import { getLang } from "@/i18n/server";
 import type { ProductSummary } from "@/modules/catalog";
 import type { StockState } from "@/modules/inventory";
 import { productHref } from "@/lib/routes";
@@ -19,7 +21,7 @@ import { Tag } from "./tag";
  * pill (docs/05-DESIGN-SYSTEM.md section 6). Out of stock: greyed image,
  * "Out of stock today" and no Add.
  */
-export function ProductCard({
+export async function ProductCard({
   product,
   stock,
   priority = false,
@@ -28,6 +30,8 @@ export function ProductCard({
   stock: StockState;
   priority?: boolean;
 }) {
+  const lang = await getLang();
+  const t = MESSAGES[lang].product;
   const href = productHref(product);
   const out = stock === "out";
   const save = salePercent(product.priceCents, product.compareAtCents);
@@ -54,12 +58,12 @@ export function ProductCard({
       </Link>
       <div className="grid content-start gap-1 px-1">
         <div className="flex flex-wrap gap-1.5 empty:hidden">
-          {save !== null && <Tag tone="sale">Save {save}%</Tag>}
-          <StockBadge state={stock} />
+          {save !== null && <Tag tone="sale">{t.save(save)}</Tag>}
+          <StockBadge state={stock} lang={lang} />
           {product.isWeighed && (
             <Tag tone="quiet">
               <ScalesIcon size={14} aria-hidden />
-              By weight
+              {t.byWeight}
             </Tag>
           )}
         </div>
@@ -71,7 +75,7 @@ export function ProductCard({
           {product.name}
         </Link>
         <span className="text-muted-foreground text-[13px] leading-[18px]">
-          {formatPackSize(product.packSize, product.isWeighed)}
+          {formatPackSize(product.packSize, product.isWeighed, lang)}
         </span>
       </div>
       <div className="grid gap-2.5 px-0.5">
@@ -81,6 +85,7 @@ export function ProductCard({
           unitPrice={product.unitPrice}
           isWeighed={product.isWeighed}
           muted={out}
+          lang={lang}
         />
         {out ? null : <AddToCart productId={product.id} name={product.name} />}
       </div>

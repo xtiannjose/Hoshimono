@@ -1,11 +1,13 @@
 "use client";
 
 import { ClockIcon, ShoppingCartIcon } from "@phosphor-icons/react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useId, useState, useTransition } from "react";
 
-import { addRecipe } from "@/app/recipes/actions";
+import { addRecipe } from "@/app/[lang]/recipes/actions";
 import { setCartOpen, setCartView } from "@/components/cart/cart-store";
+import { filledText } from "@/components/cart/fill-cart-button";
+import { useMessages } from "@/i18n/client";
 import { announce } from "@/components/live-region";
 import { QuantityStepper } from "@/components/product/quantity-stepper";
 import { Tag } from "@/components/product/tag";
@@ -55,6 +57,7 @@ export function RecipeCart({
       )
     )
   );
+  const t = useMessages().cart;
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -96,11 +99,12 @@ export function RecipeCart({
             productId: c.product.id,
           }))
         );
+        const text = filledText(t, result);
         setCartView(result.cart);
-        setMessage(result.message ?? "");
-        announce(result.message ?? "");
+        setMessage(text);
+        announce(text);
       } catch {
-        setMessage("We could not add these. Please try again.");
+        setMessage(t.failed.fill);
       }
     });
   }

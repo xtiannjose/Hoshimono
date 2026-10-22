@@ -1130,3 +1130,23 @@ model RateLimit {
   @@index([resetAt])
   @@map("rate_limits")
 }
+
+enum FunnelStep {
+  product_viewed
+  added_to_cart
+  checkout_started
+  order_placed
+
+  @@map("funnel_step")
+}
+
+// The shopping funnel (ADR 0017, src/lib/funnel.ts): how many times each
+// step happened per Manila day. Counts only: nothing about who.
+model FunnelCount {
+  day   DateTime   @db.Date
+  step  FunnelStep
+  count Int        @default(0)
+
+  @@id([day, step])
+  @@map("funnel_counts")
+}

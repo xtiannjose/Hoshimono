@@ -1,5 +1,6 @@
 import { stockStates } from "@/app/_data/storefront";
 import { ProductGrid } from "@/components/product/product-grid";
+import { getMessages } from "@/i18n/server";
 import { getProductSummaries } from "@/modules/catalog";
 import { currentCustomer } from "@/modules/identity";
 import { listBoughtBefore } from "@/modules/orders";
@@ -18,7 +19,7 @@ export async function BuyAgain() {
   return (
     <section aria-labelledby="again-h" className="wrap pt-14">
       <h2 id="again-h" className="type-h2 mb-5">
-        Buy again
+        {(await getMessages()).home.buyAgain}
       </h2>
       <ProductGrid products={products.slice(0, 6)} stock={stock} empty={null} />
     </section>

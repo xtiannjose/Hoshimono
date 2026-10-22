@@ -5,7 +5,7 @@ import { useActionState, useState, type ReactNode } from "react";
 import {
   saveAddressAction,
   type AddressFormState,
-} from "@/app/account/addresses/actions";
+} from "@/app/[lang]/account/addresses/actions";
 import { formKey } from "@/components/form-key";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 

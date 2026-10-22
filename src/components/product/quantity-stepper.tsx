@@ -5,6 +5,7 @@ import { useReducedMotion } from "motion/react";
 import * as m from "motion/react-m";
 import { useEffect, useRef, useState, type Ref } from "react";
 
+import { useMessages } from "@/i18n/client";
 import { MAX_LINE_QUANTITY } from "@/lib/cart-limits";
 
 const SNAP = { type: "spring", visualDuration: 0.2, bounce: 0.1 } as const;
@@ -38,9 +39,10 @@ export function QuantityStepper({
   max = MAX_LINE_QUANTITY,
   variant = "filled",
   plusRef,
-  decreaseLabel = "Remove one",
-  increaseLabel = "Add one",
+  decreaseLabel,
+  increaseLabel,
 }: Props) {
+  const words = useMessages().product;
   const reduce = useReducedMotion();
   // A hold counts here and tells the parent once, on release: one server
   // update and one announcement instead of one every REPEAT_EVERY ms.
@@ -111,7 +113,7 @@ export function QuantityStepper({
     >
       <button
         type="button"
-        aria-label={decreaseLabel}
+        aria-label={decreaseLabel ?? words.removeOne}
         disabled={shown <= min}
         onPointerDown={(e) => {
           if (e.button === 0) start(-1);
@@ -140,7 +142,7 @@ export function QuantityStepper({
       <button
         ref={plusRef}
         type="button"
-        aria-label={increaseLabel}
+        aria-label={increaseLabel ?? words.addOne}
         disabled={shown >= max}
         onPointerDown={(e) => {
           if (e.button === 0) start(1);

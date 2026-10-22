@@ -55,6 +55,9 @@ export default function ImportPage() {
               rows match existing Products by name.
             </p>
             <p>
+              {/* A file download from a Route Handler; the shop's catch-all
+                  page makes the lint rule take it for a page. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/admin/export"
                 className="font-semibold underline underline-offset-4"

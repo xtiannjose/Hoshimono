@@ -4,22 +4,31 @@ import { Suspense } from "react";
 
 import { currentStaff, staffAreas } from "@/modules/identity";
 
+import { RootShell } from "../root-shell";
 import { AREA_LINKS } from "./areas";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
   title: { default: "Admin", template: "%s | Admin" },
   robots: { index: false },
 };
 
-// Dense admin screens: same tokens, no Motion (docs/05 section 9).
+// Dense admin screens: same tokens, no Motion (docs/05 section 9). A root
+// layout of its own, in English (ADR 0017).
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
-    <div className="wrap py-6">
-      <Suspense fallback={<div className="border-border mb-6 h-11 border-b" />}>
-        <AdminNav />
-      </Suspense>
-      {children}
-    </div>
+    <RootShell lang="en">
+      <div className="wrap py-6">
+        <Suspense
+          fallback={<div className="border-border mb-6 h-11 border-b" />}
+        >
+          <AdminNav />
+        </Suspense>
+        {children}
+      </div>
+    </RootShell>
   );
 }
 

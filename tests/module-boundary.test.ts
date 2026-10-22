@@ -9,10 +9,10 @@ async function violations(filePath: string, code: string) {
 }
 
 // The first ESLint run loads the full Next config and is slow.
-describe("module boundary lint rule", { timeout: 60_000 }, () => {
+describe("module boundary lint rule", { timeout: 120_000 }, () => {
   it("blocks alias imports into another module's internal/", async () => {
     const found = await violations(
-      "src/app/page.tsx",
+      "src/app/[lang]/page.tsx",
       'import { x } from "@/modules/catalog/internal/queries";\nexport default x;\n'
     );
     expect(found).toHaveLength(1);

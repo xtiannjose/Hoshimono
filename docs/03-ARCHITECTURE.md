@@ -74,6 +74,8 @@ app routes / server actions
 | `admin`     | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]`              | Dynamic, role-gated                                                                                          |
 | `api`       | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health`             | Route handlers                                                                                               |
 
+As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)): every shop page lives under `src/app/[lang]` (`en` or `fil`), whose layout is a root layout; `src/app/admin` is the other root layout and stays English. `src/proxy.ts` serves an address without a language from `/en` inside, sends `/en/...` to the address without it, and adds a `Link` header naming both languages (`hreflang`). Moving between shop and admin is a full page load.
+
 Use the caching primitives of the Next.js version installed at setup time; read its docs then, because caching APIs change between major versions. Product URLs follow `/p/<slug>-<id>`; the id resolves the Product, the slug is cosmetic and redirects if stale.
 
 Mutations use Server Actions with Zod validation. Each action calls a module interface and returns a typed result; it contains no business rules.
@@ -179,6 +181,15 @@ As built (Batch 5.4, [ADR 0016](adr/0016-freshness-claims.md)).
 - `claims.fileClaim` takes a delivered Order Line of the Customer's own, within 24 hours of `delivered_at`, once per line (a unique `order_line_id`). The server works out what it is worth: `claimValue` takes the items' share of `pricing.chargedLine` (what was charged after picking, substitutes included) less that share of the Order's discount, spread as ADR 0007 says. A weighed line is claimed whole. Photos (1 to 3, required for spoiled or damaged) are resized to WebP through the media store.
 - `claims.decideClaim` locks the claim row, so it is decided once. Approving pays back up to what was claimed: `payments.refundOrderPayment(tx, orderId, "claim", amount, claimId)` for an online Payment, and `pricing.createCreditVoucher` for what cannot be refunded (cash, or nothing left). `refunds.claim_id` is unique; other reasons keep one Refund per Payment through a partial unique index. Both outcomes queue `claim.decided`, which messages the Customer; the refund's own notice is skipped for claims.
 - Staff with the `claims` area (Admins, Dispatchers) review at `/admin/claims`. The daily report shows claims and claims per 100 delivered Orders.
+
+## 7e. Languages, the installable app and the Funnel
+
+As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)).
+
+- **Words**: `src/i18n/en.ts` and `fil.ts` hold the shop's words under the same keys (TypeScript checks it). Server Components read the language with `getLang()` (`next/root-params`) or take a `lang` prop from the root shell; Client Components use `useMessages()` from `I18nProvider`. Root params cannot be read in Server Actions, so actions return reason codes and data (`CartResult.notice`, `FillResult`, `HoldState.reason`, `setCartVoucher` and `placeOrder` refusals) and the page words them; Checkout and the pay page send `lang` with the form or as a bound argument, only to pick the next address and the answer's words.
+- **Addresses**: shop code links with `@/components/link`, which adds `/fil` on Filipino pages (an ESLint rule keeps `next/link` out of shop code). Forms, redirects and canonical URLs use `localPath(lang, path)`. `usePathname()` reads `/en/...` while prerendering and `/...` in the browser, so shop code reads `useShopPath()`, which strips the language.
+- **Installable app**: `src/app/manifest.ts`, `src/app/icon.tsx` (192 and 512 px) and `public/sw.js`, registered only in production builds. The worker keeps shop pages (network first) and built files, photos and icons (stored first) up to 150 each, and an offline page per language; Cart, Checkout, payments, Orders, account, sign-in, signed links, the API and staff screens are never stored. A note shows while offline.
+- **Funnel**: `src/lib/funnel.ts` counts steps in `funnel_counts`. The browser sends `product_viewed`, `added_to_cart` (the first unit of a Product) and `checkout_started` as a beacon to `/api/events` (allowlisted, 120 per minute per IP); `order_placed` is counted where the Order is placed. The daily report shows the 7 days to the chosen day.
 
 ## 8. Payments
 

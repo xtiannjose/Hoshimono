@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useLocalPath, useShopPath } from "@/i18n/client";
 
 export type CategoryLink = { slug: string; name: string; href: string };
 
@@ -15,10 +15,11 @@ export function CategoryLinks({
   links: CategoryLink[];
   current?: string | null;
 }) {
+  const local = useLocalPath();
   return links.map((c) => (
     <a
       key={c.slug}
-      href={c.href}
+      href={local(c.href)}
       aria-current={c.slug === current ? "page" : undefined}
       className={LINK}
     >
@@ -30,7 +31,7 @@ export function CategoryLinks({
 /** Reads the path, so it renders inside Suspense (Next 16 cacheComponents). */
 export function ActiveCategoryLinks({ links }: { links: CategoryLink[] }) {
   // /c/<top-level slug>/...: the top-level aisle is the one to mark.
-  const [, section, slug] = usePathname().split("/");
+  const [, section, slug] = useShopPath().split("/");
   const current =
     section === "c" ? slug : section === "recipes" ? "recipes" : null;
   return <CategoryLinks links={links} current={current} />;

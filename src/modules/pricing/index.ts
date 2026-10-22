@@ -39,7 +39,6 @@ export {
   redeemVoucher,
   REFERRAL_REWARD_CENTS,
   saveVoucher,
-  VOUCHER_REFUSAL,
 } from "./internal/vouchers";
 export type {
   VoucherCheck,

@@ -214,6 +214,12 @@ _Avoid_: Wastage, loss (as a stock reason)
 A Customer's report, within 24 hours of delivery, that an Order Line was spoiled, damaged, missing or the wrong item. Staff approve it (refund to GCash or card, or a Voucher for a cash Order) or reject it with a reason ([ADR 0016](docs/adr/0016-freshness-claims.md)).
 _Avoid_: Complaint, return, ticket
 
+### Shop
+
+**Funnel**:
+The four shopping steps counted per Manila day: a Product page viewed, an item added to a Cart, a Checkout started and an Order placed. Counts only, never who ([ADR 0017](docs/adr/0017-filipino-pwa-and-funnel.md)).
+_Avoid_: Tracking, analytics events (for these counts), conversion pixel
+
 ### People
 
 **Customer**:
