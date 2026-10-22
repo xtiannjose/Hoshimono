@@ -30,6 +30,7 @@ export {
 export type { PromotionInput } from "./internal/promotions";
 export {
   checkVoucher,
+  createCreditVoucher,
   createRewardVoucher,
   getVoucherForAdmin,
   listCustomerVouchers,

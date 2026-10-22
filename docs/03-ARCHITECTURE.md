@@ -47,7 +47,7 @@ Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/`
 | `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                           |
 | `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                          |
 | `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                              |
-| `claims`        | Freshness Claims                                | `openClaim`, `resolveClaim`                                          |
+| `claims`        | Freshness Claims                                | `fileClaim`, `decideClaim`, `claimableLines`                         |
 
 Allowed dependency direction (arrow means "may call"):
 
@@ -171,6 +171,14 @@ As built (Batch 5.3, [ADR 0015](adr/0015-promotions-vouchers-referrals.md)).
 - After picking, `priceFinal` and `receiptBreakdown` keep the checkout discount but never more than what was picked, spread the same way.
 - **Referrals**: `/r/<code>` keeps the code in a cookie for 30 days; the first Checkout links the Customer (`customers.applyReferral`). `transitionOrder` queues `order.delivered`; its job calls `customers.rewardReferral` with `pricing.createRewardVoucher`, so the two Vouchers and the ledger row commit together, once per friend, then emails both.
 - `MAX_LINE_QUANTITY` lives in `lib/cart-limits.ts` so the browser stepper never imports a module index that reaches the database.
+
+## 7d. Freshness Claims
+
+As built (Batch 5.4, [ADR 0016](adr/0016-freshness-claims.md)).
+
+- `claims.fileClaim` takes a delivered Order Line of the Customer's own, within 24 hours of `delivered_at`, once per line (a unique `order_line_id`). The server works out what it is worth: `claimValue` takes the items' share of `pricing.chargedLine` (what was charged after picking, substitutes included) less that share of the Order's discount, spread as ADR 0007 says. A weighed line is claimed whole. Photos (1 to 3, required for spoiled or damaged) are resized to WebP through the media store.
+- `claims.decideClaim` locks the claim row, so it is decided once. Approving pays back up to what was claimed: `payments.refundOrderPayment(tx, orderId, "claim", amount, claimId)` for an online Payment, and `pricing.createCreditVoucher` for what cannot be refunded (cash, or nothing left). `refunds.claim_id` is unique; other reasons keep one Refund per Payment through a partial unique index. Both outcomes queue `claim.decided`, which messages the Customer; the refund's own notice is skipped for claims.
+- Staff with the `claims` area (Admins, Dispatchers) review at `/admin/claims`. The daily report shows claims and claims per 100 delivered Orders.
 
 ## 8. Payments
 

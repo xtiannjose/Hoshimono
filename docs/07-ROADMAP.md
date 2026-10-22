@@ -10,7 +10,7 @@ Resume here: read this section, then the batch named first under Next.
 
 **Done**
 
-- Phases 0 to 2 are on `main`. Phase 2 reached `main` through PR #6: the stacked PRs #4 and #5 had merged into their base branches, not `main`.
+- Phases 0 to 4 and Batches 5.1 to 5.3 are on `main`: the owner merged PRs #14 to #21 in order on 21 Oct (23:48 UTC). Phase 2 had reached `main` through PR #6: the stacked PRs #4 and #5 had merged into their base branches, not `main`.
 - Phase 1 close-out and Phase 2 follow-ups (PR #7): one-typo search, Lighthouse CI job, pricing rules ahead of their phase ([ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)).
 - Carry-over code health (PR #8): 11 of 12 items; the result convention for module errors waits on an owner decision.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
@@ -21,23 +21,26 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- Batch 5.4 (branch `phase-5/claims`, committed locally, not yet pushed): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
 - Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
 - Batch 5.2 (PR #20): Reorder, Shopping Lists, "Buy again", Cart Reminders with consent and Stock Alerts ([ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4), #19 (Batch 5.1), #20 (Batch 5.2), #21 (Batch 5.3). Each is built on the one before: merge them in that order.
+**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so `phase-5/claims` (Batch 5.4) and later branches wait locally. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
 
 **Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 5 (section 10), in order: Batch 5.4 Freshness Claims, 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
+1. Phase 5 (section 10): Batch 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
 2. A general checkup of the app (asked for on 21 Oct), and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
 3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 
 **Waiting on the owner**
+
+- GitHub account `xtiannjose` suspended (22 Oct): contact https://support.github.com. Nothing can be pushed or merged until it is restored.
 
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
@@ -396,7 +399,7 @@ Frontend:
 
 **Batch 5.4 Freshness Claims** (W16 to W17). Stack: object storage for photos, `payments.refund`. Skills: `tdd`.
 
-- [ ] Freshness Claims with photo upload and resolution workflow
+- [x] Freshness Claims with photo upload and resolution workflow. 22 Oct ([ADR 0016](adr/0016-freshness-claims.md)): Customers report a delivered item within 24 hours (reason, how many, up to 3 photos, required for spoiled or damaged); Admins and Dispatchers approve in full or less, or reject with a reason, at `/admin/claims`; online payments are refunded, cash Orders get a Voucher; the Customer is told by email or SMS; the daily report counts claims per 100 delivered Orders
 
 **Batch 5.5 PWA, Filipino and analytics** (W17). Stack: web manifest, service worker, `next-intl`, Vercel Analytics. Skills: `dataviz`.
 

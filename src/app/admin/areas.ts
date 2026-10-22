@@ -76,6 +76,13 @@ export const AREA_LINKS: Record<
       hint: "Products as CSV",
     },
   ],
+  claims: [
+    {
+      href: "/admin/claims",
+      label: "Freshness Claims",
+      hint: "Reports on delivered items: approve, pay back or reject",
+    },
+  ],
   promotions: [
     {
       href: "/admin/promotions",

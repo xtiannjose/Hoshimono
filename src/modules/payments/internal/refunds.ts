@@ -15,16 +15,20 @@ export const REFUND_JOB = "payment.refund";
 
 /**
  * Owe the Customer part of a Payment (all that is left by default), in the
- * caller's transaction (ADR 0008). Recorded once per Payment and reason,
- * never past what was captured, and sent by REFUND_JOB after commit.
- * Returns the amount now owed: 0 when nothing is.
+ * caller's transaction (ADR 0008). Recorded once per Payment and reason, or
+ * once per Freshness Claim (ADR 0016), never past what was captured, and
+ * sent by REFUND_JOB after commit. Returns the amount now owed: 0 when
+ * nothing is.
  */
 export async function requestRefund(
   tx: Prisma.TransactionClient,
   paymentId: string,
   reason: RefundReason,
-  amountCents?: number
+  amountCents?: number,
+  claimId?: string
 ): Promise<number> {
+  if ((reason === "claim") !== Boolean(claimId))
+    throw new Error("A claim refund, and only one, names its claim");
   // Row lock: two triggers at once cannot both take the same remainder.
   const [payment] = await tx.$queryRaw<
     { captured_cents: number; refunded_cents: number }[]
@@ -33,7 +37,7 @@ export async function requestRefund(
   const amount = Math.min(amountCents ?? left, left);
   if (amount <= 0) return 0;
   const { count } = await tx.refund.createMany({
-    data: { paymentId, reason, amountCents: amount },
+    data: { paymentId, reason, amountCents: amount, claimId: claimId ?? null },
     skipDuplicates: true,
   });
   if (count === 0) return 0;
@@ -46,8 +50,8 @@ export async function requestRefund(
         refunded === payment.captured_cents ? "refunded" : "partially_refunded",
     },
   });
-  const refund = await tx.refund.findUniqueOrThrow({
-    where: { paymentId_reason: { paymentId, reason } },
+  const refund = await tx.refund.findFirstOrThrow({
+    where: claimId ? { claimId } : { paymentId, reason, claimId: null },
     select: { id: true },
   });
   await enqueueJob(tx, REFUND_JOB, { refundId: refund.id });
@@ -59,13 +63,16 @@ export async function refundOrderPayment(
   tx: Prisma.TransactionClient,
   orderId: string,
   reason: RefundReason,
-  amountCents?: number
+  amountCents?: number,
+  claimId?: string
 ): Promise<number> {
   const payment = await tx.payment.findFirst({
     where: { orderId, method: { not: "cod" }, capturedCents: { gt: 0 } },
     select: { id: true },
   });
-  return payment ? requestRefund(tx, payment.id, reason, amountCents) : 0;
+  return payment
+    ? requestRefund(tx, payment.id, reason, amountCents, claimId)
+    : 0;
 }
 
 /**

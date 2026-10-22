@@ -15,6 +15,7 @@ const WHY = {
   cancelled: "Paid Order cancelled",
   picked: "Packed less than paid",
   late_payment: "Paid after cancellation",
+  claim: "Freshness Claim",
 } as const;
 
 export default function AdminRefunds() {

@@ -8,6 +8,8 @@ export { sendSubstitutionAsked } from "./internal/substitution-asked";
 export { sendDeliveryFailed, sendOutForDelivery } from "./internal/delivery";
 export type { OutForDeliveryNotice } from "./internal/delivery";
 export type { SubstitutionNotice } from "./internal/substitution-asked";
+export { sendClaimDecided } from "./internal/claims";
+export type { ClaimNotice } from "./internal/claims";
 export { lastMessage, lastSignInLink } from "./internal/providers";
 export {
   sendBackInStock,

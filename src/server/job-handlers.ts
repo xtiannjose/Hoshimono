@@ -4,6 +4,7 @@ import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
 import { signValue } from "@/lib/signed";
 import { CART_REMINDER_JOB, getCartReminder } from "@/modules/cart";
+import { CLAIM_DECIDED_JOB, getClaimNotice } from "@/modules/claims";
 import { getProductSummaries } from "@/modules/catalog";
 import { getProfile, rewardReferral } from "@/modules/customers";
 import { STOCK_ALERT_JOB } from "@/modules/inventory";
@@ -11,6 +12,7 @@ import type { JobHandlers } from "@/modules/jobs";
 import {
   sendBackInStock,
   sendCartReminder,
+  sendClaimDecided,
   sendReferralReward,
   sendDeliveryFailed,
   sendOrderConfirmed,
@@ -38,6 +40,34 @@ const link = (path: string) => new URL(path, appUrl()).toString();
 
 // Wires job kinds to modules; modules stay unaware of each other here.
 export const jobHandlers: JobHandlers = {
+  // A Freshness Claim was decided: tell the Customer how (ADR 0016).
+  async [CLAIM_DECIDED_JOB](payload) {
+    const claim = await getClaimNotice(String(payload.claimId));
+    if (!claim) return;
+    const method = claim.order.payments[0]?.method;
+    await sendClaimDecided({
+      claimId: claim.id,
+      email: claim.customer.email,
+      phone: claim.order.contactPhone,
+      name: claim.customer.name,
+      orderNo: claim.order.orderNo,
+      product: claim.orderLine.nameSnapshot,
+      approved: claim.status === "approved",
+      amount: formatMoney(claim.resolvedCents ?? 0),
+      refundedTo:
+        claim.payback === "refund"
+          ? method === "gcash"
+            ? "GCash"
+            : "your card"
+          : null,
+      voucher: claim.voucher
+        ? { code: claim.voucher.code, until: formatDate(claim.voucher.endsAt) }
+        : null,
+      note: claim.decisionNote,
+      orderUrl: trackingUrl(claim.order.orderNo),
+    });
+  },
+
   // An invited friend's first Order arrived: a Voucher each (ADR 0015).
   async [ORDER_DELIVERED_JOB](payload) {
     const order = await getOrderForNotice(String(payload.orderId));
@@ -176,6 +206,8 @@ export const jobHandlers: JobHandlers = {
     await sendRefund(refundId);
     const refund = await getRefundNotice(refundId);
     if (!refund || refund.status !== "sent" || refund.method === "cod") return;
+    // A claim's refund is told in the claim's own message (ADR 0016).
+    if (refund.reason === "claim") return;
     const order = await getOrderForNotice(refund.orderId);
     if (!order) return;
     await sendRefundIssued({

@@ -236,6 +236,9 @@ describe("staffForUser", () => {
     // Merchandisers run Promotions and Vouchers (ADR 0015); Dispatchers do not.
     expect(await staffForUser(db, merchandiser, "promotions")).not.toBeNull();
     expect(await staffForUser(db, dispatcher, "promotions")).toBeNull();
+    // Dispatchers review Freshness Claims (ADR 0016); Merchandisers do not.
+    expect(await staffForUser(db, dispatcher, "claims")).not.toBeNull();
+    expect(await staffForUser(db, merchandiser, "claims")).toBeNull();
     for (const area of [
       "picking",
       "dispatch",
@@ -245,6 +248,7 @@ describe("staffForUser", () => {
       "setup",
       "content",
       "promotions",
+      "claims",
       "catalog",
       "orders",
       "refunds",

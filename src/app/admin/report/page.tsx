@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { manilaDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { countClaims } from "@/modules/claims";
 import { dailyReport } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../staff-gate";
@@ -54,6 +55,13 @@ async function Report({
     Array.from({ length: 7 }, (_, i) => dailyReport(daysBefore(day, i)))
   );
   const r = week[0];
+  // Freshness Claims filed that Manila day (ADR 0016); launch wants fewer
+  // than 3 per 100 Orders.
+  const dayStart = new Date(`${day}T00:00:00+08:00`);
+  const claims = await countClaims({
+    gte: dayStart,
+    lt: new Date(dayStart.getTime() + DAY_MS),
+  });
   const tiles = [
     ["Orders placed", String(r.placed)],
     ["Delivered", String(r.delivered)],
@@ -63,6 +71,12 @@ async function Report({
     ["Fill rate", percent(r.fillRate)],
     ["Substitution rate", percent(r.substitutionRate)],
     ["Late deliveries", String(r.lateDeliveries)],
+    [
+      "Freshness Claims",
+      r.delivered
+        ? `${claims} (${Math.round((claims * 1000) / r.delivered) / 10} per 100)`
+        : String(claims),
+    ],
   ];
   return (
     <section className="grid max-w-5xl gap-6">

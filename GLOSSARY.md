@@ -211,7 +211,7 @@ Stock taken off the shelf because it spoiled, broke or went missing, always with
 _Avoid_: Wastage, loss (as a stock reason)
 
 **Freshness Claim**:
-A customer's report, within the claim window after delivery, that an Order Line was not fresh or was damaged, resolved by refund or credit.
+A Customer's report, within 24 hours of delivery, that an Order Line was spoiled, damaged, missing or the wrong item. Staff approve it (refund to GCash or card, or a Voucher for a cash Order) or reject it with a reason ([ADR 0016](docs/adr/0016-freshness-claims.md)).
 _Avoid_: Complaint, return, ticket
 
 ### People

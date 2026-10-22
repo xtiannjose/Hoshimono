@@ -2,7 +2,7 @@
 
 Status: v0.2, 2026-10-17. `prisma/schema.prisma` is now the source of truth for tables and fields; this document keeps the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
-**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`); Promotions, Vouchers and Referrals with Batch 5.3 (`promotions_vouchers`). Freshness Claims arrive later in Phase 5. Differences from the field lists below:
+**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`); Promotions, Vouchers and Referrals with Batch 5.3 (`promotions_vouchers`); Freshness Claims with Batch 5.4 (`freshness_claims`). Differences from the field lists below:
 
 - `carts.checked_out_at` marks a Cart that became an Order. "Active Cart" (invariant 9) means `checked_out_at IS NULL`.
 - Append-only tables (`stock_movements`, `order_status_events`, `payment_events`, `audit_log`) have `created_at` (or `at`, `received_at`) but no `updated_at`.
@@ -135,7 +135,7 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 **`referral_rewards`**: the ledger, one row per invited friend (`referee_id` and `order_id` unique), `referrer_id`, both Vouchers.
 
-**`freshness_claims`**: `order_line_id`, `reason`, `photo_urls[]`, `status`, `resolution` (`refund`, `credit`, `rejected`), `resolved_by`.
+**`freshness_claims`** (Batch 5.4, ADR 0016): `order_id`, `order_line_id` (unique: one claim per line), `customer_id`, `reason` (`not_fresh`, `damaged`, `missing`, `wrong_item`), `units`, `note`, `photo_urls[]` (up to 3), `claimed_cents` (worked out by the server), `status` (`open`, `approved`, `rejected`), `resolved_cents?` (up to `claimed_cents`), `payback?` (`refund`, `voucher`), `voucher_id?`, `decided_by_id?`, `decided_at?` (set exactly when not open), `decision_note`. **`refunds.claim_id?`** (unique; set exactly when the reason is `claim`).
 
 **`staff`**, **`audit_log`**: staff identity with role; append-only record of admin writes.
 

@@ -13,6 +13,7 @@ import { getOrder } from "@/modules/orders";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { cancelOrderAction, reorderAction } from "./actions";
+import { OrderClaims } from "./order-claims";
 
 export const metadata: Metadata = {
   title: "Track your order",
@@ -84,6 +85,11 @@ async function Tracking({
         </Link>
       )}
       <OrderDetails order={order} />
+      <OrderClaims
+        orderId={order.id}
+        orderNo={order.orderNo}
+        customerId={customer.id}
+      />
       <FillCartButton
         fill={reorderAction.bind(null, order.orderNo)}
         label="Reorder these items"
