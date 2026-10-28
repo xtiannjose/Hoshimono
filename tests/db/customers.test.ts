@@ -62,16 +62,14 @@ describe("saveAddress", () => {
     expect(second).toMatchObject({ ok: true, address: { isDefault: false } });
   });
 
-  it("explains in plain words when we do not deliver there", async () => {
+  it("says when we do not deliver there", async () => {
     const result = await saveAddress(ligaya, {
       ...home,
       city: "Quezon City",
       barangay: "Diliman",
     });
-    expect(result).toEqual({
-      ok: false,
-      errors: { area: "We do not deliver to Diliman, Quezon City yet." },
-    });
+    // A code the shop words in its language (ADR 0019).
+    expect(result).toEqual({ ok: false, errors: { area: "not_served" } });
     expect(await db.address.count()).toBe(0);
   });
 
@@ -81,12 +79,14 @@ describe("saveAddress", () => {
       line1: " ",
       landmark: "",
     });
-    expect(result.ok).toBe(false);
-    expect(Object.keys((result as { errors: object }).errors).sort()).toEqual([
-      "landmark",
-      "line1",
-    ]);
-    expect((await saveAddress(ligaya, null)).ok).toBe(false);
+    expect(result).toEqual({
+      ok: false,
+      errors: { line1: "no_street", landmark: "no_landmark" },
+    });
+    expect(await saveAddress(ligaya, null)).toEqual({
+      ok: false,
+      errors: { area: "invalid" },
+    });
   });
 
   it("edits only the Customer's own address", async () => {
@@ -100,10 +100,7 @@ describe("saveAddress", () => {
     });
     expect(
       await saveAddress(paolo, { ...home, landmark: "Mine now" }, id)
-    ).toEqual({
-      ok: false,
-      errors: { area: "We could not find that address." },
-    });
+    ).toEqual({ ok: false, errors: { area: "not_found" } });
   });
 
   it(`keeps at most ${MAX_ADDRESSES} addresses`, async () => {

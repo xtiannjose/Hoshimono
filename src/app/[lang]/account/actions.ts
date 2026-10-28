@@ -3,12 +3,16 @@
 import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { langOf, localPath } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import { setMarketingOptIn, updateName } from "@/modules/customers";
 import { requireCustomer, signOut } from "@/modules/identity";
 
-export async function signOutAction() {
+// Server Actions cannot read the language; forms send it (ADR 0017).
+
+export async function signOutAction(fd: FormData) {
   await signOut();
-  redirect("/");
+  redirect(localPath(langOf(fd.get("lang")), "/"));
 }
 
 export type NameState = { message?: string; saved?: boolean; name?: string };
@@ -22,7 +26,7 @@ export async function saveNameAction(
   const result = await updateName(customer.id, name);
   return result.ok
     ? { saved: true, name }
-    : { message: result.errors.name, name };
+    : { message: MESSAGES[langOf(fd.get("lang"))].account.nameInvalid, name };
 }
 
 /** "Send me reminders and offers" on or off (ADR 0014). */

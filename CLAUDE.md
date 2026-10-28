@@ -24,7 +24,7 @@ Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning 
 - **Modules own their tables.** Import another module only through its `index.ts`. Reaching into `modules/x/internal/` from outside `x` is a boundary violation.
 - **Order lines snapshot price, name and tax at checkout.** Catalog edits never rewrite past orders.
 - **Weighed Products** (meat, fruit by kg) store an estimated weight at checkout and a final weight at pick. Every online method, cards included, charges the estimate; there are no card holds. At `picked` the Final Total follows what was packed, never above the estimate, and the difference is refunded in one go (ADR 0008).
-- **How a module says no** (ADR 0009): reads return `null`; business refusals return `{ ok: false, reason }`; form checks return `{ ok: false, errors: { field: message } }`; bugs and outages throw and are caught only at the edge.
+- **How a module says no** (ADR 0009): reads return `null`; business refusals return `{ ok: false, reason }`; form checks return `{ ok: false, errors: { field: message } }` (Customer forms return a code per field instead, which the page words in its language, ADR 0019); bugs and outages throw and are caught only at the edge.
 - **Webhooks are idempotent.** Every payment webhook handler dedupes on the provider event id before touching an Order.
 - **Server Components by default.** `"use client"` only for leaf components with state, Motion or browser APIs.
 - **Prices, stock and totals are always recomputed on the server.** Treat client-sent totals as untrusted.

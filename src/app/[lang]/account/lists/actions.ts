@@ -4,26 +4,48 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { langOf, localPath } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import {
   createShoppingList,
   deleteShoppingList,
   getCartQuantities,
+  MAX_LIST_ITEMS,
+  MAX_LISTS,
   removeFromList,
   renameShoppingList,
   saveToList,
   shoppingListLines,
+  type ListNameProblem,
 } from "@/modules/cart";
 import { requireCustomer } from "@/modules/identity";
 
 import { fillCart, type FillResult } from "../../cart/fill";
 
 // Shopping Lists (ADR 0014). Each action re-checks the Customer; the cart
-// module refuses lists that are not theirs.
+// module refuses lists that are not theirs. Server Actions cannot read the
+// language, so the forms send it (ADR 0017) and answers are worded here.
 
 export type ListFormState = { errors: Record<string, string>; saved?: boolean };
 
 const text = (fd: FormData, key: string) => String(fd.get(key) ?? "").trim();
 const NEW = "new";
+
+/** The page's words for list problems. */
+const problems = (fd: FormData) =>
+  MESSAGES[langOf(fd.get("lang"))].lists.problems;
+
+/** A refused list name in the page's language (ADR 0019). */
+function nameError(fd: FormData, problem: ListNameProblem): ListFormState {
+  const t = problems(fd);
+  const name =
+    problem === "name_taken"
+      ? t.name_taken(text(fd, "name"))
+      : problem === "too_many_lists"
+        ? t.too_many_lists(MAX_LISTS)
+        : t[problem];
+  return { errors: { name } };
+}
 
 /** A new list, from the lists page. */
 export async function createListAction(
@@ -32,8 +54,8 @@ export async function createListAction(
 ): Promise<ListFormState> {
   const customer = await requireCustomer("/account/lists");
   const result = await createShoppingList(customer.id, text(fd, "name"));
-  if (!result.ok) return { errors: result.errors };
-  redirect(`/account/lists/${result.id}`);
+  if (!result.ok) return nameError(fd, result.errors.name);
+  redirect(localPath(langOf(fd.get("lang")), `/account/lists/${result.id}`));
 }
 
 export async function renameListAction(
@@ -47,15 +69,18 @@ export async function renameListAction(
     listId,
     text(fd, "name")
   );
-  if (!result.ok) return { errors: result.errors };
+  if (!result.ok) return nameError(fd, result.errors.name);
   refresh();
   return { errors: {}, saved: true };
 }
 
-export async function deleteListAction(listId: string): Promise<void> {
+export async function deleteListAction(
+  listId: string,
+  fd: FormData
+): Promise<void> {
   const customer = await requireCustomer("/account/lists");
   await deleteShoppingList(customer.id, listId);
-  redirect("/account/lists");
+  redirect(localPath(langOf(fd.get("lang")), "/account/lists"));
 }
 
 export async function removeFromListAction(
@@ -93,19 +118,21 @@ async function intoList(
   let listId = text(fd, "listId");
   if (!listId || listId === NEW) {
     const created = await createShoppingList(customerId, text(fd, "name"));
-    if (!created.ok) return { errors: created.errors };
+    if (!created.ok) return nameError(fd, created.errors.name);
     listId = created.id;
   }
   const saved = await saveToList(customerId, listId, items);
-  if (!saved.ok)
+  if (!saved.ok) {
+    const t = problems(fd);
     return {
       errors: {
         listId:
           saved.reason === "too_many"
-            ? "That list is full: 100 items at most."
-            : "That did not save. Please try again.",
+            ? t.list_full(MAX_LIST_ITEMS)
+            : t.not_saved,
       },
     };
+  }
   return { errors: {}, saved: true };
 }
 
@@ -117,7 +144,7 @@ export async function saveProductAction(
 ): Promise<ListFormState> {
   const customer = await requireCustomer();
   if (!z.guid().safeParse(productId).success)
-    return { errors: { listId: "That did not save. Please try again." } };
+    return { errors: { listId: problems(fd).not_saved } };
   return intoList(customer.id, fd, [{ productId, quantity: 1 }]);
 }
 
@@ -132,6 +159,6 @@ export async function saveCartAction(
     productId,
     quantity: Math.min(quantity, 99),
   }));
-  if (items.length === 0) return { errors: { name: "Your cart is empty." } };
+  if (items.length === 0) return { errors: { name: problems(fd).empty_cart } };
   return intoList(customer.id, fd, items);
 }

@@ -2,21 +2,24 @@ import type { Metadata } from "next";
 import Link from "@/components/link";
 import { Suspense } from "react";
 
-import { ORDER_STATUS_LABEL } from "@/components/order/status-labels";
 import { Tag } from "@/components/product/tag";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatDateTime, formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { requireCustomer } from "@/modules/identity";
 import { listOrders } from "@/modules/orders";
 
-export const metadata: Metadata = { title: "Your orders" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).history.title };
+}
 
-export default function OrdersPage() {
+export default async function OrdersPage() {
+  const t = (await getMessages()).history;
   return (
     <section className="wrap py-10 md:py-14">
-      <h1 className="type-h1">Your orders</h1>
+      <h1 className="type-h1">{t.title}</h1>
       <Suspense
         fallback={<Skeleton className="rounded-card mt-6 h-48 max-w-2xl" />}
       >
@@ -29,18 +32,20 @@ export default function OrdersPage() {
 async function Orders() {
   const customer = await requireCustomer("/account/orders");
   const orders = await listOrders(customer.id);
+  const lang = await getLang();
+  const m = await getMessages();
+  const t = m.history;
   if (orders.length === 0) {
     return (
       <div className="mt-6 grid justify-items-start gap-4">
-        <p className="text-muted-foreground">
-          No orders yet. Your first one is a few taps away.
-        </p>
+        <p className="text-muted-foreground">{t.none}</p>
         <Link href="/" className={PRIMARY_BUTTON}>
-          Start shopping
+          {t.startShopping}
         </Link>
       </div>
     );
   }
+  const now = new Date();
   return (
     <ul className="mt-6 grid max-w-2xl gap-3">
       {orders.map((order) => (
@@ -52,15 +57,17 @@ async function Orders() {
             <span className="flex flex-wrap items-center justify-between gap-2">
               <b className="tabular-nums">{order.orderNo}</b>
               <Tag tone={order.status === "cancelled" ? "quiet" : "soft"}>
-                {ORDER_STATUS_LABEL[order.status]}
+                {t.status[order.status]}
               </Tag>
             </span>
             <span className="text-muted-foreground text-sm">
-              Placed {formatDateTime(order.placedAt)}. Delivery{" "}
-              {formatSlot(order.slot.startsAt, order.slot.endsAt)}.
+              {t.placed(
+                formatDateTime(order.placedAt, lang),
+                formatSlot(order.slot.startsAt, order.slot.endsAt, now, lang)
+              )}
             </span>
             <span className="text-sm">
-              {order.itemCount} {order.itemCount === 1 ? "item" : "items"},{" "}
+              {order.itemCount} {m.items(order.itemCount)},{" "}
               <b>{formatMoney(order.totalCents)}</b>
             </span>
           </Link>

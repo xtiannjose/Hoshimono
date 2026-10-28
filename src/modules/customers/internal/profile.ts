@@ -22,14 +22,17 @@ export async function getProfile(customerId: string): Promise<Profile | null> {
   });
 }
 
-/** Change the name we greet the Customer with and print on the Order. */
+/**
+ * Change the name we greet the Customer with and print on the Order. The
+ * one problem, "invalid", is 1 to 80 characters; the shop words it (ADR 0019).
+ */
 export async function updateName(
   customerId: string,
   name: string
-): Promise<{ ok: true } | { ok: false; errors: { name: string } }> {
+): Promise<{ ok: true } | { ok: false; errors: { name: "invalid" } }> {
   const clean = name.trim().replace(/\s+/g, " ");
   if (clean.length < 1 || clean.length > 80) {
-    return { ok: false, errors: { name: "Enter a name up to 80 characters." } };
+    return { ok: false, errors: { name: "invalid" } };
   }
   await db.customer.update({
     where: { id: customerId },

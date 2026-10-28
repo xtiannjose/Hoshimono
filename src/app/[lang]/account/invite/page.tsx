@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { Tag } from "@/components/product/tag";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { getReferralCode, listReferrals } from "@/modules/customers";
@@ -12,21 +13,24 @@ import { listCustomerVouchers, REFERRAL_REWARD_CENTS } from "@/modules/pricing";
 
 import { ShareLink } from "./share-link";
 
-export const metadata: Metadata = {
-  title: "Invite friends",
-  robots: { index: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: (await getMessages()).invite.title,
+    robots: { index: false },
+  };
+}
 
-export default function InvitePage() {
+export default async function InvitePage() {
+  const m = await getMessages();
   return (
     <section className="wrap pb-14">
       <Breadcrumb
         items={[
-          { name: "Your account", href: "/account" },
-          { name: "Invite friends", href: "/account/invite" },
+          { name: m.account.title, href: "/account" },
+          { name: m.invite.title, href: "/account/invite" },
         ]}
       />
-      <h1 className="type-h1 pt-2">Invite friends</h1>
+      <h1 className="type-h1 pt-2">{m.invite.title}</h1>
       <Suspense
         fallback={<Skeleton className="rounded-card mt-6 h-64 max-w-2xl" />}
       >
@@ -46,28 +50,25 @@ async function Invite() {
     listReferrals(customer.id),
     listCustomerVouchers(customer.id),
   ]);
+  const lang = await getLang();
+  const t = (await getMessages()).invite;
   const reward = formatMoney(REFERRAL_REWARD_CENTS);
   return (
     <div className="mt-4 grid max-w-2xl gap-10">
       <div className="grid gap-4">
-        <p className="type-lead">
-          Share your link. When a friend&apos;s first order is delivered, you
-          each get {reward} off your next order.
-        </p>
+        <p className="type-lead">{t.lead(reward)}</p>
         <ShareLink url={new URL(`/r/${code}`, appUrl()).toString()} />
         <p className="text-muted-foreground text-sm">
-          Your code is <b className="text-foreground font-mono">{code}</b>.
+          {t.codeIs} <b className="text-foreground font-mono">{code}</b>.
         </p>
       </div>
 
       <section aria-labelledby="h-friends" className="grid gap-3">
         <h2 id="h-friends" className="type-h3">
-          Friends who joined
+          {t.friends}
         </h2>
         {friends.length === 0 ? (
-          <p className="text-muted-foreground">
-            No one yet. Your first reward is a share away.
-          </p>
+          <p className="text-muted-foreground">{t.noFriends}</p>
         ) : (
           <ul className="divide-border grid divide-y">
             {friends.map((f, i) => (
@@ -75,11 +76,9 @@ async function Invite() {
                 key={i}
                 className="flex flex-wrap items-center justify-between gap-2 py-2.5"
               >
-                <span>
-                  {f.name}, joined {formatDate(f.joinedAt)}
-                </span>
+                <span>{t.joined(f.name, formatDate(f.joinedAt, lang))}</span>
                 <Tag tone={f.rewardedAt ? "soft" : "quiet"}>
-                  {f.rewardedAt ? `${reward} earned` : "First order on the way"}
+                  {f.rewardedAt ? t.earned(reward) : t.waiting}
                 </Tag>
               </li>
             ))}
@@ -89,12 +88,10 @@ async function Invite() {
 
       <section aria-labelledby="h-vouchers" className="grid gap-3">
         <h2 id="h-vouchers" className="type-h3">
-          Your Vouchers
+          {t.vouchers}
         </h2>
         {vouchers.length === 0 ? (
-          <p className="text-muted-foreground">
-            Vouchers you earn show here. Type the code in your cart.
-          </p>
+          <p className="text-muted-foreground">{t.noVouchers}</p>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {vouchers.map((v) => (
@@ -104,11 +101,13 @@ async function Invite() {
               >
                 <b className="font-mono">{v.code}</b>
                 <span className="text-sm">
-                  {formatMoney(v.value)} off orders of{" "}
-                  {formatMoney(v.minSpendCents)} or more
+                  {t.voucher(
+                    formatMoney(v.value),
+                    formatMoney(v.minSpendCents)
+                  )}
                 </span>
                 <span className="text-muted-foreground text-sm">
-                  {v.used ? "Used" : `Until ${formatDate(v.endsAt)}`}
+                  {v.used ? t.used : t.until(formatDate(v.endsAt, lang))}
                 </span>
               </li>
             ))}

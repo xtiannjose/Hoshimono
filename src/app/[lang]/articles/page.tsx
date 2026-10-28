@@ -4,30 +4,34 @@ import Link from "@/components/link";
 import { articleList } from "@/app/_data/storefront";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { ContentPhoto } from "@/components/recipe/content-photo";
+import { localPath } from "@/i18n/lang";
+import { getLang, getMessages } from "@/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Tips and guides",
-  description:
-    "How to shop, store and cook well, from the people who pack your groceries.",
-  alternates: { canonical: "/articles" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const m = await getMessages();
+  return {
+    title: m.shell.tipsAndGuides,
+    description: m.articles.description,
+    alternates: { canonical: localPath(await getLang(), "/articles") },
+  };
+}
 
 export default async function ArticlesPage() {
   const articles = await articleList();
+  const m = await getMessages();
+  const title = m.shell.tipsAndGuides;
   return (
     <div className="wrap">
-      <Breadcrumb items={[{ name: "Tips and guides", href: "/articles" }]} />
+      <Breadcrumb items={[{ name: title, href: "/articles" }]} />
       <div className="grid max-w-2xl gap-3 pt-2 pb-8">
-        <h1 className="type-h1">Tips and guides</h1>
-        <p className="type-lead">
-          How to shop, store and cook well, with the groceries to match.
-        </p>
+        <h1 className="type-h1">{title}</h1>
+        <p className="type-lead">{m.articles.lead}</p>
       </div>
       {articles.length === 0 ? (
         <p className="rounded-card bg-muted px-6 py-10 text-center">
-          Nothing here yet. In the meantime,{" "}
+          {m.articles.none}{" "}
           <Link href="/recipes" className="font-semibold underline">
-            see the Recipes
+            {m.articles.seeRecipes}
           </Link>
           .
         </p>

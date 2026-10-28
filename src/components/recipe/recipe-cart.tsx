@@ -57,7 +57,9 @@ export function RecipeCart({
       )
     )
   );
-  const t = useMessages().cart;
+  const m = useMessages();
+  const t = m.cart;
+  const words = m.recipes;
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
 
@@ -113,57 +115,61 @@ export function RecipeCart({
     <div className="grid gap-5">
       <div className="grid gap-3">
         <H id={`${id}-h`} className="type-h2">
-          {heading} for {servings}
+          {words.forServings(heading, servings)}
         </H>
         <div className="flex flex-wrap items-center gap-4">
           <div className="w-[148px]">
             <QuantityStepper
               value={servings}
               onChange={setServings}
-              label="Servings"
+              label={words.servings}
               min={1}
               max={MAX_SERVINGS}
               variant="ghost"
-              decreaseLabel="Fewer servings"
-              increaseLabel="More servings"
+              decreaseLabel={words.fewer}
+              increaseLabel={words.more}
             />
           </div>
-          <span className="text-muted-foreground text-sm">Servings</span>
+          <span className="text-muted-foreground text-sm">
+            {words.servings}
+          </span>
           {minutes > 0 && (
             <Tag tone="quiet">
               <ClockIcon size={14} aria-hidden />
-              {minutes} minutes
+              {words.minutes(minutes)}
             </Tag>
           )}
         </div>
         <p className="text-muted-foreground max-w-[52ch] text-sm">
-          Untick anything you already have at home.
+          {words.untick}
         </p>
       </div>
 
       <fieldset className="grid">
-        <legend className="sr-only">Ingredients to add</legend>
+        <legend className="sr-only">{words.toAdd}</legend>
         <ul className="divide-border grid divide-y">
-          {rows.map((r) => (
-            <li key={r.id} className="grid gap-1 py-2.5">
+          {rows.map((row) => (
+            <li key={row.id} className="grid gap-1 py-2.5">
               <Choice
-                row={r}
-                product={r.product}
-                count={count(r)}
-                checked={picked[r.id] === r.product?.id}
-                disabled={r.soldOut}
-                onChange={(on) => r.product && toggle(r.id, r.product.id, on)}
+                row={row}
+                product={row.product}
+                count={count(row)}
+                checked={picked[row.id] === row.product?.id}
+                disabled={row.soldOut}
+                onChange={(on) =>
+                  row.product && toggle(row.id, row.product.id, on)
+                }
               />
-              {r.soldOut && r.alternative && (
+              {row.soldOut && row.alternative && (
                 <div className="pl-8">
                   <Choice
-                    row={r}
-                    product={r.alternative}
-                    count={count(r)}
-                    checked={picked[r.id] === r.alternative.id}
+                    row={row}
+                    product={row.alternative}
+                    count={count(row)}
+                    checked={picked[row.id] === row.alternative.id}
                     instead
                     onChange={(on) =>
-                      r.alternative && toggle(r.id, r.alternative.id, on)
+                      row.alternative && toggle(row.id, row.alternative.id, on)
                     }
                   />
                 </div>
@@ -175,11 +181,11 @@ export function RecipeCart({
 
       {extras.length > 0 && (
         <p className="text-muted-foreground text-sm">
-          You will also need{" "}
-          {extras
-            .map((e) => (e.note ? `${e.name} (${e.note})` : e.name))
-            .join(", ")}
-          .
+          {words.alsoNeed(
+            extras
+              .map((e) => (e.note ? `${e.name} (${e.note})` : e.name))
+              .join(", ")
+          )}
         </p>
       )}
 
@@ -200,10 +206,10 @@ export function RecipeCart({
         >
           <ShoppingCartIcon aria-hidden />
           {items === 0
-            ? "Tick what you need"
+            ? words.tick
             : pending
-              ? "Adding..."
-              : `Add ${items} ${items === 1 ? "item" : "items"}, ${formatMoney(total)}`}
+              ? t.adding
+              : words.addItems(items, formatMoney(total))}
         </Button>
       </div>
       {message && (
@@ -214,7 +220,7 @@ export function RecipeCart({
             onClick={() => setCartOpen(true)}
             className="decoration-border-strong underline decoration-[1.5px] underline-offset-4 hover:decoration-current"
           >
-            View cart
+            {m.shell.viewCart}
           </button>
         </p>
       )}
@@ -239,6 +245,7 @@ function Choice({
   instead?: boolean;
   onChange: (on: boolean) => void;
 }) {
+  const t = useMessages().recipes;
   return (
     <label
       className={`flex min-h-11 items-start gap-3 ${disabled ? "text-muted-foreground" : "cursor-pointer"}`}
@@ -252,7 +259,7 @@ function Choice({
       />
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="font-medium">
-          {instead && "Instead: "}
+          {instead && t.instead}
           {instead || !product ? (product?.name ?? row.name) : row.name}
           {product && (
             <span className="text-muted-foreground font-normal">
@@ -262,14 +269,12 @@ function Choice({
         </span>
         <span className="text-muted-foreground text-sm">
           {!instead && row.note}
-          {!instead &&
-            row.optional &&
-            (row.note ? ". " : "") + "Usually at home"}
+          {!instead && row.optional && (row.note ? ". " : "") + t.usuallyAtHome}
         </span>
       </span>
       <span className="grid shrink-0 justify-items-end gap-0.5 text-sm">
         {disabled ? (
-          <Tag tone="warn">{product ? "Sold out" : "No longer sold"}</Tag>
+          <Tag tone="warn">{product ? t.soldOut : t.noLongerSold}</Tag>
         ) : (
           product && (
             <>

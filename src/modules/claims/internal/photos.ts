@@ -11,19 +11,22 @@ export const MAX_PHOTOS = 3;
 const MAX_BYTES = 8 * 1024 * 1024;
 const FORMATS = new Set(["jpeg", "png", "webp"]);
 
+export type PhotoProblem = "too_many_photos" | "photo_too_big" | "photo_type";
+
 /** What is wrong with these photos, or null when they are fine. */
-export async function checkPhotos(photos: Buffer[]): Promise<string | null> {
-  if (photos.length > MAX_PHOTOS) return `Add up to ${MAX_PHOTOS} photos.`;
+export async function checkPhotos(
+  photos: Buffer[]
+): Promise<PhotoProblem | null> {
+  if (photos.length > MAX_PHOTOS) return "too_many_photos";
   for (const bytes of photos) {
-    if (bytes.length > MAX_BYTES) return "Each photo must be under 8 MB.";
+    if (bytes.length > MAX_BYTES) return "photo_too_big";
     try {
       const meta = await sharp(bytes).metadata();
-      if (!meta.format || !FORMATS.has(meta.format))
-        return "Use a JPEG, PNG or WebP photo.";
+      if (!meta.format || !FORMATS.has(meta.format)) return "photo_type";
       if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS)
-        return "That photo is too large. Take a new one with your phone's camera.";
+        return "photo_too_big";
     } catch {
-      return "Use a JPEG, PNG or WebP photo.";
+      return "photo_type";
     }
   }
   return null;

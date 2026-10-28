@@ -6,6 +6,7 @@ import { useActionState, useTransition } from "react";
 import { formKey } from "@/components/form-key";
 import { QuantityStepper } from "@/components/product/quantity-stepper";
 import { Button } from "@/components/ui/button";
+import { useLang, useMessages } from "@/i18n/client";
 
 import {
   createListAction,
@@ -33,12 +34,15 @@ function NameForm({
   defaultValue?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, initial);
+  const lang = useLang();
+  const t = useMessages().lists;
   return (
     <form
       key={formKey(state)}
       action={formAction}
       className="flex max-w-md flex-wrap items-end gap-2"
     >
+      <input type="hidden" name="lang" value={lang} />
       <div className="grid min-w-0 flex-1 gap-1.5">
         <label htmlFor={id} className="text-sm font-semibold">
           {label}
@@ -61,7 +65,7 @@ function NameForm({
       )}
       {state.saved && (
         <p role="status" className="basis-full text-sm font-semibold">
-          Saved.
+          {t.saved}
         </p>
       )}
     </form>
@@ -69,38 +73,43 @@ function NameForm({
 }
 
 export function CreateListForm() {
+  const t = useMessages().lists;
   return (
     <NameForm
       action={createListAction}
       id="new-list"
-      label="Name a new list"
-      button="Make the list"
+      label={t.newName}
+      button={t.create}
     />
   );
 }
 
 export function RenameListForm({ id, name }: { id: string; name: string }) {
+  const t = useMessages().lists;
   return (
     <NameForm
       action={renameListAction.bind(null, id)}
       id="rename-list"
-      label="Rename the list"
-      button="Rename"
+      label={t.renameLabel}
+      button={t.rename}
       defaultValue={name}
     />
   );
 }
 
 export function DeleteListButton({ id, name }: { id: string; name: string }) {
+  const lang = useLang();
+  const t = useMessages().lists;
   return (
     <form
       action={deleteListAction.bind(null, id)}
       onSubmit={(e) => {
-        if (!confirm(`Delete the list "${name}"?`)) e.preventDefault();
+        if (!confirm(t.confirmDelete(name))) e.preventDefault();
       }}
     >
+      <input type="hidden" name="lang" value={lang} />
       <Button type="submit" variant="danger">
-        Delete this list
+        {t.delete}
       </Button>
     </form>
   );
@@ -119,13 +128,14 @@ export function ListItemControls({
   quantity: number;
 }) {
   const [pending, startTransition] = useTransition();
+  const t = useMessages().lists;
   return (
     <div className="flex items-center gap-2">
       <div className="w-[132px]">
         <QuantityStepper
           value={quantity}
           min={1}
-          label={`How many ${name}`}
+          label={t.howMany(name)}
           variant="ghost"
           onChange={(next) =>
             startTransition(() =>
@@ -138,7 +148,7 @@ export function ListItemControls({
         type="button"
         size="icon"
         variant="ghost"
-        aria-label={`Remove ${name} from the list`}
+        aria-label={t.remove(name)}
         disabled={pending}
         onClick={() =>
           startTransition(() => removeFromListAction(listId, productId))

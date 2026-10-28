@@ -179,24 +179,22 @@ describe("filing a claim (ADR 0016)", () => {
       note: "Sour on opening",
       photos: [await photo()],
     };
+    // Codes the shop words in its language (ADR 0019).
     expect(await fileClaim(paolo, base, NOW)).toEqual({
       ok: false,
-      errors: { form: "We could not find that item in your orders." },
+      errors: { form: "not_found" },
     });
     expect(
       await fileClaim(ligaya, base, new Date(NOW.getTime() + 24 * HOUR))
     ).toEqual({
       ok: false,
-      errors: { form: "The 24 hours to report a problem have passed." },
+      errors: { form: "window_passed" },
     });
     expect(
       await fileClaim(ligaya, { ...base, units: 6, photos: [] }, NOW)
     ).toEqual({
       ok: false,
-      errors: {
-        units: "Choose 1 to 5.",
-        photos: "Add a photo of the item.",
-      },
+      errors: { units: "bad_units", photos: "photo_needed" },
     });
 
     const filed = await fileClaim(ligaya, base, NOW);
@@ -212,7 +210,7 @@ describe("filing a claim (ADR 0016)", () => {
     expect(claim.photoUrls).toHaveLength(1);
     expect(await fileClaim(ligaya, base, NOW)).toEqual({
       ok: false,
-      errors: { form: "You already reported a problem with this item." },
+      errors: { form: "already_reported" },
     });
   });
 

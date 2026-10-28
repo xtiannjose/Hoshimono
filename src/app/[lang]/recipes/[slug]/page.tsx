@@ -8,6 +8,8 @@ import { ContentPhoto } from "@/components/recipe/content-photo";
 import { RecipeCart } from "@/components/recipe/recipe-cart";
 import { recipeRows } from "@/components/recipe/recipe-rows";
 import { Skeleton } from "@/components/ui/skeleton";
+import { localPath } from "@/i18n/lang";
+import { getLang, getMessages } from "@/i18n/server";
 import type { RecipeView } from "@/modules/content";
 
 type Props = PageProps<"/[lang]/recipes/[slug]">;
@@ -24,11 +26,14 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = await loadRecipe((await params).slug);
-  if (!found) return { title: "Recipe not found" };
+  const t = (await getMessages()).recipes;
+  if (!found) return { title: t.notFound };
   return {
     title: found.title,
-    description: found.intro || `${found.title}, serves ${found.servings}.`,
-    alternates: { canonical: `/recipes/${found.slug}` },
+    description: found.intro || t.summary(found.title, found.servings),
+    alternates: {
+      canonical: localPath(await getLang(), `/recipes/${found.slug}`),
+    },
     ...(found.photoUrl && {
       openGraph: {
         type: "article",
@@ -63,6 +68,7 @@ const iso = (minutes: number) => `PT${minutes}M`;
 
 async function RecipeArticle({ recipe }: { recipe: RecipeView }) {
   const { rows, extras } = await recipeRows(recipe);
+  const t = (await getMessages()).recipes;
   const minutes = recipe.prepMinutes + recipe.cookMinutes;
   const structured = {
     "@context": "https://schema.org",
@@ -94,7 +100,7 @@ async function RecipeArticle({ recipe }: { recipe: RecipeView }) {
       />
       <Breadcrumb
         items={[
-          { name: "Recipes", href: "/recipes" },
+          { name: t.title, href: "/recipes" },
           { name: recipe.title, href: `/recipes/${recipe.slug}` },
         ]}
       />
@@ -113,31 +119,33 @@ async function RecipeArticle({ recipe }: { recipe: RecipeView }) {
             <p className="type-lead max-w-[60ch]">{recipe.intro}</p>
           )}
           <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-            {[
-              ["Prep", recipe.prepMinutes],
-              ["Cook", recipe.cookMinutes],
-            ].map(([label, value]) =>
-              Number(value) > 0 ? (
+            {(
+              [
+                [t.prep, recipe.prepMinutes],
+                [t.cook, recipe.cookMinutes],
+              ] as const
+            ).map(([label, value]) =>
+              value > 0 ? (
                 <div key={label} className="grid">
                   <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-semibold">{value} minutes</dd>
+                  <dd className="font-semibold">{t.minutes(value)}</dd>
                 </div>
               ) : null
             )}
             <div className="grid">
-              <dt className="text-muted-foreground">Serves</dt>
+              <dt className="text-muted-foreground">{t.serves}</dt>
               <dd className="font-semibold">{recipe.servings}</dd>
             </div>
           </dl>
         </header>
 
         <aside
-          aria-label="Ingredients"
+          aria-label={t.ingredients}
           className="rounded-card border-border bg-card lg:top-sticky border p-6 md:p-7 lg:sticky lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           <RecipeCart
             slug={recipe.slug}
-            heading="Ingredients"
+            heading={t.ingredients}
             baseServings={recipe.servings}
             minutes={minutes}
             rows={rows}
@@ -150,7 +158,7 @@ async function RecipeArticle({ recipe }: { recipe: RecipeView }) {
           className="grid gap-5 lg:col-start-1"
         >
           <h2 id="steps-h" className="type-h2">
-            How to cook it
+            {t.steps}
           </h2>
           <ol className="grid max-w-[65ch] gap-6">
             {recipe.steps.map((step, i) => (

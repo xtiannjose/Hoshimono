@@ -42,7 +42,11 @@ export {
   saveToList,
   shoppingListLines,
 } from "./internal/lists";
-export type { ShoppingListSummary, ShoppingListView } from "./internal/lists";
+export type {
+  ListNameProblem,
+  ShoppingListSummary,
+  ShoppingListView,
+} from "./internal/lists";
 export {
   CART_REMINDER_JOB,
   getCartReminder,

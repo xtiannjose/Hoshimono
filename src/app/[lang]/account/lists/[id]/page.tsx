@@ -7,6 +7,7 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { FillCartButton } from "@/components/cart/fill-cart-button";
 import { formatPackSize } from "@/components/product/format";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
@@ -20,10 +21,12 @@ import {
   RenameListForm,
 } from "../list-forms";
 
-export const metadata: Metadata = {
-  title: "Your list",
-  robots: { index: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: (await getMessages()).lists.list,
+    robots: { index: false },
+  };
+}
 
 type Props = PageProps<"/[lang]/account/lists/[id]">;
 
@@ -44,12 +47,14 @@ async function List({ params }: { params: Props["params"] }) {
   const customer = await requireCustomer(`/account/lists/${id}`);
   const list = await getShoppingList(customer.id, id);
   if (!list) notFound();
+  const lang = await getLang();
+  const m = await getMessages();
   return (
     <>
       <Breadcrumb
         items={[
-          { name: "Your account", href: "/account" },
-          { name: "Your lists", href: "/account/lists" },
+          { name: m.account.title, href: "/account" },
+          { name: m.lists.title, href: "/account/lists" },
           { name: list.name, href: `/account/lists/${list.id}` },
         ]}
       />
@@ -59,15 +64,12 @@ async function List({ params }: { params: Props["params"] }) {
           {list.items.length > 0 && (
             <FillCartButton
               fill={listToCartAction.bind(null, list.id)}
-              label="Add all to cart"
+              label={m.lists.addAll}
             />
           )}
         </div>
         {list.items.length === 0 ? (
-          <p className="text-muted-foreground">
-            Nothing on this list yet. Open any Product and choose Save to a
-            list.
-          </p>
+          <p className="text-muted-foreground">{m.lists.empty}</p>
         ) : (
           <ul className="divide-border grid divide-y">
             {list.items.map(({ product, quantity }) => {
@@ -85,8 +87,12 @@ async function List({ params }: { params: Props["params"] }) {
                       {name}
                     </Link>
                     <span className="text-muted-foreground text-sm tabular-nums">
-                      {formatPackSize(product.packSize, product.isWeighed)},{" "}
-                      {formatMoney(product.priceCents)}
+                      {formatPackSize(
+                        product.packSize,
+                        product.isWeighed,
+                        lang
+                      )}
+                      , {formatMoney(product.priceCents)}
                     </span>
                   </span>
                   <ListItemControls

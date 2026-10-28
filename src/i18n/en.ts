@@ -552,6 +552,254 @@ export const en = {
     weighedNote:
       " Items sold by weight are charged for the weight we pack, so the final amount may change a little.",
   },
+  account: {
+    title: "Your account",
+    signedInWith: "Signed in with",
+    links: {
+      orders: {
+        name: "Your orders",
+        hint: "Track, cancel before picking, and see past orders",
+      },
+      addresses: {
+        name: "Your addresses",
+        hint: "Where we deliver, with landmarks for the Rider",
+      },
+      lists: {
+        name: "Your lists",
+        hint: "Weekly groceries and more, added to your cart in one tap",
+      },
+      invite: {
+        name: "Invite friends",
+        hint: "₱100 off for you and a friend, and your Vouchers",
+      },
+    },
+    name: "Your name",
+    nameInvalid: "Enter a name up to 80 characters.",
+    save: "Save",
+    saved: "Saved.",
+    messages: "Messages",
+    reminders: "Send me reminders and offers by email",
+    remindersHint:
+      "Such as a note when you leave items in your cart. Order and delivery messages come either way. Turn this off any time.",
+    signOut: "Sign out",
+  },
+  history: {
+    title: "Your orders",
+    none: "No orders yet. Your first one is a few taps away.",
+    startShopping: "Start shopping",
+    placed: (date: string, slot: string) => `Placed ${date}. Delivery ${slot}.`,
+    // An Order's status for its Customer; staff screens keep their own words.
+    status: {
+      pending_payment: "Waiting for payment",
+      confirmed: "Confirmed",
+      picking: "Picking",
+      picked: "Ready for the Rider",
+      out_for_delivery: "On the way",
+      delivered: "Delivered",
+      delivery_failed: "Delivery failed",
+      cancelled: "Cancelled",
+    },
+  },
+  addresses: {
+    title: "Your addresses",
+    none: "No saved addresses yet. Add one so checkout takes seconds.",
+    default: "Default",
+    notes: (notes: string) => `Notes: ${notes}`,
+    edit: "Edit",
+    makeDefault: "Make default",
+    remove: "Remove",
+    add: "Add an address",
+    editTitle: "Edit address",
+    // The address form, shared with Checkout.
+    label: "Name this address",
+    labelHint: "Such as Home, Office or Lola's house.",
+    labelIdeas: ["Home", "Office", "Condo"],
+    line1: "House or unit number and street",
+    city: "City",
+    cityHint: (cities: string) => `We deliver to ${cities} for now.`,
+    chooseCity: "Choose a city",
+    barangay: "Barangay",
+    barangayHint: (city: string, barangays: string) =>
+      `In ${city} we deliver to ${barangays}.`,
+    landmark: "Landmark",
+    landmarkHint: "Such as a store, a gate colour or a church nearby.",
+    notesLabel: "Notes for the Rider (optional)",
+    isDefault: "Use this address by default",
+    save: "Save address",
+    saving: "Saving...",
+    // What the customers module answers (ADR 0019).
+    problems: {
+      no_label: "Give this address a name, such as Home.",
+      no_street: "Enter the house or unit number and street.",
+      no_barangay: "Enter the barangay.",
+      no_city: "Choose the city.",
+      no_landmark: "Add a landmark so the Rider can find you.",
+      too_long: "That's too long. Please shorten it.",
+      not_served: (barangay: string, city: string) =>
+        `We do not deliver to ${barangay}, ${city} yet.`,
+      not_found: "We could not find that address.",
+      too_many: (max: number) =>
+        `You can keep up to ${max} addresses. Remove one first.`,
+      invalid: "Please check the address.",
+    },
+  },
+  invite: {
+    title: "Invite friends",
+    lead: (reward: string) =>
+      `Share your link. When a friend's first order is delivered, you each get ${reward} off your next order.`,
+    codeIs: "Your code is",
+    friends: "Friends who joined",
+    noFriends: "No one yet. Your first reward is a share away.",
+    joined: (name: string, date: string) => `${name}, joined ${date}`,
+    earned: (reward: string) => `${reward} earned`,
+    waiting: "First order on the way",
+    vouchers: "Your Vouchers",
+    noVouchers: "Vouchers you earn show here. Type the code in your cart.",
+    voucher: (value: string, minimum: string) =>
+      `${value} off orders of ${minimum} or more`,
+    used: "Used",
+    until: (date: string) => `Until ${date}`,
+    link: "Your link",
+    shareText: "Get your groceries delivered by Hoshimono. Use my link:",
+    share: "Share",
+    copied: "Copied",
+    linkCopied: "Link copied",
+  },
+  lists: {
+    title: "Your lists",
+    list: "Your list",
+    none: "No lists yet. Save Products from any Product page, or your whole cart, to buy them again in one tap.",
+    empty:
+      "Nothing on this list yet. Open any Product and choose Save to a list.",
+    addAll: "Add all to cart",
+    howMany: (name: string) => `How many ${name}`,
+    remove: (name: string) => `Remove ${name} from the list`,
+    newName: "Name a new list",
+    create: "Make the list",
+    renameLabel: "Rename the list",
+    rename: "Rename",
+    confirmDelete: (name: string) => `Delete the list “${name}”?`,
+    delete: "Delete this list",
+    saved: "Saved.",
+    // Save to a list, on Product pages and the Cart.
+    choose: "List",
+    newList: "A new list",
+    newListName: "Name of the new list",
+    placeholder: "Weekly",
+    save: "Save",
+    saving: "Saving...",
+    seeLists: "See your lists",
+    // What the cart module and the list actions answer (ADR 0019).
+    problems: {
+      no_name: "Give the list a name.",
+      name_too_long: "Keep the name under 60 characters.",
+      name_taken: (name: string) => `You already have a list called “${name}”.`,
+      too_many_lists: (max: number) => `You can keep up to ${max} lists.`,
+      list_gone: "That list is gone.",
+      list_full: (max: number) => `That list is full: ${max} items at most.`,
+      not_saved: "That did not save. Please try again.",
+      empty_cart: "Your cart is empty.",
+    },
+  },
+  recipes: {
+    title: "Recipes",
+    description:
+      "Filipino home cooking, with every ingredient ready to add to your cart in one tap.",
+    lead: "Pick one and add every ingredient to your cart in one tap.",
+    none: "No Recipes yet. Check back soon.",
+    card: (minutes: number, servings: number) =>
+      `${minutes > 0 ? `${minutes} minutes, ` : ""}serves ${servings}`,
+    notFound: "Recipe not found",
+    summary: (title: string, servings: number) =>
+      `${title}, serves ${servings}.`,
+    prep: "Prep",
+    cook: "Cook",
+    minutes: (n: number) => `${n} minutes`,
+    serves: "Serves",
+    ingredients: "Ingredients",
+    steps: "How to cook it",
+    // The add-to-cart panel, on Recipe pages and Home.
+    forServings: (heading: string, servings: number) =>
+      `${heading} for ${servings}`,
+    servings: "Servings",
+    fewer: "Fewer servings",
+    more: "More servings",
+    untick: "Untick anything you already have at home.",
+    toAdd: "Ingredients to add",
+    instead: "Instead: ",
+    usuallyAtHome: "Usually at home",
+    soldOut: "Sold out",
+    noLongerSold: "No longer sold",
+    alsoNeed: (things: string) => `You will also need ${things}.`,
+    tick: "Tick what you need",
+    addItems: (n: number, total: string) => `Add ${n} ${items(n)}, ${total}`,
+    ofTheWeek: "Recipe of the week",
+    seeFull: "See the full recipe",
+  },
+  // The page around an Article; its words are data, as staff write them.
+  articles: {
+    description:
+      "How to shop, store and cook well, from the people who pack your groceries.",
+    lead: "How to shop, store and cook well, with the groceries to match.",
+    none: "Nothing here yet. In the meantime,",
+    seeRecipes: "see the Recipes",
+    notFound: "Article not found",
+    shop: "Shop this article",
+  },
+  claims: {
+    title: "Report a problem",
+    back: (orderNo: string) => `Back to order ${orderNo}`,
+    lead: (time: string) =>
+      `Something spoiled, damaged, missing or wrong? Tell us by ${time} and we will make it right.`,
+    passed:
+      "The 24 hours to report a problem have passed. If something is still wrong, please contact us.",
+    allReported:
+      "You have reported every item already. We will tell you what we decide.",
+    which: "Which item?",
+    what: "What was wrong?",
+    howMany: (n: number) => `How many of the ${n}?`,
+    photos: "Photos",
+    optional: " (optional)",
+    photosHint:
+      "Up to 3 photos of the item and its label. Needed when it was spoiled or damaged.",
+    note: "Anything to add? (optional)",
+    send: "Send report",
+    sending: "Sending...",
+    reasons: {
+      not_fresh: "Spoiled or not fresh",
+      damaged: "Damaged",
+      missing: "Missing",
+      wrong_item: "Wrong item",
+    },
+    // On the Order page.
+    heading: "Problem with an item?",
+    statuses: {
+      open: "Waiting for review",
+      approved: "Approved",
+      rejected: "Not approved",
+    },
+    refunded: (amount: string) => `${amount} refunded to how you paid.`,
+    credited: (amount: string, code: string) =>
+      `${amount} off your next order with code ${code}.`,
+    report: "Report a problem",
+    until: (time: string) => `until ${time}`,
+    // What the claims module and the claim action answer (ADR 0019).
+    problems: {
+      not_found: "We could not find that item in your orders.",
+      not_delivered: "You can report a problem once your order arrives.",
+      window_passed: "The 24 hours to report a problem have passed.",
+      already_reported: "You already reported a problem with this item.",
+      not_charged: "We did not charge you for this item.",
+      bad_units: "Choose how many, up to what you got.",
+      note_too_long: "Keep the note under 500 characters.",
+      too_many_photos: (max: number) => `Add up to ${max} photos.`,
+      photo_too_big:
+        "That photo is too big. Use one under 8 MB, straight from your phone's camera.",
+      photo_type: "Use a JPEG, PNG or WebP photo.",
+      photo_needed: "Add a photo of the item.",
+      no_reason: "Choose what was wrong.",
+    },
+  },
 };
 
 export type Messages = typeof en;

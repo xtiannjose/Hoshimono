@@ -5,20 +5,21 @@ import { useState } from "react";
 
 import { announce } from "@/components/live-region";
 import { Button } from "@/components/ui/button";
+import { useMessages } from "@/i18n/client";
 
 /** The Referral link, shared with the phone's share sheet or copied. */
 export function ShareLink({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
+  const t = useMessages().invite;
   async function share() {
-    const text = "Get your groceries delivered by Hoshimono. Use my link:";
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Hoshimono", text, url });
+        await navigator.share({ title: "Hoshimono", text: t.shareText, url });
         return;
       }
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      announce("Link copied");
+      announce(t.linkCopied);
     } catch {
       // Closing the share sheet is not an error worth showing.
     }
@@ -26,7 +27,7 @@ export function ShareLink({ url }: { url: string }) {
   return (
     <div className="grid gap-2">
       <label htmlFor="invite-link" className="text-sm font-semibold">
-        Your link
+        {t.link}
       </label>
       <div className="flex flex-wrap gap-2">
         <input
@@ -38,7 +39,7 @@ export function ShareLink({ url }: { url: string }) {
         />
         <Button type="button" onClick={share}>
           <ShareNetworkIcon aria-hidden />
-          {copied ? "Copied" : "Share"}
+          {copied ? t.copied : t.share}
         </Button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLang, useMessages } from "@/i18n/client";
 
 import { saveNameAction, type NameState } from "./actions";
 
@@ -13,9 +14,12 @@ export function NameForm({ name }: { name: string }) {
     saveNameAction,
     {}
   );
+  const lang = useLang();
+  const t = useMessages().account;
   return (
     <form action={action} noValidate className="grid gap-2">
-      <Label htmlFor="name">Your name</Label>
+      <input type="hidden" name="lang" value={lang} />
+      <Label htmlFor="name">{t.name}</Label>
       <div className="flex gap-2">
         <Input
           id="name"
@@ -28,7 +32,7 @@ export function NameForm({ name }: { name: string }) {
           aria-describedby={state.message ? "name-error" : undefined}
         />
         <Button type="submit" variant="secondary" disabled={pending}>
-          Save
+          {t.save}
         </Button>
       </div>
       {state.message && (
@@ -38,7 +42,7 @@ export function NameForm({ name }: { name: string }) {
       )}
       {state.saved && (
         <p role="status" className="type-small">
-          Saved.
+          {t.saved}
         </p>
       )}
     </form>

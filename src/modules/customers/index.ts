@@ -12,6 +12,7 @@ export {
 } from "./internal/addresses";
 export type {
   AddressField,
+  AddressProblem,
   AddressView,
   SaveAddressResult,
 } from "./internal/addresses";

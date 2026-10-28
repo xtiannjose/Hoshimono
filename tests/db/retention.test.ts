@@ -187,13 +187,13 @@ describe("Shopping Lists (ADR 0014)", () => {
   it("names lists, keeps Products with counts and adds a list to the Cart", async () => {
     expect(await createShoppingList(ligaya, " ")).toEqual({
       ok: false,
-      errors: { name: "Give the list a name." },
+      errors: { name: "no_name" },
     });
     const weekly = await createShoppingList(ligaya, "Weekly");
     if (!weekly.ok) throw new Error("not created");
     expect(await createShoppingList(ligaya, "weekly")).toEqual({
       ok: false,
-      errors: { name: 'You already have a list called "Weekly".' },
+      errors: { name: "name_taken" },
     });
 
     await saveToList(ligaya, weekly.id, [

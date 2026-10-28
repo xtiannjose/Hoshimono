@@ -3,6 +3,7 @@ import { ContentPhoto } from "@/components/recipe/content-photo";
 import { RecipeCart } from "@/components/recipe/recipe-cart";
 import { recipeRows } from "@/components/recipe/recipe-rows";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getMessages } from "@/i18n/server";
 
 /**
  * The featured Recipe on Home (mockup-v2 #recipes, ADR 0013): photo beside
@@ -12,8 +13,9 @@ export async function FeaturedRecipe() {
   const recipe = await featuredRecipe();
   if (!recipe) return null;
   const { rows, extras } = await recipeRows(recipe);
+  const t = (await getMessages()).recipes;
   return (
-    <section aria-label="Recipe of the week" className="wrap pt-10">
+    <section aria-label={t.ofTheWeek} className="wrap pt-10">
       <div className="rounded-card border-border bg-card grid overflow-hidden border lg:grid-cols-2">
         <ContentPhoto
           url={recipe.photoUrl}
@@ -32,7 +34,7 @@ export async function FeaturedRecipe() {
             extras={extras}
             more={{
               href: `/recipes/${recipe.slug}`,
-              label: "See the full recipe",
+              label: t.seeFull,
             }}
           />
         </div>

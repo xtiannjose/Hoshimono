@@ -8,7 +8,11 @@ export {
   fileClaim,
   listOrderClaims,
 } from "./internal/claims";
-export type { ClaimableLine, ClaimInput } from "./internal/claims";
+export type {
+  ClaimableLine,
+  ClaimInput,
+  ClaimProblem,
+} from "./internal/claims";
 export {
   CLAIM_DECIDED_JOB,
   decideClaim,

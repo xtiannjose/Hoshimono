@@ -11,6 +11,8 @@ import { Breadcrumb } from "@/components/breadcrumb";
 import { ProductGrid } from "@/components/product/product-grid";
 import { ContentPhoto } from "@/components/recipe/content-photo";
 import { Skeleton } from "@/components/ui/skeleton";
+import { localPath } from "@/i18n/lang";
+import { getLang, getMessages } from "@/i18n/server";
 import type { ArticleView } from "@/modules/content";
 
 type Props = PageProps<"/[lang]/articles/[slug]">;
@@ -26,11 +28,13 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = await loadArticle((await params).slug);
-  if (!found) return { title: "Article not found" };
+  if (!found) return { title: (await getMessages()).articles.notFound };
   return {
     title: found.title,
     description: found.intro || undefined,
-    alternates: { canonical: `/articles/${found.slug}` },
+    alternates: {
+      canonical: localPath(await getLang(), `/articles/${found.slug}`),
+    },
     ...(found.photoUrl && {
       openGraph: {
         type: "article",
@@ -68,11 +72,12 @@ const paragraphs = (text: string) =>
 
 async function ArticleBody({ article }: { article: ArticleView }) {
   const stock = await stockStates(article.products.map((p) => p.id));
+  const m = await getMessages();
   return (
     <>
       <Breadcrumb
         items={[
-          { name: "Tips and guides", href: "/articles" },
+          { name: m.shell.tipsAndGuides, href: "/articles" },
           { name: article.title, href: `/articles/${article.slug}` },
         ]}
       />
@@ -107,7 +112,7 @@ async function ArticleBody({ article }: { article: ArticleView }) {
       {article.products.length > 0 && (
         <section aria-labelledby="shop-h" className="pt-14">
           <h2 id="shop-h" className="type-h2 mb-5">
-            Shop this article
+            {m.articles.shop}
           </h2>
           <ProductGrid products={article.products} stock={stock} empty={null} />
         </section>

@@ -22,31 +22,44 @@ export type AddressView = {
 export type AddressField =
   "label" | "line1" | "barangay" | "city" | "landmark" | "notes" | "area";
 
+/** What is wrong with a field; the shop words it in its language (ADR 0019). */
+export type AddressProblem =
+  | "no_label"
+  | "no_street"
+  | "no_barangay"
+  | "no_city"
+  | "no_landmark"
+  | "too_long"
+  | "not_served"
+  | "not_found"
+  | "too_many"
+  | "invalid";
+
 export type SaveAddressResult =
   | { ok: true; address: AddressView }
-  | { ok: false; errors: Partial<Record<AddressField, string>> };
+  | { ok: false; errors: Partial<Record<AddressField, AddressProblem>> };
 
-const text = (min: number, max: number, message: string) =>
-  z
-    .string(message)
-    .trim()
-    .min(min, message)
-    .max(max, `Keep this under ${max} characters.`);
+// Every rule's message is an AddressProblem, so any issue maps to one.
+const text = (min: number, max: number, missing: AddressProblem) =>
+  z.string(missing).trim().min(min, missing).max(max, "too_long");
 
-const addressInput = z.object({
-  label: text(1, 40, "Give this address a name, such as Home."),
-  line1: text(3, 120, "Enter the house or unit number and street."),
-  barangay: text(2, 60, "Enter the barangay."),
-  city: text(2, 60, "Choose the city."),
-  landmark: text(3, 120, "Add a landmark so the Rider can find you."),
-  notes: z
-    .string()
-    .trim()
-    .max(200, "Keep notes under 200 characters.")
-    .nullish()
-    .transform((v) => v || null),
-  isDefault: z.boolean().optional(),
-});
+const addressInput = z.object(
+  {
+    label: text(1, 40, "no_label"),
+    line1: text(3, 120, "no_street"),
+    barangay: text(2, 60, "no_barangay"),
+    city: text(2, 60, "no_city"),
+    landmark: text(3, 120, "no_landmark"),
+    notes: z
+      .string("invalid")
+      .trim()
+      .max(200, "too_long")
+      .nullish()
+      .transform((v) => v || null),
+    isDefault: z.boolean("invalid").optional(),
+  },
+  "invalid"
+);
 
 const select = {
   id: true,
@@ -101,26 +114,18 @@ export async function saveAddress(
 ): Promise<SaveAddressResult> {
   const parsed = addressInput.safeParse(input);
   if (!parsed.success) {
-    const errors: Partial<Record<AddressField, string>> = {};
+    const errors: Partial<Record<AddressField, AddressProblem>> = {};
     for (const issue of parsed.error.issues) {
       const field = (issue.path[0] ?? "area") as AddressField;
-      errors[field] ??= issue.message;
+      errors[field] ??= issue.message as AddressProblem;
     }
-    if (Object.keys(errors).length === 0)
-      errors.area = "Please check the address.";
+    if (Object.keys(errors).length === 0) errors.area = "invalid";
     return { ok: false, errors };
   }
   const { isDefault, ...fields } = parsed.data;
 
   const zone = await resolveZone(fields);
-  if (!zone) {
-    return {
-      ok: false,
-      errors: {
-        area: `We do not deliver to ${fields.barangay}, ${fields.city} yet.`,
-      },
-    };
-  }
+  if (!zone) return { ok: false, errors: { area: "not_served" } };
 
   return db.$transaction(async (tx) => {
     const others = await tx.address.findMany({
@@ -133,20 +138,10 @@ export async function saveAddress(
         where: { id, customerId },
         data: { ...fields, zoneId: zone.zoneId },
       });
-      if (count === 0) {
-        return {
-          ok: false,
-          errors: { area: "We could not find that address." },
-        };
-      }
+      if (count === 0) return { ok: false, errors: { area: "not_found" } };
     } else {
       if (others.length >= MAX_ADDRESSES) {
-        return {
-          ok: false,
-          errors: {
-            area: `You can keep up to ${MAX_ADDRESSES} addresses. Remove one first.`,
-          },
-        };
+        return { ok: false, errors: { area: "too_many" } };
       }
       id = (
         await tx.address.create({

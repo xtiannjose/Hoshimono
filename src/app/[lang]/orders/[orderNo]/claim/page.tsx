@@ -4,16 +4,19 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatDateTime } from "@/lib/dates";
 import { claimableLines } from "@/modules/claims";
 import { requireCustomer } from "@/modules/identity";
 
 import { ClaimForm } from "./claim-form";
 
-export const metadata: Metadata = {
-  title: "Report a problem",
-  robots: { index: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: (await getMessages()).claims.title,
+    robots: { index: false },
+  };
+}
 
 type Props = PageProps<"/[lang]/orders/[orderNo]/claim">;
 
@@ -33,6 +36,8 @@ async function Claim({ params }: { params: Props["params"] }) {
   const customer = await requireCustomer(`/orders/${orderNo}/claim`);
   const order = await claimableLines(orderNo, customer.id);
   if (!order) notFound();
+  const lang = await getLang();
+  const t = (await getMessages()).claims;
   const lines = order.lines.filter((l) => !l.claim && l.units > 0);
   return (
     <div className="grid gap-6">
@@ -41,26 +46,21 @@ async function Claim({ params }: { params: Props["params"] }) {
           href={`/orders/${order.orderNo}`}
           className="text-muted-foreground text-sm hover:underline"
         >
-          Back to order {order.orderNo}
+          {t.back(order.orderNo)}
         </Link>
-        <h1 className="type-h1">Report a problem</h1>
+        <h1 className="type-h1">{t.title}</h1>
         {order.open && order.windowEndsAt && (
           <p className="type-lead max-w-[60ch]">
-            Something spoiled, damaged, missing or wrong? Tell us by{" "}
-            {formatDateTime(order.windowEndsAt)} and we will make it right.
+            {t.lead(formatDateTime(order.windowEndsAt, lang))}
           </p>
         )}
       </div>
       {!order.open ? (
         <p className="rounded-card bg-muted max-w-xl p-5">
-          {order.windowEndsAt
-            ? "The 24 hours to report a problem have passed. If something is still wrong, please contact us."
-            : "You can report a problem once your order arrives."}
+          {order.windowEndsAt ? t.passed : t.problems.not_delivered}
         </p>
       ) : lines.length === 0 ? (
-        <p className="rounded-card bg-muted max-w-xl p-5">
-          You have reported every item already. We will tell you what we decide.
-        </p>
+        <p className="rounded-card bg-muted max-w-xl p-5">{t.allReported}</p>
       ) : (
         <ClaimForm orderNo={order.orderNo} lines={lines} />
       )}

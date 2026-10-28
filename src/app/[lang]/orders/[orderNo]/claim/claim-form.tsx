@@ -2,9 +2,9 @@
 
 import { useActionState, useState } from "react";
 
-import { CLAIM_REASON } from "@/components/order/claim-labels";
 import { Button } from "@/components/ui/button";
 import type { ClaimReason } from "@/generated/prisma/enums";
+import { useLang, useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 
 import { fileClaimAction, type ClaimFormState } from "./actions";
@@ -45,10 +45,13 @@ export function ClaimForm({
   const [reason, setReason] = useState<ClaimReason | "">("");
   const line = lines.find((l) => l.id === lineId);
   const e = state.errors;
+  const lang = useLang();
+  const t = useMessages().claims;
   return (
     <form action={action} className="grid max-w-xl gap-6">
+      <input type="hidden" name="lang" value={lang} />
       <fieldset className="grid gap-2">
-        <legend className="mb-2 font-semibold">Which item?</legend>
+        <legend className="mb-2 font-semibold">{t.which}</legend>
         {lines.map((l) => (
           <label
             key={l.id}
@@ -72,9 +75,9 @@ export function ClaimForm({
       </fieldset>
 
       <fieldset className="grid gap-2">
-        <legend className="mb-2 font-semibold">What was wrong?</legend>
+        <legend className="mb-2 font-semibold">{t.what}</legend>
         <div className="grid gap-2 sm:grid-cols-2">
-          {(Object.keys(CLAIM_REASON) as ClaimReason[]).map((r) => (
+          {(Object.keys(t.reasons) as ClaimReason[]).map((r) => (
             <label
               key={r}
               className="rounded-field border-input has-[:checked]:border-ink flex min-h-11 cursor-pointer items-center gap-3 border px-3"
@@ -87,7 +90,7 @@ export function ClaimForm({
                 onChange={() => setReason(r)}
                 className="accent-ink size-5"
               />
-              {CLAIM_REASON[r]}
+              {t.reasons[r]}
             </label>
           ))}
         </div>
@@ -97,7 +100,7 @@ export function ClaimForm({
       {line && !line.weighed && line.units > 1 && (
         <div className="grid gap-1.5">
           <label htmlFor="units" className="font-semibold">
-            How many of the {line.units}?
+            {t.howMany(line.units)}
           </label>
           <input
             id="units"
@@ -114,8 +117,8 @@ export function ClaimForm({
 
       <div className="grid gap-1.5">
         <label htmlFor="photos" className="font-semibold">
-          Photos
-          {reason && PHOTO_NEEDED.includes(reason) ? "" : " (optional)"}
+          {t.photos}
+          {reason && PHOTO_NEEDED.includes(reason) ? "" : t.optional}
         </label>
         <input
           id="photos"
@@ -127,15 +130,14 @@ export function ClaimForm({
           className="text-sm"
         />
         <p id="photos-help" className="text-muted-foreground text-fine">
-          Up to 3 photos of the item and its label. Needed when it was spoiled
-          or damaged.
+          {t.photosHint}
         </p>
         <Problem message={e.photos} />
       </div>
 
       <div className="grid gap-1.5">
         <label htmlFor="note" className="font-semibold">
-          Anything to add? (optional)
+          {t.note}
         </label>
         <textarea
           id="note"
@@ -153,7 +155,7 @@ export function ClaimForm({
           size="lg"
           disabled={pending || !lineId || !reason}
         >
-          {pending ? "Sending..." : "Send report"}
+          {pending ? t.sending : t.send}
         </Button>
       </div>
     </form>

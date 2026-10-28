@@ -1,7 +1,7 @@
 import Link from "@/components/link";
 
-import { CLAIM_REASON, CLAIM_STATUS } from "@/components/order/claim-labels";
 import { Tag } from "@/components/product/tag";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatDateTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { claimableLines, listOrderClaims } from "@/modules/claims";
@@ -27,10 +27,12 @@ export async function OrderClaims({
   const canReport =
     order.open && order.lines.some((l) => !l.claim && l.units > 0);
   if (!canReport && claims.length === 0) return null;
+  const lang = await getLang();
+  const t = (await getMessages()).claims;
   return (
     <section aria-labelledby="h-problem" className="grid gap-3">
       <h2 id="h-problem" className="type-h3">
-        Problem with an item?
+        {t.heading}
       </h2>
       {claims.length > 0 && (
         <ul className="divide-border grid divide-y">
@@ -38,17 +40,20 @@ export async function OrderClaims({
             <li key={c.id} className="grid gap-1 py-2.5">
               <span className="flex flex-wrap items-center justify-between gap-2">
                 <span>
-                  {c.orderLine.nameSnapshot}: {CLAIM_REASON[c.reason]}
+                  {c.orderLine.nameSnapshot}: {t.reasons[c.reason]}
                 </span>
                 <Tag tone={c.status === "approved" ? "soft" : "quiet"}>
-                  {CLAIM_STATUS[c.status]}
+                  {t.statuses[c.status]}
                 </Tag>
               </span>
               {c.status === "approved" && (
                 <span className="text-sm">
                   {c.payback === "refund"
-                    ? `${formatMoney(c.resolvedCents ?? 0)} refunded to how you paid.`
-                    : `${formatMoney(c.resolvedCents ?? 0)} off your next order with code ${c.voucher?.code}.`}
+                    ? t.refunded(formatMoney(c.resolvedCents ?? 0))
+                    : t.credited(
+                        formatMoney(c.resolvedCents ?? 0),
+                        c.voucher?.code ?? ""
+                      )}
                 </span>
               )}
               {c.decisionNote && (
@@ -66,10 +71,10 @@ export async function OrderClaims({
             href={`/orders/${encodeURIComponent(orderNo)}/claim`}
             className="decoration-border-strong font-semibold underline decoration-[1.5px] underline-offset-4 hover:decoration-current"
           >
-            Report a problem
+            {t.report}
           </Link>{" "}
           <span className="text-muted-foreground text-sm">
-            until {formatDateTime(order.windowEndsAt)}
+            {t.until(formatDateTime(order.windowEndsAt, lang))}
           </span>
         </p>
       )}
