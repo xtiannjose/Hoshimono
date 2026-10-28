@@ -11,6 +11,7 @@ export {
 export {
   bookSlot,
   getSlotHold,
+  hasOpenSlot,
   holdSlot,
   listSlots,
   purgeExpiredHolds,

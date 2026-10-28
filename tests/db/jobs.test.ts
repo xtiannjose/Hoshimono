@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db as appDb } from "@/lib/db";
 import {
   enqueueJob,
+  jobsHealth,
   MAX_ATTEMPTS,
   purgeDoneJobs,
   runDueJobs,
@@ -95,5 +96,25 @@ describe("runDueJobs", () => {
     expect(await purgeDoneJobs(new Date(Date.now() + 29 * 86_400_000))).toBe(0);
     expect(await purgeDoneJobs(new Date(Date.now() + 31 * 86_400_000))).toBe(1);
     expect(await db.job.count()).toBe(1);
+  });
+});
+
+describe("jobsHealth", () => {
+  it("counts jobs the cron left waiting, and jobs that gave up today", async () => {
+    await db.job.createMany({
+      data: [
+        { kind: "a", runAt: later(-30) }, // due half an hour ago
+        { kind: "b", runAt: later(-5) }, // due, the next tick takes it
+        { kind: "c", runAt: later(30) }, // retrying later
+        { kind: "d", runAt: later(-30), doneAt: NOW },
+        {
+          kind: "e",
+          runAt: later(-30),
+          attempts: MAX_ATTEMPTS,
+          createdAt: NOW,
+        },
+      ],
+    });
+    expect(await jobsHealth(NOW)).toEqual({ behind: 1, failed: 1 });
   });
 });

@@ -164,22 +164,26 @@ Sign-in is by magic link or text code, and no email or SMS account exists yet, s
 
 ## 7. Scripts to define in `package.json`
 
-| Script       | Command                                         | Purpose                               |
-| ------------ | ----------------------------------------------- | ------------------------------------- |
-| `dev`        | `next dev`                                      | Dev server                            |
-| `build`      | `next build`                                    | Production build                      |
-| `start`      | `next start`                                    | Run the build                         |
-| `lint`       | `eslint .`                                      | Lint                                  |
-| `typecheck`  | `tsc --noEmit`                                  | Types                                 |
-| `format`     | `prettier --write .`                            | Format                                |
-| `test`       | `vitest run`                                    | Unit and integration tests            |
-| `test:watch` | `vitest`                                        | Watch mode                            |
-| `test:e2e`   | `playwright test`                               | End-to-end tests                      |
-| `db:migrate` | `prisma migrate dev`                            | Create and apply a migration locally  |
-| `db:deploy`  | `prisma migrate deploy`                         | Apply migrations in CI and production |
-| `db:seed`    | `prisma db seed`                                | Seed data                             |
-| `db:studio`  | `prisma studio`                                 | Browse data                           |
-| `check`      | `npm run lint && npm run typecheck && npm test` | The pre-push gate                     |
+| Script             | Command                                         | Purpose                                                                           |
+| ------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dev`              | `next dev`                                      | Dev server                                                                        |
+| `build`            | `next build`                                    | Production build                                                                  |
+| `start`            | `next start`                                    | Run the build                                                                     |
+| `lint`             | `eslint .`                                      | Lint                                                                              |
+| `typecheck`        | `tsc --noEmit`                                  | Types                                                                             |
+| `format`           | `prettier --write .`                            | Format                                                                            |
+| `test`             | `vitest run`                                    | Unit and integration tests                                                        |
+| `test:watch`       | `vitest`                                        | Watch mode                                                                        |
+| `test:e2e`         | `playwright test`                               | End-to-end tests                                                                  |
+| `db:migrate`       | `prisma migrate dev`                            | Create and apply a migration locally                                              |
+| `db:deploy`        | `prisma migrate deploy`                         | Apply migrations in CI and production                                             |
+| `db:seed`          | `prisma db seed`                                | Seed data (local databases only; a remote dev branch needs `ALLOW_REMOTE_SEED=1`) |
+| `db:studio`        | `prisma studio`                                 | Browse data                                                                       |
+| `db:dry-run`       | `tsx prisma/dry-run.ts`                         | 20 Orders for the Hub dry run (`docs/dry-run.md`)                                 |
+| `db:restore-drill` | `bash scripts/restore-drill.sh`                 | Back up, restore and compare (`docs/backup-restore.md`)                           |
+| `load:checkout`    | `tsx scripts/load-checkout.ts`                  | Checkout load test on `hoshimono_load` (`docs/load-test.md`)                      |
+| `load:pages`       | `tsx scripts/load-pages.mts`                    | Shop pages load test against a running server                                     |
+| `check`            | `npm run lint && npm run typecheck && npm test` | The pre-push gate                                                                 |
 
 ## 8. Git, hooks and CI
 

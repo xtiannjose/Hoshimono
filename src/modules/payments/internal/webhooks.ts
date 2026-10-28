@@ -1,4 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
+import { addDays, addMinutes } from "@/lib/dates";
 import { db } from "@/lib/db";
 
 import type { PaymentProvider } from "./provider";
@@ -97,4 +98,24 @@ export async function handleWebhook(
     }
     return "applied";
   });
+}
+
+/**
+ * For the alerting health check: provider events from the last day that
+ * match no Payment (kept for someone to look at), and Refunds waiting for
+ * staff at /admin/refunds.
+ */
+export async function paymentsHealth(
+  now = new Date()
+): Promise<{ unmatchedEvents: number; refundsToCheck: number }> {
+  const [unmatchedEvents, refundsToCheck] = await Promise.all([
+    db.paymentEvent.count({
+      where: {
+        paymentId: null,
+        receivedAt: { gt: addDays(now, -1), lt: addMinutes(now, -10) },
+      },
+    }),
+    db.refund.count({ where: { status: "needs_review" } }),
+  ]);
+  return { unmatchedEvents, refundsToCheck };
 }

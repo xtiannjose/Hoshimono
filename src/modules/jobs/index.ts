@@ -2,6 +2,7 @@
 // Owns the jobs outbox; the cron route runs it every minute.
 export {
   enqueueJob,
+  jobsHealth,
   MAX_ATTEMPTS,
   purgeDoneJobs,
   runDueJobs,

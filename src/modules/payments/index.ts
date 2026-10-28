@@ -29,6 +29,7 @@ export {
 } from "./internal/refunds";
 export {
   handleWebhook,
+  paymentsHealth,
   type WebhookOptions,
   type WebhookResult,
 } from "./internal/webhooks";

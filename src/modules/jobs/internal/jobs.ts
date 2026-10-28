@@ -88,3 +88,29 @@ export async function purgeDoneJobs(now = new Date()): Promise<number> {
   });
   return count;
 }
+
+/**
+ * For the alerting health check: jobs due more than 10 minutes ago and
+ * still not run (the cron is not ticking), and jobs that gave up today.
+ */
+export async function jobsHealth(
+  now = new Date()
+): Promise<{ behind: number; failed: number }> {
+  const [behind, failed] = await Promise.all([
+    db.job.count({
+      where: {
+        doneAt: null,
+        attempts: { lt: MAX_ATTEMPTS },
+        runAt: { lt: addMinutes(now, -10) },
+      },
+    }),
+    db.job.count({
+      where: {
+        doneAt: null,
+        attempts: { gte: MAX_ATTEMPTS },
+        createdAt: { gt: addDays(now, -1) },
+      },
+    }),
+  ]);
+  return { behind, failed };
+}
