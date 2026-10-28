@@ -81,6 +81,23 @@ export async function sendOutForDelivery(
   );
 }
 
+/**
+ * Staff cancelled the Order (a Hub problem, an item that cannot be had).
+ * Their reason stays inside; any refund gets its own message.
+ */
+export async function sendOrderCancelled(
+  n: Omit<Recipient, "trip">,
+  providers: Providers = {}
+): Promise<void> {
+  await sendBoth(
+    { ...n, trip: "" },
+    "order_cancelled",
+    `Order ${n.orderNo} is cancelled`,
+    `We're sorry, we had to cancel order ${n.orderNo}. If you paid online, all of it comes back to you, and we'll tell you when it's sent.`,
+    providers
+  );
+}
+
 /** A delivery missed the Customer; the team calls to arrange another try. */
 export async function sendDeliveryFailed(
   n: Recipient,

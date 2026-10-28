@@ -30,6 +30,7 @@ export {
 export {
   handleWebhook,
   paymentsHealth,
+  recordPaidByStaff,
   type WebhookOptions,
   type WebhookResult,
 } from "./internal/webhooks";

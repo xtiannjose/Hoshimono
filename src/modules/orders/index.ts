@@ -12,6 +12,7 @@ export {
   cancelOrder,
   confirmPaidOrder,
   expireUnpaidOrders,
+  ORDER_CANCELLED_JOB,
   ORDER_CONFIRMED_JOB,
   ORDER_DELIVERED_JOB,
   PAYMENT_WINDOW_MINUTES,

@@ -15,6 +15,7 @@ import {
   sendClaimDecided,
   sendReferralReward,
   sendDeliveryFailed,
+  sendOrderCancelled,
   sendOrderConfirmed,
   sendOutForDelivery,
   sendRefundIssued,
@@ -25,6 +26,7 @@ import {
   getDeliveryNotice,
   getOrderForNotice,
   getSubstitution,
+  ORDER_CANCELLED_JOB,
   ORDER_CONFIRMED_JOB,
   ORDER_DELIVERED_JOB,
   OUT_FOR_DELIVERY_JOB,
@@ -202,6 +204,17 @@ export const jobHandlers: JobHandlers = {
       email: d.email,
       phone: d.phone,
       trip: String(payload.at),
+    });
+  },
+
+  async [ORDER_CANCELLED_JOB](payload) {
+    const order = await getOrderForNotice(String(payload.orderId));
+    if (!order || order.status !== "cancelled") return;
+    await sendOrderCancelled({
+      orderId: order.id,
+      orderNo: order.orderNo,
+      email: order.customer.email,
+      phone: order.contactPhone,
     });
   },
 

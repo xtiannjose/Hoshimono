@@ -24,7 +24,8 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   pending_payment: ["confirmed", "cancelled"],
   confirmed: ["picking", "cancelled"],
   picking: ["picked", "cancelled"],
-  picked: ["out_for_delivery"],
+  // Cancelling a packed Order puts what was picked back on the shelf.
+  picked: ["out_for_delivery", "cancelled"],
   out_for_delivery: ["delivered", "delivery_failed"],
   delivery_failed: ["out_for_delivery", "cancelled"],
   delivered: [],
@@ -46,6 +47,9 @@ export const ORDER_CONFIRMED_JOB = "order.confirmed";
 
 /** Job run once an Order is delivered, such as a Referral reward (ADR 0015). */
 export const ORDER_DELIVERED_JOB = "order.delivered";
+
+/** Job that tells the Customer staff cancelled their Order. */
+export const ORDER_CANCELLED_JOB = "order.cancelled";
 
 export type Actor = { type: ActorType; id?: string | null };
 
@@ -130,6 +134,10 @@ export async function transitionOrder(
             data: { paymentStatus: "refunded" },
           });
         }
+      }
+      // The Customer cancelled it, or watched it expire; staff say so.
+      if (to === "cancelled" && actor.type === "staff") {
+        await enqueueJob(tx, ORDER_CANCELLED_JOB, { orderId });
       }
       if (to === "picked") await settlePicked(tx, orderId);
       if (to === "delivered")

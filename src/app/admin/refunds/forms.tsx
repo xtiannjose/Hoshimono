@@ -23,8 +23,12 @@ export function SettleRefundForms({ refundId }: { refundId: string }) {
     <div className="grid gap-2">
       <form action={markSent} className="flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-sm font-semibold">
-          PayMongo refund id (optional)
-          <input name="providerRef" placeholder="ref_..." className={FIELD} />
+          PayMongo refund id, or how it was paid back (optional)
+          <input
+            name="providerRef"
+            placeholder="ref_... or GCash sent by hand, ref 1234"
+            className={FIELD}
+          />
         </label>
         <Button type="submit" size="sm" disabled={sending || retrying}>
           It went through

@@ -38,6 +38,7 @@ import {
   MAX_COD_TOTAL_CENTS,
   MAX_OPEN_COD_ORDERS,
   MAX_ORDER_ITEMS,
+  ORDER_CANCELLED_JOB,
   ORDER_CONFIRMED_JOB,
   placeOrder,
   proposeSubstitution,
@@ -903,7 +904,7 @@ describe("the staff order queue", () => {
     expect(staffMoves("pending_payment")).toEqual([]);
     expect(staffMoves("confirmed")).toEqual(["picking", "cancelled"]);
     // Leaving the Hub and arriving go through dispatch: Rider, PIN, cash.
-    expect(staffMoves("picked")).toEqual([]);
+    expect(staffMoves("picked")).toEqual(["cancelled"]);
     expect(staffMoves("out_for_delivery")).toEqual([]);
     expect(staffMoves("delivery_failed")).toEqual(["cancelled"]);
     expect(staffMoves("delivered")).toEqual([]);
@@ -1358,6 +1359,24 @@ describe("dispatch and delivery (ADR 0011)", () => {
       actorType: "staff",
       actorId: rider,
     });
+  });
+
+  it("lets staff cancel a packed Order: the stock goes back, the Customer is told", async () => {
+    const { orderId } = await ready();
+    const onHand = async () =>
+      (
+        await db.stockLevel.findFirstOrThrow({
+          where: { productId: MILK, hubId: HUB },
+        })
+      ).onHand;
+    const before = await onHand();
+    expect(
+      await transitionOrder(orderId, "cancelled", dispatcher, "Hub flooded")
+    ).toBe(true);
+    expect(await onHand()).toBe(before + 2);
+    expect(await db.job.count({ where: { kind: ORDER_CANCELLED_JOB } })).toBe(
+      1
+    );
   });
 
   it("checks no more than 5 wrong PINs, even tried all at once", async () => {

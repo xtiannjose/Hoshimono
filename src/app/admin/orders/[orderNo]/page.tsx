@@ -11,6 +11,7 @@ import {
 import type { OrderStatus } from "@/generated/prisma/enums";
 import { formatDateTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { currentStaff, staffAreas } from "@/modules/identity";
 import {
   getOrderForStaff,
   MAX_ORDER_NOTE_LENGTH,
@@ -18,7 +19,13 @@ import {
 } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
-import { MoveForm, NoteForm } from "./order-forms";
+import {
+  MoveForm,
+  NoteForm,
+  RecordPaymentForm,
+  TextCustomerForm,
+  VoucherForm,
+} from "./order-forms";
 
 export const metadata: Metadata = { title: "Order" };
 
@@ -55,8 +62,17 @@ export default function AdminOrder({ params }: Props) {
 
 async function Order({ params }: { params: Props["params"] }) {
   const { orderNo } = await params;
-  const order = await getOrderForStaff(orderNo);
+  const [order, staff] = await Promise.all([
+    getOrderForStaff(orderNo),
+    currentStaff(),
+  ]);
   if (!order) notFound();
+  // Money tools for those who handle refunds (docs/runbook.md).
+  const money = !!staff && staffAreas(staff.role).includes("refunds");
+  const unpaidOnline =
+    order.payment &&
+    order.payment.method !== "cod" &&
+    (order.payment.status === "unpaid" || order.payment.status === "failed");
   const moves = staffMoves(order.status).map((to) => ({
     to,
     label: MOVE_LABEL[to],
@@ -128,6 +144,19 @@ async function Order({ params }: { params: Props["params"] }) {
             <h2 id="h-move" className="type-h3">
               Next step
             </h2>
+            {(order.status === "picked" ||
+              order.status === "out_for_delivery") && (
+              <p className="text-muted-foreground">
+                It goes out and is delivered through{" "}
+                <Link
+                  href="/admin/dispatch"
+                  className="font-semibold underline underline-offset-4"
+                >
+                  Dispatch
+                </Link>
+                , with a Rider and the Customer&apos;s PIN.
+              </p>
+            )}
             {moves.length > 0 ? (
               <MoveForm
                 orderId={order.id}
@@ -135,27 +164,16 @@ async function Order({ params }: { params: Props["params"] }) {
                 status={order.status}
                 moves={moves}
               />
-            ) : (
+            ) : order.status === "pending_payment" ? (
               <p className="text-muted-foreground">
-                {order.status === "pending_payment" ? (
-                  "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on."
-                ) : order.status === "picked" ||
-                  order.status === "out_for_delivery" ? (
-                  <>
-                    It goes out and is delivered through{" "}
-                    <Link
-                      href="/admin/dispatch"
-                      className="font-semibold underline underline-offset-4"
-                    >
-                      Dispatch
-                    </Link>
-                    , with a Rider and the Customer&apos;s PIN.
-                  </>
-                ) : (
-                  "Nothing more to do: this Order is closed."
-                )}
+                Waiting for the Customer to pay. The payment, or the 15-minute
+                Payment Window, moves it on.
               </p>
-            )}
+            ) : order.status !== "out_for_delivery" ? (
+              <p className="text-muted-foreground">
+                Nothing more to do: this Order is closed.
+              </p>
+            ) : null}
           </section>
           {order.refunds.length > 0 && (
             <section aria-labelledby="h-refunds" className={PANEL}>
@@ -179,6 +197,32 @@ async function Order({ params }: { params: Props["params"] }) {
               </ul>
             </section>
           )}
+          {money && unpaidOnline && (
+            <section aria-labelledby="h-paid" className={PANEL}>
+              <h2 id="h-paid" className="type-h3">
+                Paid in PayMongo?
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                If PayMongo shows this Order paid but it still waits here,
+                record it. An Order that closed meanwhile gets the money back as
+                a refund.
+              </p>
+              <RecordPaymentForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                amount={formatMoney(order.payment!.amountCents)}
+              />
+            </section>
+          )}
+          <section aria-labelledby="h-contact" className={PANEL}>
+            <h2 id="h-contact" className="type-h3">
+              Customer contact
+            </h2>
+            <TextCustomerForm orderId={order.id} orderNo={order.orderNo} />
+            {money && (
+              <VoucherForm orderId={order.id} orderNo={order.orderNo} />
+            )}
+          </section>
           <section aria-labelledby="h-notes" className={PANEL}>
             <h2 id="h-notes" className="type-h3">
               Notes

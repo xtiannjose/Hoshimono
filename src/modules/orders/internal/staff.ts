@@ -105,6 +105,13 @@ export type StaffOrderDetail = OrderDetail & {
   }[];
   notes: { text: string; at: Date; staffName: string }[];
   refunds: { amountCents: number; reason: string; status: RefundStatus }[];
+  customerId: string;
+  /** The newest Payment, for the staff tools that act on it. */
+  payment: {
+    method: PaymentMethod;
+    status: PaymentStatus;
+    amountCents: number;
+  } | null;
 };
 
 const ACTOR: Record<Exclude<ActorType, "staff">, string> = {
@@ -121,6 +128,7 @@ export async function getOrderForStaff(
   const order = await db.order.findUniqueOrThrow({
     where: { id: detail.id },
     select: {
+      customerId: true,
       customer: { select: { name: true, email: true, phone: true } },
       statusEvents: {
         orderBy: { at: "asc" },
@@ -142,7 +150,11 @@ export async function getOrderForStaff(
         },
       },
       payments: {
+        orderBy: { createdAt: "desc" },
         select: {
+          method: true,
+          status: true,
+          amountCents: true,
           refunds: {
             orderBy: { createdAt: "asc" },
             select: { amountCents: true, reason: true, status: true },
@@ -185,6 +197,14 @@ export async function getOrderForStaff(
       staffName: n.staff.name,
     })),
     refunds: order.payments.flatMap((p) => p.refunds),
+    customerId: order.customerId,
+    payment: order.payments[0]
+      ? {
+          method: order.payments[0].method,
+          status: order.payments[0].status,
+          amountCents: order.payments[0].amountCents,
+        }
+      : null,
   };
 }
 
