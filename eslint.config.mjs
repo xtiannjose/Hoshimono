@@ -67,6 +67,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "docs/**",
     "src/generated/**",
+    // Agents' git worktrees: copies of the repo, linted in their own checkout.
+    ".claude/worktrees/**",
   ]),
 ]);
 

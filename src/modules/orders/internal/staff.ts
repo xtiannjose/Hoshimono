@@ -26,6 +26,7 @@ export type QueueRow = {
   slot: { startsAt: Date; endsAt: Date };
   totalCents: number;
   finalTotalCents: number | null;
+  lineCount: number;
 };
 
 const MAX_ROWS = 100;
@@ -76,6 +77,7 @@ export async function listOrdersForStaff({
       finalTotalCents: true,
       customer: { select: { name: true } },
       slot: { select: { startsAt: true, endsAt: true } },
+      _count: { select: { lines: true } },
       payments: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -83,8 +85,9 @@ export async function listOrdersForStaff({
       },
     },
   });
-  return orders.map(({ customer, payments, ...o }) => ({
+  return orders.map(({ customer, payments, _count, ...o }) => ({
     ...o,
+    lineCount: _count.lines,
     customerName: customer.name ?? "",
     paymentMethod: payments[0]?.method ?? null,
   }));

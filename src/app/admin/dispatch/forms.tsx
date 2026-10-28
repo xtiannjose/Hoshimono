@@ -85,15 +85,21 @@ export function WithoutPinForm({
           <input name="reason" className={INLINE_FIELD} />
         </label>
         {dueCents !== null && (
-          <label className="grid gap-1 font-semibold">
-            Cash received (₱)
-            <input
-              name="cash"
-              inputMode="decimal"
-              defaultValue={(dueCents / 100).toFixed(2)}
-              className={INLINE_FIELD}
-            />
-          </label>
+          <>
+            <label className="grid gap-1 font-semibold">
+              Cash received (₱)
+              <input
+                name="cash"
+                inputMode="decimal"
+                defaultValue={(dueCents / 100).toFixed(2)}
+                className={INLINE_FIELD}
+              />
+            </label>
+            <label className="grid gap-1 font-semibold">
+              If the cash is different, why?
+              <input name="note" className={INLINE_FIELD} />
+            </label>
+          </>
         )}
         <Button type="submit" variant="secondary" disabled={pending}>
           Mark delivered
@@ -207,15 +213,16 @@ export function FailedForm({ orderId }: { orderId: string }) {
   );
 }
 
-/** The Dispatcher counts a Rider's cash for the day. */
+/**
+ * The Dispatcher counts a Rider's cash for the day. Blind: the field starts
+ * empty, so the number saved is what was counted, not what was expected.
+ */
 export function CountCashForm({
   riderId,
   day,
-  recordedCents,
 }: {
   riderId: string;
   day: string;
-  recordedCents: number;
 }) {
   const [state, action, pending] = useActionState(
     countCashAction.bind(null, riderId, day),
@@ -232,7 +239,7 @@ export function CountCashForm({
         <input
           name="counted"
           inputMode="decimal"
-          defaultValue={(recordedCents / 100).toFixed(2)}
+          required
           className={`${INLINE_FIELD} w-36 tabular-nums`}
         />
       </label>

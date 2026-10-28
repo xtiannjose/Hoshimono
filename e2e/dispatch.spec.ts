@@ -109,6 +109,7 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
     .getByRole("listitem")
     .filter({ hasText: "Jun Dela Rosa" });
   await expect(jun).toContainText("₱624.00");
+  await jun.getByLabel("Cash counted (₱)").fill("624.00");
   await jun.getByRole("button", { name: "Record count" }).click();
   await expect(jun).toContainText(
     "Counted ₱624.00 by Marites Aquino: matches.",

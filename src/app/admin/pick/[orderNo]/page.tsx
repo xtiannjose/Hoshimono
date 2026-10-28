@@ -101,6 +101,8 @@ async function Pick({ params }: { params: Props["params"] }) {
   );
 }
 
+const grams = (g: number | null) => `${(g ?? 0).toLocaleString("en-PH")} g`;
+
 function LineSummary({ line }: { line: PickLine }) {
   const sub = line.substitution;
   return (
@@ -109,8 +111,8 @@ function LineSummary({ line }: { line: PickLine }) {
         <b>{line.name}</b>
         <span className="tabular-nums">
           {line.weighed
-            ? `, about ${line.orderedWeightGrams} g`
-            : `, ${line.orderedQty} pcs`}
+            ? `, about ${grams(line.orderedWeightGrams)}`
+            : `, ${line.orderedQty} ${line.orderedQty === 1 ? "pc" : "pcs"}`}
         </span>
       </p>
       {line.note && (
@@ -119,15 +121,17 @@ function LineSummary({ line }: { line: PickLine }) {
         </p>
       )}
       <p className="text-muted-foreground text-sm">
-        {line.preference === "preferred" && line.preferred
-          ? `If missing: only ${line.preferred.name}`
-          : PREFERENCE[line.preference]}
+        {line.weighed
+          ? "Sold by weight: no substitute"
+          : line.preference === "preferred" && line.preferred
+            ? `If missing: only ${line.preferred.name}`
+            : PREFERENCE[line.preference]}
       </p>
       {line.status === "picked" && (
         <p className="text-sm font-semibold">
           Done
           {line.weighed
-            ? `: ${line.finalWeightGrams} g`
+            ? `: ${grams(line.finalWeightGrams)}`
             : `: found all ${line.orderedQty}`}
         </p>
       )}

@@ -114,11 +114,7 @@ async function Cash({ searchParams }: { searchParams: Props["searchParams"] }) {
                         : ": matches."}
                   </p>
                 ) : (
-                  <CountCashForm
-                    riderId={r.riderId}
-                    day={day}
-                    recordedCents={r.recordedCents}
-                  />
+                  <CountCashForm riderId={r.riderId} day={day} />
                 )}
               </li>
             );

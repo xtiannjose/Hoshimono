@@ -41,3 +41,9 @@ src/generated/
 
 # Uploaded media in development (production uses object storage)
 public/media/
+
+# Database dumps from scripts/restore-drill.sh
+backups/
+
+# Agent worktrees
+.claude/worktrees/
