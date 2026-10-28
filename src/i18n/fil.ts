@@ -149,6 +149,31 @@ export const fil: Messages = {
     orders: "Ang mga order mo",
     contact: "May tanong pa? I-email kami sa",
   },
+  legal: {
+    label: "Mga patakaran",
+    updated: (date) => `Huling binago: ${date}`,
+    englishOnly: "Nasa English pa ang buong teksto ng patakarang ito.",
+    privacy: {
+      title: "Patakaran sa Privacy",
+      description:
+        "Anong personal na impormasyon ang kinukuha ng Hoshimono, bakit, sino ang tumatanggap nito, gaano katagal namin itinatago at ang mga karapatan mo.",
+    },
+    terms: {
+      title: "Mga Tuntunin sa Paggamit at Pagbili",
+      description:
+        "Ang mga tuntunin sa paggamit ng Hoshimono at sa pagbili ng grocery na ihahatid sa Metro Manila.",
+    },
+    refunds: {
+      title: "Refund at Pagbabalik",
+      description:
+        "Pag-cancel, mga item na ayon sa timbang, mga kapalit, Freshness Claim at mga delivery na hindi natuloy sa Hoshimono.",
+    },
+    business: {
+      title: "Impormasyon sa Buwis at Negosyo",
+      description:
+        "Ang rehistradong detalye ng negosyo ng Hoshimono, katayuan sa buwis at mga resibo.",
+    },
+  },
   listing: {
     notFound: "Walang ganitong kategorya",
     description: (name) =>

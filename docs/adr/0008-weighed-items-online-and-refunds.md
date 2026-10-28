@@ -28,3 +28,5 @@ Batch 3.3 had to settle what [ADR 0003](0003-payment-provider-interface.md) left
 - `refunds` is the ledger: one row per Payment and reason (`cancelled`, `picked`, `late_payment`), so a repeated trigger never refunds twice, and the database check keeps `refunded_cents` within `captured_cents`.
 - Refunds marked `needs_review` need a staff screen (Batch 4.1 order queue) and a runbook entry (Batch 6.3). Until then they are logged.
 - The refund window (60 days for cards) is far longer than the time from payment to picking, so a picked refund is always possible.
+
+Note, 2026-10-28: the Picker's tolerance is one-sided, not plus or minus 10%. `recordPick` refuses a pack more than 10% over the ordered weight; a lighter pack of any weight is accepted and charged by its weight (docs/03 section 8).

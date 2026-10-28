@@ -33,7 +33,13 @@ What this says:
 - Races end exactly right: the last places and the last units go to as many Customers as there are, and everyone else gets a clear "full" or "sold out".
 - **Limit found:** 200 checkouts started in the same instant in one process wait longer than the 5 s `placeOrder` allows for a free connection, and fail with an error page (the Cart is left as it was). On Vercel, requests spread over many instances and Neon's pooler, so one process should not see that; the preview deployment run below checks it.
 
-**Pages** (`scripts/load-pages.mts`): to be measured again with nothing else running on the laptop; a first run while four builds ran beside it is not a fair number.
+**Pages** (`scripts/load-pages.mts`, `next start`, one process, 28 Oct, nothing else running):
+
+| Run                         | Pages | Rate | p50   | p95   | p99   | Failures |
+| --------------------------- | ----- | ---- | ----- | ----- | ----- | -------- |
+| 50 shoppers, no pause, 30 s | 691   | 23/s | 3.0 s | 4.7 s | 5.1 s | none     |
+
+One page on its own takes 140 to 440 ms (Category and search are the slowest). Every page is rendered for each request, so one process tops out at about 23 a second on this laptop, and the waiting time above is the queue. Fifty shoppers who never pause are many times more than one Hub's evening; real shoppers spend seconds on each page. On Vercel, pages are spread over instances. If hosting costs grow, caching the catalogue part of Home, Category and Product pages is the lever.
 
 ## Still to do on real hosting
 

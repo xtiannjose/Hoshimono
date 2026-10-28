@@ -32,47 +32,56 @@ Status: draft v0.1. Decisions that are expensive to reverse are recorded in [doc
 
 Each module lives in `src/modules/<name>/` with `index.ts` (public), `internal/` (private), and its own tests. A module owns its tables: only that module reads or writes them. Others call its interface.
 
-| Module          | Owns                                            | Public interface (examples)                                          |
-| --------------- | ----------------------------------------------- | -------------------------------------------------------------------- |
-| `catalog`       | Product, Category, ProductImage, search index   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`    |
-| `pricing`       | Promotion, Voucher, price rules                 | `priceCart(lines, context)` (pure), `checkVoucher`, `redeemVoucher`  |
-| `inventory`     | StockLevel, reservations                        | `reserve(orderId, lines)`, `release`, `adjust`, `availability`       |
-| `cart`          | Cart, CartLine, Shopping List                   | `getCart`, `addLines`, `setQuantity`, `mergeGuestCart`, `saveToList` |
-| `delivery`      | Hub, Zone, Slot, Address resolution             | `resolveZone(address)`, `listSlots`, `holdSlot`, `confirmSlot`       |
-| `orders`        | Order, OrderLine, status history, Substitution  | `placeOrder`, `transition(orderId, event)`, `cancelOrder`            |
-| `payments`      | Payment, PaymentEvent, provider adapters        | `createPayment`, `handleWebhook`, `refund`                           |
-| `fulfilment`    | Pick tasks, Rider assignment, proof of delivery | `getPickList`, `markPicked`, `proposeSubstitution`, `dispatch`       |
-| `customers`     | Customer profile, Address book, Referral        | `getProfile`, `saveAddress`, `applyReferral`                         |
-| `content`       | Recipe, Article                                 | `getRecipe`, `addRecipeToCart`, `saveRecipe`, `saveArticle`          |
-| `notifications` | Message templates and delivery log              | `notify(event, recipient)`                                           |
-| `jobs`          | Jobs outbox                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                          |
-| `identity`      | Sessions, roles (wraps Better Auth)             | `requireCustomer`, `requireStaff(role)`                              |
-| `claims`        | Freshness Claims                                | `fileClaim`, `decideClaim`, `claimableLines`                         |
+| Module          | Owns                                                            | Public interface (examples)                                                                                                       |
+| --------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `catalog`       | Product, Category, ProductImage, search index                   | `getProduct`, `listProducts`, `searchProducts`, `getCategoryTree`                                                                 |
+| `pricing`       | Promotion, Voucher, price rules                                 | `priceCart(lines, context)` (pure), `priceFinal`, `checkVoucher`, `redeemVoucher`                                                 |
+| `inventory`     | StockLevel, stock movements, Stock Alerts                       | `reserveStock`, `releaseStock`, `pickStock`, `receiveStock`, `recordShrink`, `countStock`, `getAvailability`                      |
+| `cart`          | Cart, CartLine, Shopping List                                   | `getCart`, `addLines`, `setLineQuantity`, `mergeGuestCart`, `saveToList`                                                          |
+| `delivery`      | Hub, Zone, Slot Schedule, Slot, Slot Hold                       | `resolveZone({ city, barangay })`, `listSlots`, `holdSlot`, `bookSlot`                                                            |
+| `orders`        | Order, OrderLine, status history, Substitution, Order Note      | `placeOrder`, `transitionOrder(orderId, to, actor, reason, options)`, `cancelOrder`, `getPickList`, `recordPick`, `dispatchOrder` |
+| `payments`      | Payment, PaymentEvent, Refund, Cash Handover, provider adapters | `createCodPayment`, `createOnlinePayment`, `startCheckout`, `handleWebhook`, `refundOrderPayment`, `sendRefund`                   |
+| `customers`     | Customer profile, Address book, Referral                        | `getProfile`, `saveAddress`, `applyReferral`                                                                                      |
+| `content`       | Recipe, Article                                                 | `getRecipe`, `addRecipeToCart`, `saveRecipe`, `saveArticle`                                                                       |
+| `notifications` | Message templates, providers and delivery log                   | One sender per message: `sendOrderConfirmed`, `sendRefundIssued`, `sendOutForDelivery`, ...                                       |
+| `jobs`          | Jobs outbox                                                     | `enqueueJob`, `runDueJobs`, `purgeDoneJobs`                                                                                       |
+| `identity`      | Sessions, Staff roles, audit log (wraps Better Auth)            | `requireCustomer`, `requireStaff(area)`                                                                                           |
+| `claims`        | Freshness Claims                                                | `fileClaim`, `decideClaim`, `claimableLines`                                                                                      |
 
-Allowed dependency direction (arrow means "may call"):
+There is no `fulfilment` module. Picking and dispatch live in `orders` (`orders/internal/picking.ts`, `orders/internal/delivery.ts`), which owns the Order Lines and Substitutions they change.
+
+Dependency direction, from the imports in the code (arrow means "calls"):
 
 ```
-app routes / server actions
+app routes / server actions / src/server/job-handlers.ts
         |
-  orders --> payments, delivery, inventory, pricing, notifications, cart, customers
-  cart   --> pricing, catalog, inventory (read-only availability)
+  orders    --> cart, catalog, customers, delivery, inventory, jobs, payments, pricing
+  claims    --> payments, pricing, jobs
+  content   --> catalog, cart
+  cart      --> catalog, inventory, pricing, jobs
+  identity  --> customers, notifications (sign-in links and codes)
   customers --> delivery (resolveZone when saving an Address)
-  fulfilment --> orders, inventory
-  content --> catalog, cart
-  everything --> lib (db, money, dates, logger)
+  catalog   --> pricing (Promotions set the shelf price)
+  delivery  --> pricing (the ZoneFees type only)
+  inventory --> jobs
+  payments  --> jobs
+  everything --> lib (db, money, dates and other helpers)
 ```
 
-`catalog`, `pricing` and `lib` never import upward. Cycles are a defect.
+`pricing`, `jobs`, `notifications` and `lib` import no module. Apart from sign-in, modules queue a job for a message instead of calling `notifications`; `src/server/job-handlers.ts` wires each job kind to its sender. Cycles are a defect.
 
 ## 4. Routes and rendering
 
-| Route group | Examples                                                                 | Rendering                                                                                                    |
-| ----------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `(shop)`    | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes/[slug]`       | Server-rendered with incremental revalidation; tag-based invalidation when admin edits a Product or Category |
-| `(account)` | `/account`, `/account/orders`, `/orders/[orderNo]`, `/account/addresses` | Dynamic, authenticated                                                                                       |
-| `checkout`  | `/cart`, `/checkout`, `/checkout/confirmed/[orderNo]`                    | Dynamic, no caching                                                                                          |
-| `admin`     | `/admin/products`, `/admin/orders`, `/admin/pick/[orderId]`              | Dynamic, role-gated                                                                                          |
-| `api`       | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/health`             | Route handlers                                                                                               |
+| Folder           | Area              | Examples                                                                                                                                          | Rendering                                                                                                             |
+| ---------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/app/[lang]` | Shop              | `/`, `/c/[...category]`, `/p/[slug]`, `/search`, `/recipes`, `/recipes/[slug]`, `/articles/[slug]`, `/delivery`, `/help`, `/offline`              | Server Components over cached reads (`"use cache"`, tags `catalog`, `content`, `stock`); staff edits call `updateTag` |
+| `src/app/[lang]` | Account           | `/account`, `/account/orders`, `/account/addresses`, `/account/lists`, `/account/invite`, `/orders/[orderNo]`, `/orders/[orderNo]/claim`          | Dynamic, signed-in Customer                                                                                           |
+| `src/app/[lang]` | Checkout          | `/cart`, `/checkout`, `/checkout/pay/[orderNo]`, `/checkout/confirmed/[orderNo]`                                                                  | Dynamic, no caching                                                                                                   |
+| `src/app/[lang]` | Sign-in and links | `/sign-in`, `/s/[token]` (Substitution answer), `/stop/[token]` (reminder stop), `/r/[code]` (Referral)                                           | Dynamic; no sign-in needed                                                                                            |
+| `src/app/admin`  | Staff             | `/admin/products`, `/admin/orders`, `/admin/pick/[orderNo]`, `/admin/dispatch`, `/admin/stock`, `/admin/claims`, `/admin/print/receipt/[orderNo]` | Dynamic; every page calls `requireStaff(area)` (`requireAnyStaff` on `/admin` itself)                                 |
+| `src/app/api`    | API               | `/api/webhooks/[provider]`, `/api/cron/[job]`, `/api/auth/[...all]`, `/api/events`, `/api/search/suggest`, `/api/health`                          | Route handlers                                                                                                        |
+
+Paths are shown as an English shopper sees them; Filipino pages add `/fil`. At the root of `src/app`: `manifest.ts`, `icon.tsx`, `robots.ts` and `sitemap.ts`. Development only: `/dev/pay/[ref]` (the fake checkout), `/dev/sign-in` and `/api/dev/mailbox`.
 
 As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)): every shop page lives under `src/app/[lang]` (`en` or `fil`), whose layout is a root layout; `src/app/admin` is the other root layout and stays English. `src/proxy.ts` serves an address without a language from `/en` inside, sends `/en/...` to the address without it, and adds a `Link` header naming both languages (`hreflang`). Moving between shop and admin is a full page load.
 
@@ -94,8 +103,8 @@ Mutations use Server Actions with Zod validation. Each action calls a module int
 
 1. Load the Cart and re-run `priceCart`. If the total differs from what the Customer saw, return the new total and stop.
 2. `resolveZone(address)`; reject if outside coverage or below the Zone minimum.
-3. `confirmSlot(slotId)`: atomically increment `booked` only while `booked < capacity`; the earlier 10-minute hold is released into this booking.
-4. `reserve(lines)` at the Hub: atomically increase `reserved` only while `onHand - reserved >= qty` for each line. Any shortfall rolls the whole transaction back and returns the unavailable lines.
+3. `bookSlot`: atomically increment `booked` only while `booked < capacity`; the earlier 10-minute hold is released into this booking.
+4. `reserveStock` at the Hub: atomically increase `reserved` only while `onHand - reserved >= qty` for each line. Any shortfall rolls the whole transaction back and returns the unavailable lines.
 5. Create the Order and Order Lines with snapshotted price, name, tax class and VAT amount.
 6. Create the Payment: COD is `cod_pending`; online methods call the provider and return a redirect or invoice URL.
 7. Commit, then enqueue notifications.
@@ -114,7 +123,7 @@ As built (Batch 2.4, `src/modules/orders/internal/place-order.ts`):
 
 Order status and payment status are separate fields. Only `transitionOrder()` (orders module) changes Order status; each call writes a status-history row with actor and reason. Cancelling a COD Order sets its Payment to `unpaid`.
 
-Picking, as built (Batch 4.2, [ADR 0010](adr/0010-picking-and-substitutions.md)). The pick functions live in `orders`, which owns Order Lines and Substitutions; the `fulfilment` module in the map above starts with dispatch (Batch 4.3).
+Picking, as built (Batch 4.2, [ADR 0010](adr/0010-picking-and-substitutions.md)). The pick functions live in `orders`, which owns Order Lines and Substitutions; dispatch (Batch 4.3) lives there too. There is no `fulfilment` module.
 
 - `getPickList` returns an Order's lines in Category order (top-level, then sub-Category, then name) with the Substitution Preference, the chosen alternative and the Picker Note.
 - `recordPick` saves what was found: pieces, or a weighed pack's grams (0 is short; more than 10% over is refused).
@@ -193,7 +202,8 @@ As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)).
 
 ## 8. Payments
 
-- **Interface:** `PaymentProvider` with `createCheckout`, `expireCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the one new Orders pay through. `fake` is a stand-in for development and the local e2e build only (refused on a real domain): its hosted checkout is `/dev/pay/[ref]`, whose Pay button sends a signed webhook.
+- **Interface:** `PaymentProvider` with `createCheckout`, `expireCheckout`, `capture`, `refund`, `verifyWebhook`, `parseEvent`. The PayMongo adapter implements it ([ADR 0003](adr/0003-payment-provider-interface.md)); `PAYMENT_PROVIDER` names the one new Orders pay through. `fake` is a stand-in for development and the local e2e build only (refused on a real domain): its hosted checkout is `/dev/pay/[ref]`, whose Pay button sends a signed webhook. `capture` (taking a card hold) is implemented but never called: there are no card holds (ADR 0008).
+- **Leftovers from the card-hold plan:** the `authorised` payment status and `orders.authorised_cents` are in the schema, but nothing sets them.
 - **Webhooks** hit `/api/webhooks/[provider]`. The handler verifies the signature, records the raw event in `payment_events` with a unique constraint on the provider event id, then applies it. A duplicate event is acknowledged and ignored. The handler never trusts amounts from the browser return URL; the webhook (or a provider fetch) is the source of truth.
 - **Online checkout, as built (Batch 3.2):**
   - `placeOrder` holds stock and the Slot as `pending_payment` with an `unpaid` Payment; no notice yet. The COD limits do not apply.
@@ -205,7 +215,7 @@ As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)).
   - Money for an Order no longer waiting is recorded `late` and logged as a refund owed (refunds: Batch 3.3).
   - Dependencies: `orders` also calls `payments` (close a checkout) and `cart` (`returnLinesToCart`).
 - **Cash on delivery:** the Rider records collected cash at delivery; Dispatch reconciles per Rider per day. As built (Batch 4.3, [ADR 0011](adr/0011-dispatch-pin-and-cash.md)): `completeDelivery` records the cash in the delivery's transaction (`payments.recordCodCollected`: `cod_collected`, `captured_cents`, and `collected_note` when it differs from the Final Total). `/admin/cash` lists each Rider's recorded cash for a Manila date; the Dispatcher's count is a `cash_handovers` row, one per Rider per day, and a shortfall needs a note.
-- **Weighed items** ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)): every online method, cards included, charges the estimate; there are no card holds. On the move to `picked`, `transitionOrder` sets the Order's `final_total_cents` from `pricing.priceFinal`: each line by what was packed (weight, or pieces picked), never above its checkout amount, so a heavier pick is on Hoshimono. The Delivery Fee and discount stay. Paid online, the difference is refunded in one go; cash on delivery, the Final Total is what the Rider collects. Picker tolerance stays plus or minus 10% of ordered weight.
+- **Weighed items** ([ADR 0008](adr/0008-weighed-items-online-and-refunds.md)): every online method, cards included, charges the estimate; there are no card holds. On the move to `picked`, `transitionOrder` sets the Order's `final_total_cents` from `pricing.priceFinal`: each line by what was packed (weight, or pieces picked), never above its checkout amount, so a heavier pick is on Hoshimono. The Delivery Fee and discount stay. Paid online, the difference is refunded in one go; cash on delivery, the Final Total is what the Rider collects. A Picker may pack up to 10% over the ordered weight (`recordPick` refuses more); a lighter pack of any weight is accepted and charged by its weight.
 - **Refunds** (ADR 0008): `payments.refundOrderPayment` records a `refunds` row in the caller's transaction (one per Payment and reason: `cancelled`, `picked`, `late_payment`), raises `refunded_cents` (a database check keeps it within `captured_cents`) and queues `payment.refund`. The job (`sendRefund`) claims the row (`pending` to `sending`), calls the provider with the payment id from the paid webhook (`payments.payment_ref`), and marks it `sent`, then emails and texts the Customer once. A clear refusal (a 4xx) goes back to `pending` and the job retries; no clear answer, or a row found still `sending`, becomes `needs_review` and is never resent. Triggers: cancelling a paid Order (`transitionOrder`), money arriving after cancellation (`handleWebhook`'s late path), and `picked`. Cancelling from the tracking page runs the job at once (`after`); the cron tick is the safety net.
 - Card data never touches our servers; use hosted checkout or provider-hosted fields.
 
@@ -235,19 +245,28 @@ The index narrows candidates first (any one word hits the Product or its Categor
 
 ## 11. Background work
 
-No queue service in the MVP. A `jobs` table plus a cron endpoint called every minute by the host handles: expiring Slot holds and unpaid Orders, retrying notifications, releasing stale reservations, sending abandoned-cart nudges (V1). Jobs are idempotent and lock rows with `FOR UPDATE SKIP LOCKED`. Move to a managed queue only when jobs need fan-out or long runtimes.
+No queue service in the MVP. A `jobs` table plus a cron endpoint called every minute by the host handles: expiring Slot holds and unpaid Orders, retrying notifications and sending Cart Reminders. Stock reservations are never swept: one ends only when its Order is cancelled (released) or picked (taken off the shelf). Jobs are idempotent and lock rows with `FOR UPDATE SKIP LOCKED`. Move to a managed queue only when jobs need fan-out or long runtimes.
 
 As built (Batch 2.5):
 
 - `jobs` is an outbox. Work that must follow a commit is written in the same transaction (`placeOrder` enqueues `order.confirmed`), so a placed Order always gets its notice.
 - `runDueJobs` leases due rows with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)`, so overlapping runs never take the same job. Failures retry after 1, 4, 9 and 16 minutes, then stop with the last error kept.
-- `GET /api/cron/tick` needs `Authorization: Bearer <CRON_SECRET>` (Vercel Cron sends it). It purges lapsed Slot holds, cancels online Orders unpaid after 15 minutes, makes the next 7 days' Slots from the schedule (Batch 4.4), and runs due jobs. Checkout also starts a run with `after()` so notices go out at once.
+- `GET /api/cron/tick` needs `Authorization: Bearer <CRON_SECRET>` (Vercel Cron sends it; any other job name answers 404). It runs these steps in order, each on its own, so one failing does not stop the rest (a failed step makes the answer a 500 naming it):
+  1. Purge lapsed Slot Holds (`purgeExpiredHolds`).
+  2. Make the next 7 Manila days' Slots from the Slot Schedule (`ensureSlots`, Batch 4.4).
+  3. Cancel online Orders unpaid after 15 minutes (`expireUnpaidOrders`), which releases their stock and Slot place.
+  4. Queue Cart Reminders (`queueCartReminders`) and Stock Alerts (`queueStockAlerts`, Batch 5.2).
+  5. Run due jobs (`runDueJobs`): notices, refunds, Referral rewards.
+  6. Delete ended rate-limit windows (`purgeRateLimits`).
+  7. Delete guest Carts idle 30 days and Carts checked out over 30 days ago (`purgeIdleCarts`).
+  8. Delete jobs finished over 30 days ago (`purgeDoneJobs`).
+- Checkout also starts a job run with `after()` so notices go out at once.
 - `notifications` logs each sent message (unique per template, channel and Order), so a retried job sends only what is missing. Console providers only, until Resend and the SMS sender exist. Per-minute crons need a paid Vercel plan.
 
 ## 12. Identity and access
 
 - **Customers:** mobile OTP, email magic link, Google. Sessions are HTTP-only cookies.
-- **Staff:** email plus Google Workspace or passkey; roles `admin`, `merchandiser`, `content_editor`, `picker`, `dispatcher`, `rider`.
+- **Staff:** the same sign-in as Customers (email link, text code or Google, at `/sign-in`); there are no passkeys. An Admin adds a Staff row by email, and the first sign-in with that verified email links it. Roles `admin`, `merchandiser`, `content_editor`, `picker`, `dispatcher`, `rider`.
 - Authorisation is checked in two places: the page or Server Action (`requireCustomer`, `requireStaff` per operation) and data access (row ownership, every query filtered by the Customer). There is no route middleware layer: Next 16 pages render inside Suspense and each one checks on its own. A missing check in one layer must not expose data.
 - Rate-limit OTP sends, login and checkout creation per IP and per phone number.
 - Audit log for every admin write: who, what, before, after.
@@ -282,5 +301,5 @@ Environments: **local** (dev DB branch), **preview** (per pull request, own DB b
 
 - Microservices, Kubernetes, event buses, GraphQL, a headless commerce platform. Each solves a problem we do not have.
 - A custom payment form. Hosted checkout keeps card data out of scope.
-- Real-time everywhere. Order status updates by polling or server-sent events on the tracking page only.
+- Real-time everywhere. The tracking page (`/orders/[orderNo]`) does not poll: it shows the Order as of the last load. Only the pay page (`/checkout/pay/[orderNo]`) refreshes itself, every 3 seconds for 2 minutes, while it waits for the payment webhook.
 - A native mobile app. The PWA covers MVP and V1. If one is built later it will be Flutter on a versioned JSON API; the frozen plan is in [concepts/flutter-mobile](concepts/flutter-mobile/README.md).

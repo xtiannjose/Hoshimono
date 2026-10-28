@@ -147,6 +147,32 @@ export const en = {
     orders: "Your orders",
     contact: "Still stuck? Email us at",
   },
+  // Page chrome only: the policies themselves are English on every page.
+  legal: {
+    label: "Policies",
+    updated: (date: string) => `Last updated ${date}`,
+    englishOnly: "",
+    privacy: {
+      title: "Privacy Policy",
+      description:
+        "What personal data Hoshimono collects, why, who receives it, how long we keep it and your rights.",
+    },
+    terms: {
+      title: "Terms of Use and Sale",
+      description:
+        "The terms for using Hoshimono and buying groceries for delivery in Metro Manila.",
+    },
+    refunds: {
+      title: "Refunds and Returns",
+      description:
+        "Cancelling, items sold by weight, substitutions, Freshness Claims and missed deliveries at Hoshimono.",
+    },
+    business: {
+      title: "Tax and Business Information",
+      description:
+        "Hoshimono's registered business details, tax status and receipts.",
+    },
+  },
   listing: {
     notFound: "Category not found",
     description: (name: string) =>

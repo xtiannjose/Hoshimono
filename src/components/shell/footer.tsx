@@ -14,7 +14,7 @@ import { MESSAGES } from "@/i18n/messages";
 const LINK = "inline-flex min-h-11 items-center font-semibold hover:underline";
 
 export function Footer({ lang }: { lang: Lang }) {
-  const t = MESSAGES[lang].shell;
+  const { shell: t, legal } = MESSAGES[lang];
   return (
     // Room below the last links for the phone's floating Cart bar.
     <footer className="bg-surface-2 mt-24 print:hidden max-md:[body:has([data-cart-bar])_&]:pb-[calc(88px+env(safe-area-inset-bottom))]">
@@ -40,6 +40,23 @@ export function Footer({ lang }: { lang: Lang }) {
             <LanguageSwitch long className={LINK} />
           </Suspense>
           <InstallButton className={LINK} />
+        </nav>
+        <nav
+          aria-label={legal.label}
+          className="type-small text-muted-foreground flex flex-wrap gap-x-6"
+        >
+          <Link href="/privacy" className={LINK}>
+            {legal.privacy.title}
+          </Link>
+          <Link href="/terms" className={LINK}>
+            {legal.terms.title}
+          </Link>
+          <Link href="/refunds" className={LINK}>
+            {legal.refunds.title}
+          </Link>
+          <Link href="/business-info" className={LINK}>
+            {legal.business.title}
+          </Link>
         </nav>
       </div>
     </footer>

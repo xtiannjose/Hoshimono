@@ -24,3 +24,5 @@ Batch 4.2 builds the Picker's view and Substitutions (PRD ADM-6, CRT-3). The PRD
 - The Picker may wait up to 10 minutes for an answer before finishing an Order; they pick the other Orders meanwhile.
 - Stock: the substitute is taken from the shelf but not yet deducted from stock; stock movements for picked and substituted items come with Batch 4.4 (stock receipts and adjustments).
 - A Picker can be over by at most 10% on a weighed line (docs/03 section 8); a heavier pack must be repacked.
+
+Note, 2026-10-28: the stock consequence above was superseded by [ADR 0012](0012-stock-slots-reports-receipts.md). Since Batch 4.4, `pickStock` takes an accepted substitute off the shelf count when the Order moves to `picked`; a refused one stays on the shelf.
