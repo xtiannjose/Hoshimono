@@ -524,7 +524,6 @@ describe("payment window", () => {
         expired.push(ref);
         return answer;
       },
-      capture: async () => {},
       refund: async () => ({ ok: true, refundRef: "ref_unused" }),
       verifyWebhook: () => false,
       parseEvent: () => {

@@ -118,7 +118,7 @@ describe("priceCart", () => {
     expect(priced.belowMinimumByCents).toBe(0);
   });
 
-  it("totals Weighed Products separately for the card hold and the weight note", () => {
+  it("totals Weighed Products separately for the weight note", () => {
     const priced = priceCart(
       [
         line({

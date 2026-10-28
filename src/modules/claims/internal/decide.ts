@@ -170,6 +170,7 @@ export async function getClaimForStaff(claimId: string) {
       decidedAt: true,
       decidedBy: { select: { name: true } },
       voucher: { select: { code: true } },
+      refund: { select: { amountCents: true } },
       orderLine: {
         select: {
           nameSnapshot: true,

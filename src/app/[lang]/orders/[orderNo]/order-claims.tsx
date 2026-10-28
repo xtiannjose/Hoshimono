@@ -46,14 +46,19 @@ export async function OrderClaims({
                   {t.statuses[c.status]}
                 </Tag>
               </span>
-              {c.status === "approved" && (
+              {c.status === "approved" && c.refund && (
                 <span className="text-sm">
-                  {c.payback === "refund"
-                    ? t.refunded(formatMoney(c.resolvedCents ?? 0))
-                    : t.credited(
-                        formatMoney(c.resolvedCents ?? 0),
-                        c.voucher?.code ?? ""
-                      )}
+                  {t.refunded(formatMoney(c.refund.amountCents))}
+                </span>
+              )}
+              {c.status === "approved" && c.voucher && (
+                <span className="text-sm">
+                  {t.credited(
+                    formatMoney(
+                      (c.resolvedCents ?? 0) - (c.refund?.amountCents ?? 0)
+                    ),
+                    c.voucher.code
+                  )}
                 </span>
               )}
               {c.decisionNote && (

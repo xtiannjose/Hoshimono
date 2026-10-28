@@ -597,7 +597,6 @@ describe("startCheckout", () => {
         expired.push(ref);
         return "expired";
       },
-      capture: async () => {},
       refund: async () => ({ ok: true, refundRef: "ref_unused" }),
       verifyWebhook: () => false,
       parseEvent: () => {

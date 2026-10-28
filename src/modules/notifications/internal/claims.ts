@@ -14,11 +14,10 @@ export type ClaimNotice = {
   orderNo: string;
   product: string;
   approved: boolean;
-  /** Formatted, such as "₱115.00". */
-  amount: string;
-  /** How it comes back: a refund to GCash or card, or a Voucher. */
-  refundedTo: "GCash" | "your card" | null;
-  voucher: { code: string; until: string } | null;
+  /** Back to GCash or the card it was paid with; amounts formatted. */
+  refund: { amount: string; to: "GCash" | "your card" } | null;
+  /** The rest as a Voucher: all of it for a cash Order. */
+  voucher: { amount: string; code: string; until: string } | null;
   /** Why, when rejected or cut down. */
   note: string;
   orderUrl: string;
@@ -33,9 +32,14 @@ export async function sendClaimDecided(
   const what = notice.approved
     ? [
         `We approved your report on ${notice.product} (order ${notice.orderNo}).`,
-        notice.refundedTo
-          ? `We are refunding ${notice.amount} to ${notice.refundedTo}.`
-          : `Here is ${notice.amount} off your next order: use code ${notice.voucher?.code} until ${notice.voucher?.until}, no minimum spend.`,
+        ...(notice.refund
+          ? [`We are refunding ${notice.refund.amount} to ${notice.refund.to}.`]
+          : []),
+        ...(notice.voucher
+          ? [
+              `Here is ${notice.voucher.amount} off your next order: use code ${notice.voucher.code} until ${notice.voucher.until}, no minimum spend.`,
+            ]
+          : []),
         ...(notice.note ? [notice.note] : []),
       ]
     : [

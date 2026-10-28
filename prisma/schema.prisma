@@ -554,7 +554,6 @@ enum OrderStatus {
 
 enum PaymentStatus {
   unpaid
-  authorised
   paid
   partially_refunded
   refunded
@@ -669,7 +668,6 @@ model Order {
   deliveryFeeCents  Int                @map("delivery_fee_cents")
   vatCents          Int                @map("vat_cents")
   totalCents        Int                @map("total_cents")
-  authorisedCents   Int                @default(0) @map("authorised_cents")
   finalTotalCents   Int?               @map("final_total_cents")
   idempotencyKey    String             @unique @map("idempotency_key")
   placedAt          DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)

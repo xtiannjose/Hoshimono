@@ -43,8 +43,6 @@ export interface PaymentProvider {
    * provider will not: it is paid, or a payment is still going through.
    */
   expireCheckout(providerRef: string): Promise<"expired" | "refused">;
-  /** Take the final amount of a card hold (Weighed Products, Batch 3.3). */
-  capture(holdRef: string, amountCents: number): Promise<void>;
   /**
    * Return part or all of a completed payment. ok false: the provider said
    * no, nothing moved, and asking again later is safe. Throws when the

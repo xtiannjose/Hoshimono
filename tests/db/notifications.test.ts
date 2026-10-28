@@ -6,6 +6,7 @@ import { setLineQuantity } from "@/modules/cart";
 import { getDefaultAddress } from "@/modules/customers";
 import {
   sendDeliveryFailed,
+  sendClaimDecided,
   sendOrderConfirmed,
   sendOutForDelivery,
   sendRefundIssued,
@@ -206,6 +207,31 @@ describe("sendSubstitutionAsked", () => {
     expect(sms).toContain("by 3:42 PM");
     expect(sms).toContain("No reply means yes");
     expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
+  });
+});
+
+describe("sendClaimDecided", () => {
+  it("names both parts when a claim comes back partly refunded, partly as a Voucher", async () => {
+    const { sent, providers } = recorder();
+    await sendClaimDecided(
+      {
+        claimId: randomUUID(),
+        email: null,
+        phone: "+639171234567",
+        name: "Ligaya Dimaculangan",
+        orderNo: "SW-261002-TEST",
+        product: "Magnolia Fresh Milk",
+        approved: true,
+        refund: { amount: "₱80.00", to: "GCash" },
+        voucher: { amount: "₱35.00", code: "CREDIT-AB12", until: "Jan 26" },
+        note: "",
+        orderUrl: "http://localhost:3000/orders/SW-261002-TEST",
+      },
+      providers
+    );
+    expect(sent[0].text).toContain("refunding ₱80.00 to GCash");
+    expect(sent[0].text).toContain("₱35.00 off your next order");
+    expect(sent[0].text).toContain("CREDIT-AB12");
   });
 });
 

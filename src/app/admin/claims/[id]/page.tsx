@@ -127,11 +127,27 @@ async function Claim({ params }: { params: Props["params"] }) {
         <p className="rounded-card bg-muted p-4">
           {CLAIM_STATUS[claim.status]} by {claim.decidedBy?.name}
           {claim.decidedAt && `, ${formatDateTime(claim.decidedAt)}`}.{" "}
-          {claim.status === "approved" &&
-            `${formatMoney(claim.resolvedCents ?? 0)} ${claim.payback === "refund" ? "refunded" : `as Voucher ${claim.voucher?.code}`}.`}
+          {claim.status === "approved" && paidBack(claim)}
           {claim.decisionNote && ` Note: ${claim.decisionNote}`}
         </p>
       )}
     </section>
   );
+}
+
+/** How an approved claim came back: refunded, as a Voucher, or both. */
+function paidBack(claim: {
+  resolvedCents: number | null;
+  refund: { amountCents: number } | null;
+  voucher: { code: string } | null;
+}): string {
+  const refunded = claim.refund?.amountCents ?? 0;
+  const rest = (claim.resolvedCents ?? 0) - refunded;
+  return [
+    refunded > 0 && `${formatMoney(refunded)} refunded`,
+    claim.voucher && `${formatMoney(rest)} as Voucher ${claim.voucher.code}`,
+  ]
+    .filter(Boolean)
+    .join(" and ")
+    .concat(".");
 }

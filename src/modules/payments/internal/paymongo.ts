@@ -118,12 +118,6 @@ export function createPaymongo({
       }
     },
 
-    async capture(holdRef, amountCents) {
-      await post(`/v1/payment_intents/${holdRef}/capture`, {
-        amount: amountCents,
-      });
-    },
-
     async refund(paymentRef, amountCents, note) {
       try {
         const refund = await post<{ data: { id: string } }>("/v1/refunds", {

@@ -237,6 +237,7 @@ export async function listOrderClaims(orderId: string, customerId: string) {
       payback: true,
       decisionNote: true,
       voucher: { select: { code: true } },
+      refund: { select: { amountCents: true } },
       orderLine: { select: { nameSnapshot: true } },
     },
   });

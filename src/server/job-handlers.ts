@@ -47,6 +47,7 @@ export const jobHandlers: JobHandlers = {
     const claim = await getClaimNotice(String(payload.claimId));
     if (!claim) return;
     const method = claim.order.payments[0]?.method;
+    const refunded = claim.refund?.amountCents ?? 0;
     await sendClaimDecided({
       claimId: claim.id,
       email: claim.customer.email,
@@ -55,15 +56,20 @@ export const jobHandlers: JobHandlers = {
       orderNo: claim.order.orderNo,
       product: claim.orderLine.nameSnapshot,
       approved: claim.status === "approved",
-      amount: formatMoney(claim.resolvedCents ?? 0),
-      refundedTo:
-        claim.payback === "refund"
-          ? method === "gcash"
-            ? "GCash"
-            : "your card"
-          : null,
+      // Partly refunded when less was left of the payment; the rest is a
+      // Voucher.
+      refund: refunded
+        ? {
+            amount: formatMoney(refunded),
+            to: method === "gcash" ? "GCash" : "your card",
+          }
+        : null,
       voucher: claim.voucher
-        ? { code: claim.voucher.code, until: formatDate(claim.voucher.endsAt) }
+        ? {
+            amount: formatMoney((claim.resolvedCents ?? 0) - refunded),
+            code: claim.voucher.code,
+            until: formatDate(claim.voucher.endsAt),
+          }
         : null,
       note: claim.decisionNote,
       orderUrl: trackingUrl(claim.order.orderNo),

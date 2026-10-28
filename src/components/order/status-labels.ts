@@ -26,7 +26,6 @@ export const PAYMENT_METHOD_LABEL: Record<PaymentMethod, string> = {
 /** A Payment's status in words, for staff. */
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   unpaid: "Not paid",
-  authorised: "Held",
   paid: "Paid",
   partially_refunded: "Partly refunded",
   refunded: "Refunded",

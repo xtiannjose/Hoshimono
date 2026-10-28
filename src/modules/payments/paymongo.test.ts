@@ -122,18 +122,6 @@ describe("PayMongo adapter", () => {
     ).rejects.toThrow("PayMongo 502");
   });
 
-  it("captures the final amount of a card hold", async () => {
-    const { fetch, sent } = fakeFetch({ data: { id: "pi_123" } });
-    const paymongo = createPaymongo({ ...config, fetch });
-
-    await paymongo.capture("pi_123", 61000);
-
-    expect(sent[0].url).toBe(
-      "https://api.paymongo.com/v1/payment_intents/pi_123/capture"
-    );
-    expect(body(sent[0])).toEqual({ data: { attributes: { amount: 61000 } } });
-  });
-
   it("expires a Checkout Session, and reports PayMongo's refusal as refused", async () => {
     const ok = fakeFetch({ data: { id: "cs_abc123" } });
     expect(
@@ -175,8 +163,17 @@ describe("PayMongo adapter", () => {
     );
     const paymongo = createPaymongo({ ...config, fetch });
 
-    await expect(paymongo.capture("pi_123", 100)).rejects.toThrow(
-      "PayMongo 400 on /v1/payment_intents/pi_123/capture: amount cannot be less than 2000."
+    await expect(
+      paymongo.createCheckout({
+        reference: "SW-201026-0042",
+        description: "Hoshimono order SW-201026-0042",
+        amountCents: 100,
+        methods: ["gcash"],
+        successUrl: "https://hoshimono.ph/checkout/return?o=SW-201026-0042",
+        cancelUrl: "https://hoshimono.ph/checkout",
+      })
+    ).rejects.toThrow(
+      "PayMongo 400 on /v2/checkout_sessions: amount cannot be less than 2000."
     );
   });
 });
