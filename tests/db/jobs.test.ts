@@ -22,8 +22,8 @@ describe("runDueJobs", () => {
   it("runs due jobs once and marks them done", async () => {
     const seen: unknown[] = [];
     const handlers = { note: async (p: unknown) => void seen.push(p) };
-    await enqueueJob(appDb, "note", { n: 1 }, NOW);
-    await enqueueJob(appDb, "note", { n: 2 }, later(30));
+    await enqueueJob(appDb, "note", { n: 1 }, { runAt: NOW });
+    await enqueueJob(appDb, "note", { n: 2 }, { runAt: later(30) });
     expect(await runDueJobs(handlers, { now: NOW })).toEqual({
       done: 1,
       failed: 0,
@@ -37,7 +37,7 @@ describe("runDueJobs", () => {
   });
 
   it("retries a failing job later, keeps the error, and stops after the last try", async () => {
-    await enqueueJob(appDb, "flaky", {}, NOW);
+    await enqueueJob(appDb, "flaky", {}, { runAt: NOW });
     const fail = {
       flaky: async () => Promise.reject(new Error("SMS gateway down")),
     };
@@ -68,7 +68,8 @@ describe("runDueJobs", () => {
   });
 
   it("never runs a job twice when two cron calls overlap", async () => {
-    for (let n = 0; n < 10; n++) await enqueueJob(appDb, "count", { n }, NOW);
+    for (let n = 0; n < 10; n++)
+      await enqueueJob(appDb, "count", { n }, { runAt: NOW });
     let runs = 0;
     const handlers = {
       count: async () => {
@@ -84,18 +85,34 @@ describe("runDueJobs", () => {
   });
 
   it("fails a job whose kind has no handler", async () => {
-    await enqueueJob(appDb, "mystery", {}, NOW);
+    await enqueueJob(appDb, "mystery", {}, { runAt: NOW });
     expect(await runDueJobs({}, { now: NOW })).toEqual({ done: 0, failed: 1 });
     expect((await db.job.findFirstOrThrow()).lastError).toContain("No handler");
   });
 
   it("deletes finished jobs after 30 days", async () => {
-    await enqueueJob(appDb, "note", {}, NOW);
+    await enqueueJob(appDb, "note", {}, { runAt: NOW });
     await runDueJobs({ note: async () => {} }, { now: NOW });
-    await enqueueJob(appDb, "note", {}, later(10));
+    await enqueueJob(appDb, "note", {}, { runAt: later(10) });
     expect(await purgeDoneJobs(new Date(Date.now() + 29 * 86_400_000))).toBe(0);
     expect(await purgeDoneJobs(new Date(Date.now() + 31 * 86_400_000))).toBe(1);
     expect(await db.job.count()).toBe(1);
+  });
+});
+
+describe("priority", () => {
+  it("runs Order notices before reminders and alerts that came first", async () => {
+    await enqueueJob(appDb, "reminder", {}, { runAt: later(-5), low: true });
+    await enqueueJob(appDb, "notice", {}, { runAt: NOW });
+    const ran: string[] = [];
+    const record = (kind: string) => async () => {
+      ran.push(kind);
+    };
+    await runDueJobs(
+      { reminder: record("reminder"), notice: record("notice") },
+      { now: NOW, limit: 1 }
+    );
+    expect(ran).toEqual(["notice"]);
   });
 });
 

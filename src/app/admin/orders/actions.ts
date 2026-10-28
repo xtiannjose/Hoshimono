@@ -11,6 +11,7 @@ import { recordAudits, requireStaff } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
 import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney, parseMoney } from "@/lib/money";
+import { setCustomerBlocked } from "@/modules/customers";
 import { sendStaffMessage, sendVoucherGiven } from "@/modules/notifications";
 import {
   addOrderNote,
@@ -389,4 +390,33 @@ export async function changeAddressAction(
   ]);
   refresh();
   return { errors: {}, saved: true };
+}
+
+/**
+ * Block the Order's Customer from placing Orders, or unblock them
+ * (docs/security-review.md, M1). Their Orders already placed go on.
+ */
+export async function blockCustomerAction(
+  orderId: string,
+  orderNo: string,
+  block: boolean
+): Promise<void> {
+  const staff = await requireStaff("refunds", `/admin/orders/${orderNo}`);
+  const order = await getOrderForNotice(orderId);
+  if (!order) return;
+  await setCustomerBlocked(order.customerId, block);
+  await addOrderNote(
+    orderId,
+    staff.id,
+    block ? "Blocked the Customer from ordering." : "Unblocked the Customer."
+  );
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: block ? "customer_blocked" : "customer_unblocked",
+      entity: "customer",
+      entityId: order.customerId,
+    },
+  ]);
+  refresh();
 }

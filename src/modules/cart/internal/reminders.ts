@@ -38,7 +38,7 @@ export async function queueCartReminders(now = new Date()): Promise<number> {
       FOR UPDATE OF c SKIP LOCKED`;
     for (const { id } of due) {
       await tx.cart.update({ where: { id }, data: { remindedAt: now } });
-      await enqueueJob(tx, CART_REMINDER_JOB, { cartId: id });
+      await enqueueJob(tx, CART_REMINDER_JOB, { cartId: id }, { low: true });
     }
     return due.length;
   });

@@ -457,6 +457,8 @@ export const fil: Messages = {
         "Nagbago ang cart mo sa ibang tab. Pakicheck at i-order ulit.",
       too_many_open_orders:
         "Marami ka pang order na papunta. Hintayin munang dumating ang isa, o mag-cancel ng isa.",
+      blocked:
+        "Hindi kami makatanggap ng order mula sa account na ito. Makipag-ugnayan sa amin, please.",
       unpaid_order_waiting:
         "May order ka pang naghihintay ng bayad. Bayaran muna ito, o bumalik sa cart mula roon.",
       too_many_items: (limit) =>

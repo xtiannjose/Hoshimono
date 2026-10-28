@@ -16,7 +16,13 @@ export type {
   AddressView,
   SaveAddressResult,
 } from "./internal/addresses";
-export { getProfile, setMarketingOptIn, updateName } from "./internal/profile";
+export {
+  getProfile,
+  isCustomerBlocked,
+  setCustomerBlocked,
+  setMarketingOptIn,
+  updateName,
+} from "./internal/profile";
 export type { Profile } from "./internal/profile";
 export { customerForUser } from "./internal/link";
 export type { AuthUserInfo } from "./internal/link";

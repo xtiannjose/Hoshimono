@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { OrderDetails } from "@/components/order/order-details";
+import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS_LABEL,
@@ -21,6 +22,7 @@ import {
 } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
+import { blockCustomerAction } from "../actions";
 import {
   ChangeAddressForm,
   MoveForm,
@@ -131,6 +133,29 @@ async function Order({ params }: { params: Props["params"] }) {
               </span>
             </p>
             {order.riderNotes && <p>Note for the Rider: {order.riderNotes}</p>}
+            {order.customer.blocked && (
+              <p className="text-err font-semibold">
+                Blocked: this account can place no Orders.
+              </p>
+            )}
+            {money && (
+              <form>
+                <Button
+                  formAction={blockCustomerAction.bind(
+                    null,
+                    order.id,
+                    order.orderNo,
+                    !order.customer.blocked
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  {order.customer.blocked
+                    ? "Unblock this Customer"
+                    : "Block this Customer from ordering"}
+                </Button>
+              </form>
+            )}
           </section>
           <OrderDetails order={order} />
           <section aria-labelledby="h-history" className={PANEL}>

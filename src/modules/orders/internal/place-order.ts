@@ -14,7 +14,7 @@ import {
   readCartVersion,
   type VoucherProblem,
 } from "@/modules/cart";
-import { getAddress } from "@/modules/customers";
+import { getAddress, isCustomerBlocked } from "@/modules/customers";
 import { bookSlot, onlinePaused, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
@@ -74,6 +74,7 @@ export type PlaceOrderResult =
         | "too_many_open_orders"
         | "unpaid_order_waiting"
         | "online_paused"
+        | "blocked"
         | "cart_changed";
     };
 
@@ -149,6 +150,9 @@ export async function placeOrder(
 
   const earlier = await replay(order.customerId, order.idempotencyKey);
   if (earlier) return earlier;
+  if (await isCustomerBlocked(order.customerId)) {
+    return { ok: false, reason: "blocked" };
+  }
 
   const address = await getAddress(order.customerId, order.addressId);
   if (!address) return { ok: false, reason: "address_not_found" };

@@ -455,6 +455,7 @@ export const en = {
         "Your cart changed in another tab. Please check it and place your order again.",
       too_many_open_orders:
         "You already have several orders on the way. Please wait for one to arrive, or cancel one first.",
+      blocked: "We can't take orders from this account. Please contact us.",
       unpaid_order_waiting:
         "You have an order waiting for payment. Please pay for it, or go back to your cart from it, first.",
       too_many_items: (limit: number) =>

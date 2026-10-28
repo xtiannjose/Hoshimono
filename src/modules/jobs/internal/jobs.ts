@@ -12,14 +12,18 @@ const DONE_JOB_RETENTION_DAYS = 30;
 /**
  * Queue work to run after the current transaction commits. Pass the
  * transaction client so the job exists only if the change it follows does.
+ * `low`: marketing (reminders, alerts) waits behind Order notices when the
+ * queue is long.
  */
 export async function enqueueJob(
   client: Client,
   kind: string,
   payload: Prisma.InputJsonObject,
-  runAt = new Date()
+  { runAt = new Date(), low = false }: { runAt?: Date; low?: boolean } = {}
 ): Promise<void> {
-  await client.job.create({ data: { kind, payload, runAt } });
+  await client.job.create({
+    data: { kind, payload, runAt, priority: low ? -1 : 0 },
+  });
 }
 
 export type JobHandlers = Record<
@@ -46,7 +50,7 @@ export async function runDueJobs(
     WHERE id IN (
       SELECT id FROM jobs
       WHERE done_at IS NULL AND run_at <= ${now} AND attempts < ${MAX_ATTEMPTS}
-      ORDER BY run_at
+      ORDER BY priority DESC, run_at
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED)
     RETURNING id, kind, payload, attempts`;

@@ -78,11 +78,16 @@ export async function queueStockAlerts(
       FOR UPDATE OF a SKIP LOCKED`;
     for (const a of due) {
       await tx.stockAlert.delete({ where: { id: a.id } });
-      await enqueueJob(tx, STOCK_ALERT_JOB, {
-        alertId: a.id,
-        customerId: a.customer_id,
-        productId: a.product_id,
-      });
+      await enqueueJob(
+        tx,
+        STOCK_ALERT_JOB,
+        {
+          alertId: a.id,
+          customerId: a.customer_id,
+          productId: a.product_id,
+        },
+        { low: true }
+      );
     }
     return due.length;
   });

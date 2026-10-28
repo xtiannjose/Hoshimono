@@ -55,3 +55,26 @@ export async function setMarketingOptIn(
     data: { marketingOptIn: on },
   });
 }
+
+/**
+ * Staff block an account that abuses the shop (docs/security-review.md,
+ * M1): it can place no Orders until unblocked. Sign-in still works, so the
+ * Customer sees their Orders and why.
+ */
+export async function setCustomerBlocked(
+  customerId: string,
+  blocked: boolean
+): Promise<void> {
+  await db.customer.update({
+    where: { id: customerId },
+    data: { blockedAt: blocked ? new Date() : null },
+  });
+}
+
+export async function isCustomerBlocked(customerId: string): Promise<boolean> {
+  const customer = await db.customer.findUnique({
+    where: { id: customerId },
+    select: { blockedAt: true },
+  });
+  return !!customer?.blockedAt;
+}

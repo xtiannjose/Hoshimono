@@ -918,6 +918,8 @@ model Customer {
   email          String?             @unique
   name           String
   marketingOptIn Boolean             @default(false) @map("marketing_opt_in")
+  /// Set by staff for an account that abuses the shop: it can place no Orders.
+  blockedAt      DateTime?           @map("blocked_at") @db.Timestamptz(3)
   // Referrals (ADR 0015): their own code, made when first needed, and who
   // invited them.
   referralCode   String?             @unique @map("referral_code")
@@ -1098,6 +1100,8 @@ model Job {
   id        String    @id @default(uuid(7)) @db.Uuid
   kind      String
   payload   Json      @default("{}")
+  /// Higher runs first: Order notices (0) before reminders and alerts (-1).
+  priority  Int       @default(0) @db.SmallInt
   runAt     DateTime  @default(now()) @map("run_at") @db.Timestamptz(3)
   attempts  Int       @default(0)
   lastError String?   @map("last_error")

@@ -10,7 +10,7 @@ import {
   setSubstitution,
   type CartOwner,
 } from "@/modules/cart";
-import { getDefaultAddress } from "@/modules/customers";
+import { getDefaultAddress, setCustomerBlocked } from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import { jobHandlers } from "@/server/job-handlers";
 import {
@@ -418,6 +418,17 @@ describe("limits against holding stock", () => {
       await placeOrder(await checkout(ligaya, { paymentMethod: "card" }))
     ).toEqual({ ok: false, reason: "unpaid_order_waiting" });
     // Cash on delivery is still open to them.
+    expect((await placeOrder(await checkout(ligaya))).ok).toBe(true);
+  });
+
+  it("refuses every Order from an account staff blocked", async () => {
+    await setCustomerBlocked(ligaya, true);
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(await placeOrder(await checkout(ligaya))).toEqual({
+      ok: false,
+      reason: "blocked",
+    });
+    await setCustomerBlocked(ligaya, false);
     expect((await placeOrder(await checkout(ligaya))).ok).toBe(true);
   });
 

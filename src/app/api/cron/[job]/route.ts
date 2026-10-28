@@ -9,6 +9,7 @@ import {
   purgeExpiredHolds,
 } from "@/modules/delivery";
 import { purgeIdleCarts, queueCartReminders } from "@/modules/cart";
+import { purgeEndedSignIns } from "@/modules/identity";
 import { queueStockAlerts } from "@/modules/inventory";
 import {
   CRON_TICK,
@@ -76,6 +77,7 @@ export async function GET(
     ["rateLimits", () => purgeRateLimits(now)],
     ["carts", () => purgeIdleCarts(now)],
     ["doneJobs", () => purgeDoneJobs(now)],
+    ["signIns", () => purgeEndedSignIns(now)],
     // For staff to see the cron still runs (/admin/system).
     ["heartbeat", () => recordHeartbeat(CRON_TICK, now)],
   ];

@@ -94,7 +94,12 @@ export async function listOrdersForStaff({
 }
 
 export type StaffOrderDetail = OrderDetail & {
-  customer: { name: string; email: string | null; phone: string | null };
+  customer: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    blocked: boolean;
+  };
   /** Oldest first, with who moved the Order and why. */
   history: {
     from: OrderStatus | null;
@@ -131,7 +136,9 @@ export async function getOrderForStaff(
     select: {
       customerId: true,
       hubId: true,
-      customer: { select: { name: true, email: true, phone: true } },
+      customer: {
+        select: { name: true, email: true, phone: true, blockedAt: true },
+      },
       statusEvents: {
         orderBy: { at: "asc" },
         select: {
@@ -182,6 +189,7 @@ export async function getOrderForStaff(
       name: order.customer.name ?? "",
       email: order.customer.email,
       phone: order.customer.phone,
+      blocked: !!order.customer.blockedAt,
     },
     history: order.statusEvents.map((e) => ({
       from: e.from,
