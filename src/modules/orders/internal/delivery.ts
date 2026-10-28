@@ -252,6 +252,8 @@ export type DeliveryStop = {
   };
   /** Cash to collect; 0 when paid online. */
   dueCents: number;
+  /** What staff noted on the Order, oldest first: the Rider sees it too. */
+  notes: string[];
 };
 
 /** The Orders a Rider is carrying, by Slot time. */
@@ -276,6 +278,7 @@ export async function listDeliveriesForRider(
         orderBy: { createdAt: "desc" },
         select: { method: true },
       },
+      notes: { orderBy: { createdAt: "asc" }, select: { text: true } },
     },
   });
   return orders.map((o) => ({
@@ -288,6 +291,7 @@ export async function listDeliveriesForRider(
     address: o.addressSnapshot as DeliveryStop["address"],
     dueCents:
       o.payments[0]?.method === "cod" ? (o.finalTotalCents ?? o.totalCents) : 0,
+    notes: o.notes.map((n) => n.text),
   }));
 }
 

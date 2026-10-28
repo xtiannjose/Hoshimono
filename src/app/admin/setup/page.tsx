@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { formatSlot, WEEKDAYS } from "@/lib/dates";
+import { formatSlot, toManilaInput, WEEKDAYS } from "@/lib/dates";
 import {
   getDefaultHubId,
+  getHubStatus,
   listSlotTemplates,
   listUpcomingSlots,
   listZonesForAdmin,
@@ -12,6 +13,8 @@ import {
 import { AdminSkeleton, StaffGate } from "../staff-gate";
 import {
   AddWindowForm,
+  CloseSlotsForm,
+  HubStatusForm,
   SlotCapacityForm,
   WindowForm,
   ZoneFeesForm,
@@ -38,10 +41,11 @@ export default function SetupPage() {
 /** Zone fees, the weekly Slot schedule and the next week's Slots (ADR 0012). */
 async function Setup() {
   const hubId = await getDefaultHubId();
-  const [zones, templates, slots] = await Promise.all([
+  const [zones, templates, slots, status] = await Promise.all([
     listZonesForAdmin(),
     hubId ? listSlotTemplates(hubId) : [],
     hubId ? listUpcomingSlots(hubId) : [],
+    hubId ? getHubStatus(hubId) : null,
   ]);
   return (
     <section className="grid max-w-5xl gap-10">
@@ -77,6 +81,25 @@ async function Setup() {
         </ul>
       </section>
 
+      {status && (
+        <section aria-labelledby="h-hub" className="grid gap-4">
+          <h2 id="h-hub" className="type-h2">
+            Hub status
+          </h2>
+          <p className="text-muted-foreground max-w-2xl">
+            For a closure or a problem: a notice every shopper sees, cash on
+            delivery only, or whole days closed to new Orders. What to do step
+            by step is in the runbook.
+          </p>
+          <HubStatusForm
+            notice={status.notice ?? ""}
+            until={status.noticeUntil ? toManilaInput(status.noticeUntil) : ""}
+            onlinePaused={status.onlinePaused}
+          />
+          <h3 className="type-h3">Close whole days</h3>
+          <CloseSlotsForm />
+        </section>
+      )}
       <section aria-labelledby="h-schedule" className="grid gap-4">
         <h2 id="h-schedule" className="type-h2">
           Weekly Slot schedule

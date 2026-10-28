@@ -114,3 +114,54 @@ export async function jobsHealth(
   ]);
   return { behind, failed };
 }
+
+/** The heartbeat of the every-minute cron tick (/api/cron/tick). */
+export const CRON_TICK = "cron.tick";
+
+/** Something that runs on a schedule ran now, such as the cron tick. */
+export async function recordHeartbeat(
+  name: string,
+  at = new Date()
+): Promise<void> {
+  await db.heartbeat.upsert({
+    where: { name },
+    create: { name, at },
+    update: { at },
+  });
+}
+
+/** When it last ran, or null if never. */
+export async function lastHeartbeat(name: string): Promise<Date | null> {
+  return (await db.heartbeat.findUnique({ where: { name } }))?.at ?? null;
+}
+
+/**
+ * When the cron last ticked, and whether that is too long ago: it runs
+ * every minute, so five quiet minutes means it stopped.
+ */
+export async function cronStatus(
+  now = new Date()
+): Promise<{ lastAt: Date | null; stopped: boolean }> {
+  const lastAt = await lastHeartbeat(CRON_TICK);
+  return {
+    lastAt,
+    stopped: !lastAt || now.getTime() - lastAt.getTime() > 5 * 60_000,
+  };
+}
+
+/** Jobs not done yet, oldest first: waiting, retrying or given up. */
+export function listOpenJobs(limit = 50) {
+  return db.job.findMany({
+    where: { doneAt: null },
+    orderBy: { runAt: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      kind: true,
+      runAt: true,
+      attempts: true,
+      lastError: true,
+      createdAt: true,
+    },
+  });
+}

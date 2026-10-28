@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { manilaDate } from "@/lib/dates";
-import { db } from "@/lib/db";
+import { db, isRetryable } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { productName } from "@/lib/product-name";
 import {
@@ -15,7 +15,7 @@ import {
   type VoucherProblem,
 } from "@/modules/cart";
 import { getAddress } from "@/modules/customers";
-import { bookSlot, resolveZone } from "@/modules/delivery";
+import { bookSlot, onlinePaused, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import { createCodPayment, createOnlinePayment } from "@/modules/payments";
@@ -73,6 +73,7 @@ export type PlaceOrderResult =
         | "nothing_in_stock"
         | "too_many_open_orders"
         | "unpaid_order_waiting"
+        | "online_paused"
         | "cart_changed";
     };
 
@@ -128,17 +129,6 @@ async function replay(
 const isUniqueViolation = (error: unknown) =>
   (error as { code?: string }).code === "P2002";
 
-// Postgres gave up on the transaction (a deadlock or a write conflict):
-// nothing was saved, so trying again is safe.
-const isRetryable = (error: unknown) => {
-  const code = (error as { code?: string }).code;
-  return (
-    code === "P2034" ||
-    code === "40P01" ||
-    /deadlock detected|could not serialize/i.test(String(error))
-  );
-};
-
 /**
  * Turn the Customer's Cart into an Order (docs/03-ARCHITECTURE.md section 6).
  * Prices are recomputed here; nothing the browser sends is trusted except
@@ -164,6 +154,10 @@ export async function placeOrder(
   if (!address) return { ok: false, reason: "address_not_found" };
   const zone = await resolveZone(address);
   if (!zone) return { ok: false, reason: "out_of_zone" };
+  // The Hub turned GCash and card off for now (docs/runbook.md, 4a).
+  if (!cod && (await onlinePaused(zone.hubId))) {
+    return { ok: false, reason: "online_paused" };
+  }
 
   const owner = { customerId: order.customerId };
   const [cartId, cart] = await Promise.all([

@@ -1052,23 +1052,31 @@ After a restore, data written since the backup is gone. Before reopening:
 
 ---
 
+## Tools added on 28 Oct 2026
+
+Some steps above were written before these existed; where a step says "not possible in the app yet", check here first.
+
+| Situation                                                                                       | Where                                                                            | What it does                                                                                                                          |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| PayMongo shows an Order paid, but it still waits ([1a](#1a-paid-but-still-waiting-for-payment)) | Order page, **Paid in PayMongo?** (Admins)                                       | Records the payment the way a verified webhook would: the Order is confirmed, or, if it had closed, the money goes back as a refund   |
+| A refund was paid back some other way ([2c](#2c-a-refund-in-refunds-to-check))                  | **Refunds to check**, "It went through", with how it was paid in the box         | Clears it from the list                                                                                                               |
+| Make up for a bad Order                                                                         | Order page, **Customer contact**, Voucher (Admins)                               | A personal Voucher up to ₱2,000, and a text and email with the code                                                                   |
+| Tell the Customer something                                                                     | Order page, **Text the Customer**                                                | Texts their number on the Order; the text goes in the notes                                                                           |
+| Cancel an Order packed and ready                                                                | Order page, **Next step**, Cancel                                                | What was picked goes back on the shelf; the Customer is told; a paid Order is refunded                                                |
+| Deliver later, or to another address in the same Zone                                           | Order page, **Delivery**                                                         | Moves it to another Slot with room (the Customer gets the new time), or to another saved address                                      |
+| A Rider cannot finish the round                                                                 | **Dispatch**, **Out now**, "Hand to another Rider"                               | The other Rider takes it; the PIN stays; the Customer is told who is coming                                                           |
+| The Customer answered a substitute by phone                                                     | **Picking**, the line's "They answered by phone?"                                | Same as their answer by link                                                                                                          |
+| Cash recorded wrong                                                                             | **Cash**: "Correct one Order's cash" before the count, "Correct the count" after | Saves the right amount and why                                                                                                        |
+| Close the Hub, or take cash only                                                                | **Zones and Slots**, **Hub status** (Admins)                                     | A notice on every shop page until a time you choose; GCash and card off (unpaid Orders still expire); whole days closed to new Orders |
+| Is the cron running? What failed?                                                               | **System** (Admins)                                                              | When the cron last ran, every job not done with its last error, and the newest payment events                                         |
+
 ## Things the app cannot do yet
 
 Listed where they come up above. Collected here for the backlog:
 
-1. Confirm, cancel or refund an Order stuck "Waiting for payment" with money taken (amount mismatch, or a webhook that never arrives). It needs a database change.
-2. Show the Payment Event ledger, the jobs outbox or the last cron run to staff.
-3. Show the PayMongo checkout and payment ids on the Order page.
-4. Record a refund made outside the app, add an extra refund, or mark a refund "paid another way".
-5. Move an Order to another Slot.
-6. Cancel an Order that is Ready for the Rider, or On the way, without a failed delivery first.
-7. Hand an On the way Order to another Rider.
-8. Message a Customer from the admin. Also, cancelling a cash Order sends the Customer nothing.
-9. Close the Hub in one step, or show Customers a notice that it is closed.
-10. Record a Customer's answer to a Substitution given by phone.
-11. Correct a recorded cash count, or the cash a Rider recorded at the door.
-12. Reopen a decided Freshness Claim, file one for a Customer, or make a one-Customer Voucher from the admin.
-13. Set a shelf count below what is reserved.
-14. Change an Order's address. Also, Riders cannot see Order Notes.
-15. Pause GCash and card without also stopping the Payment Window job.
-16. Error alerts: Sentry is not wired in. Until it is, the alerting check (`/api/health?deep=1`, see "Where the technical person looks") names failed jobs, a stopped cron, unmatched payment events, refunds to check and full Slots.
+1. Show the PayMongo checkout and payment ids on the Order page.
+2. Cancel an Order that is On the way without a failed delivery first.
+3. Reopen a decided Freshness Claim, or file one for a Customer.
+4. Set a shelf count below what is reserved.
+5. Change an Order's address to one in another Zone (cancel, and the Customer orders again).
+6. Error alerts: Sentry is not wired in. Until it is, the alerting check (`/api/health?deep=1`, see "Where the technical person looks") names failed jobs, a stopped cron, unmatched payment events, refunds to check and full Slots.

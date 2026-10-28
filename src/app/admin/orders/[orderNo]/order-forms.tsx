@@ -8,7 +8,9 @@ import type { OrderStatus } from "@/generated/prisma/enums";
 
 import {
   addNoteAction,
+  changeAddressAction,
   giveVoucherAction,
+  moveSlotAction,
   moveOrderAction,
   recordPaymentAction,
   textCustomerAction,
@@ -238,5 +240,94 @@ export function VoucherForm({
       </Button>
       <Result state={state} done="Given, and the Customer is told." />
     </form>
+  );
+}
+
+type Choice = { id: string; label: string };
+
+/** One select and a button: a new Slot, or another saved address. */
+function ChoiceForm({
+  action,
+  name,
+  label,
+  choices,
+  submit,
+  done,
+}: {
+  action: (prev: OrderFormState, fd: FormData) => Promise<OrderFormState>;
+  name: string;
+  label: string;
+  choices: Choice[];
+  submit: string;
+  done: string;
+}) {
+  const [state, run, pending] = useActionState(action, initial);
+  if (choices.length === 0) return null;
+  return (
+    <form key={formKey(state)} action={run} className="grid gap-2">
+      <label className="grid gap-1 text-sm font-semibold">
+        {label}
+        <select name={name} className={FIELD}>
+          {choices.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={pending}
+        className="justify-self-start"
+      >
+        {submit}
+      </Button>
+      <Result state={state} done={done} />
+    </form>
+  );
+}
+
+/** Another Slot with room; the Customer gets a text with the new time. */
+export function MoveSlotForm({
+  orderId,
+  orderNo,
+  slots,
+}: {
+  orderId: string;
+  orderNo: string;
+  slots: Choice[];
+}) {
+  return (
+    <ChoiceForm
+      action={moveSlotAction.bind(null, orderId, orderNo)}
+      name="slotId"
+      label="Deliver in another Slot"
+      choices={slots}
+      submit="Move it"
+      done="Moved, and the Customer is told."
+    />
+  );
+}
+
+/** Another of the Customer's saved addresses in the same Zone. */
+export function ChangeAddressForm({
+  orderId,
+  orderNo,
+  addresses,
+}: {
+  orderId: string;
+  orderNo: string;
+  addresses: Choice[];
+}) {
+  return (
+    <ChoiceForm
+      action={changeAddressAction.bind(null, orderId, orderNo)}
+      name="addressId"
+      label="Deliver to another of their addresses"
+      choices={addresses}
+      submit="Change the address"
+      done="Changed."
+    />
   );
 }

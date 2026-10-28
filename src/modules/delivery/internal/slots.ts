@@ -211,3 +211,19 @@ export async function hasOpenSlot(
     ) AS open`;
   return open;
 }
+
+/**
+ * Close the Hub for a stretch (a typhoon, a power cut): every Slot starting
+ * between `from` and `to` takes no more Orders; those already booked keep
+ * their place. Returns how many Slots were closed.
+ */
+export async function closeSlots(
+  hubId: string,
+  from: Date,
+  to: Date
+): Promise<number> {
+  return db.$executeRaw`
+    UPDATE slots SET capacity = booked, updated_at = now()
+    WHERE hub_id = ${hubId}::uuid AND capacity > booked
+      AND starts_at >= ${from} AND starts_at < ${to}`;
+}

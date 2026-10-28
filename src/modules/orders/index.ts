@@ -63,3 +63,10 @@ export {
   hasOpenOrders,
   orderData,
 } from "./internal/privacy";
+export {
+  answerSubstitutionByPhone,
+  changeOrderAddress,
+  handOverOrder,
+  moveOrderSlot,
+} from "./internal/changes";
+export type { MoveResult } from "./internal/changes";

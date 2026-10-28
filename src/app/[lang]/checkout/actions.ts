@@ -80,6 +80,8 @@ function explain(
       return no.over_cod_limit(formatMoney(result.limitCents));
     case "too_many_items":
       return no.too_many_items(result.limit);
+    case "online_paused":
+      return t.checkout.onlineOff;
     case "voucher_unavailable":
       return no.voucher_unavailable(t.cart.notices[result.problem]);
     default:

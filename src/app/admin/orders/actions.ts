@@ -9,14 +9,16 @@ import { STOCK_TAG } from "@/app/_data/storefront";
 import type { OrderStatus } from "@/generated/prisma/enums";
 import { recordAudits, requireStaff } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
-import { formatDate, formatTime } from "@/lib/dates";
+import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney, parseMoney } from "@/lib/money";
 import { sendStaffMessage, sendVoucherGiven } from "@/modules/notifications";
 import {
   addOrderNote,
+  changeOrderAddress,
   confirmPaidOrder,
   finishPicking,
   getOrderForNotice,
+  moveOrderSlot,
   staffMoves,
   transitionOrder,
 } from "@/modules/orders";
@@ -296,6 +298,95 @@ export async function giveVoucherAction(
       },
     };
   }
+  refresh();
+  return { errors: {}, saved: true };
+}
+
+/** Deliver in another Slot; the Customer gets a text with the new time. */
+export async function moveSlotAction(
+  orderId: string,
+  orderNo: string,
+  _prev: OrderFormState,
+  fd: FormData
+): Promise<OrderFormState> {
+  const staff = await requireStaff("orders", `/admin/orders/${orderNo}`);
+  const slotId = String(fd.get("slotId") ?? "");
+  const moved = await moveOrderSlot(orderId, slotId);
+  if (!moved.ok) {
+    return {
+      errors: {
+        slotId:
+          moved.reason === "not_movable"
+            ? "This Order has left the Hub: it can't change Slot now."
+            : "That Slot is full or closed. Choose another.",
+      },
+    };
+  }
+  const when = formatSlot(moved.startsAt, moved.endsAt);
+  await addOrderNote(orderId, staff.id, `Moved to ${when}.`);
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "slot_moved",
+      entity: "order",
+      entityId: orderId,
+      after: { slotId },
+    },
+  ]);
+  const order = await getOrderForNotice(orderId);
+  if (order?.contactPhone) {
+    try {
+      await sendStaffMessage({
+        ref: `slot-moved:${orderId}:${slotId}`,
+        phone: order.contactPhone,
+        text: `Order ${order.orderNo} now arrives ${when}. Sorry for the change.`,
+      });
+    } catch (error) {
+      console.error("[orders] Slot move text not sent:", error);
+      refresh();
+      return {
+        errors: {
+          form: "Moved, but the text did not go out: tell the Customer.",
+        },
+      };
+    }
+  }
+  refresh();
+  return { errors: {}, saved: true };
+}
+
+/** Deliver to another of the Customer's saved addresses in the same Zone. */
+export async function changeAddressAction(
+  orderId: string,
+  orderNo: string,
+  _prev: OrderFormState,
+  fd: FormData
+): Promise<OrderFormState> {
+  const staff = await requireStaff("orders", `/admin/orders/${orderNo}`);
+  const addressId = String(fd.get("addressId") ?? "");
+  const result = await changeOrderAddress(orderId, addressId);
+  if (!result.ok) {
+    return {
+      errors: {
+        addressId:
+          result.reason === "other_zone"
+            ? "That address is in another Zone, with another fee: cancel and let the Customer order again."
+            : result.reason === "not_movable"
+              ? "This Order has left the Hub: it can't change address now."
+              : "Choose one of the Customer's addresses.",
+      },
+    };
+  }
+  await addOrderNote(orderId, staff.id, "Delivery address changed.");
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "address_changed",
+      entity: "order",
+      entityId: orderId,
+      after: { addressId },
+    },
+  ]);
   refresh();
   return { errors: {}, saved: true };
 }

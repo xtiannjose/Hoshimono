@@ -154,6 +154,10 @@ _Avoid_: Minimum spend, minimum order value, MOV
 A bookable delivery window at a Hub for a date, with a capacity of Orders. Customer copy says "delivery slot".
 _Avoid_: Timeslot, delivery window, appointment
 
+**Shop Notice**:
+A message staff set for a Hub that every shopper sees across the shop until a chosen time, such as a closure for a typhoon (docs/runbook.md, section 3).
+_Avoid_: Banner, announcement, alert
+
 **Slot Schedule**:
 A Hub's weekly pattern of delivery times (weekday, start, end, capacity) from which each date's Slots are made 7 days ahead. Admin copy calls one entry a "window" ([ADR 0012](docs/adr/0012-stock-slots-reports-receipts.md)).
 _Avoid_: Calling a schedule entry a Slot (a Slot is one date's window)

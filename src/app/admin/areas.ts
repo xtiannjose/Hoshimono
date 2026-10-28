@@ -51,6 +51,11 @@ export const AREA_LINKS: Record<
       label: "Zones and Slots",
       hint: "Delivery fees, the weekly Slot schedule, one Slot at a time",
     },
+    {
+      href: "/admin/system",
+      label: "System",
+      hint: "When the cron last ran, jobs waiting, payment events",
+    },
   ],
   orders: [
     {

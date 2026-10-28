@@ -7,10 +7,13 @@ import { Button } from "@/components/ui/button";
 
 import { FormMessage } from "../form-message";
 import {
+  correctCountAction,
+  correctOrderCashAction,
   countCashAction,
   deliveredAction,
   deliverWithoutPinAction,
   failedAction,
+  handOverAction,
   sendOutAction,
   type DispatchFormState,
 } from "./actions";
@@ -58,6 +61,48 @@ export function SendOutForm({
         <FormMessage state={state} />
       </div>
     </form>
+  );
+}
+
+/** Another Rider takes it on the road (a breakdown, a dead phone). */
+export function HandOverForm({
+  orderId,
+  riders,
+}: {
+  orderId: string;
+  riders: { id: string; name: string }[];
+}) {
+  const [state, action, pending] = useActionState(
+    handOverAction.bind(null, orderId),
+    initial
+  );
+  return (
+    <details className="text-sm">
+      <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+        Hand to another Rider
+      </summary>
+      <form action={action} className="flex flex-wrap items-end gap-2 pt-1">
+        <label className="grid gap-1 font-semibold">
+          New Rider
+          <select name="riderId" className={INLINE_FIELD} defaultValue="">
+            <option value="" disabled>
+              Choose a Rider
+            </option>
+            {riders.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <Button type="submit" variant="secondary" disabled={pending}>
+          Hand over
+        </Button>
+        <div className="basis-full">
+          <FormMessage state={state} />
+        </div>
+      </form>
+    </details>
   );
 }
 
@@ -254,5 +299,105 @@ export function CountCashForm({
         <FormMessage state={state} />
       </div>
     </form>
+  );
+}
+
+/** The day's count was wrong: the right amount, and why. */
+export function CorrectCountForm({
+  riderId,
+  day,
+}: {
+  riderId: string;
+  day: string;
+}) {
+  const [state, action, pending] = useActionState(
+    correctCountAction.bind(null, riderId, day),
+    initial
+  );
+  return (
+    <details className="text-sm">
+      <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+        Correct the count
+      </summary>
+      <form
+        key={formKey(state)}
+        action={action}
+        className="flex flex-wrap items-end gap-2 pt-1"
+      >
+        <label className="grid gap-1 font-semibold">
+          Cash counted (₱)
+          <input
+            name="counted"
+            inputMode="decimal"
+            required
+            className={`${INLINE_FIELD} w-36 tabular-nums`}
+          />
+        </label>
+        <label className="grid gap-1 font-semibold">
+          Why it changes
+          <input name="note" required className={`${INLINE_FIELD} w-64`} />
+        </label>
+        <Button type="submit" variant="secondary" disabled={pending}>
+          Save the correction
+        </Button>
+        <div className="basis-full">
+          <FormMessage state={state} />
+        </div>
+      </form>
+    </details>
+  );
+}
+
+/** The Rider recorded the wrong cash for one Order: before the count. */
+export function CorrectOrderCashForm({
+  orders,
+}: {
+  orders: { orderId: string; orderNo: string }[];
+}) {
+  const [state, action, pending] = useActionState(
+    correctOrderCashAction,
+    initial
+  );
+  return (
+    <details className="text-sm">
+      <summary className="min-h-11 cursor-pointer py-2 font-semibold">
+        Correct one Order&apos;s cash
+      </summary>
+      <form
+        key={formKey(state)}
+        action={action}
+        className="flex flex-wrap items-end gap-2 pt-1"
+      >
+        <label className="grid gap-1 font-semibold">
+          Order
+          <select name="orderId" className={INLINE_FIELD}>
+            {orders.map((o) => (
+              <option key={o.orderId} value={o.orderId}>
+                {o.orderNo}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 font-semibold">
+          Cash taken (₱)
+          <input
+            name="cash"
+            inputMode="decimal"
+            required
+            className={`${INLINE_FIELD} w-36 tabular-nums`}
+          />
+        </label>
+        <label className="grid gap-1 font-semibold">
+          Why it changes
+          <input name="note" required className={`${INLINE_FIELD} w-64`} />
+        </label>
+        <Button type="submit" variant="secondary" disabled={pending}>
+          Save the correction
+        </Button>
+        <div className="basis-full">
+          <FormMessage state={state} />
+        </div>
+      </form>
+    </details>
   );
 }

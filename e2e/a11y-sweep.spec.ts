@@ -51,6 +51,7 @@ const ADMIN = [
   "/admin/refunds",
   "/admin/stock",
   "/admin/setup",
+  "/admin/system",
   "/admin/report",
   "/admin/products",
   "/admin/products/new",

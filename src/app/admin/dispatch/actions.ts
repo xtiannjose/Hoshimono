@@ -11,8 +11,13 @@ import {
   deliverWithoutPin,
   dispatchOrder,
   failDelivery,
+  handOverOrder,
 } from "@/modules/orders";
-import { recordCashHandover } from "@/modules/payments";
+import {
+  correctCashHandover,
+  correctCollectedCash,
+  recordCashHandover,
+} from "@/modules/payments";
 
 import { jobHandlers } from "@/server/job-handlers";
 
@@ -62,6 +67,38 @@ export async function sendOutAction(
     {
       staffId: staff.id,
       action: "dispatch",
+      entity: "order",
+      entityId: orderId,
+      after: { riderId },
+    },
+  ]);
+  sendNow();
+  return done();
+}
+
+/** Another Rider takes an Order already on its way; the Customer is told. */
+export async function handOverAction(
+  orderId: string,
+  _prev: DispatchFormState,
+  fd: FormData
+): Promise<DispatchFormState> {
+  const staff = await requireStaff("dispatch", "/admin/dispatch");
+  const riderId = text(fd, "riderId");
+  const result = await handOverOrder(orderId, riderId);
+  if (!result.ok) {
+    return {
+      errors: {
+        form:
+          result.reason === "not_a_rider"
+            ? "Choose a Rider."
+            : "This Order is not on the road, or that Rider has it already.",
+      },
+    };
+  }
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "hand_over",
       entity: "order",
       entityId: orderId,
       after: { riderId },
@@ -172,6 +209,59 @@ export async function countCashAction(
       entity: "cash_handover",
       entityId: `${riderId}:${day}`,
       after: { counted, shortCents: result.shortCents },
+    },
+  ]);
+  return done();
+}
+
+/** A day's count was wrong: the right one, and why. */
+export async function correctCountAction(
+  riderId: string,
+  day: string,
+  _prev: DispatchFormState,
+  fd: FormData
+): Promise<DispatchFormState> {
+  const staff = await requireStaff("dispatch", "/admin/cash");
+  const counted = parseMoney(text(fd, "counted"));
+  const note = text(fd, "note");
+  const result = await correctCashHandover(
+    riderId,
+    day,
+    counted ?? Number.NaN,
+    staff.id,
+    note
+  );
+  if (!result.ok) return { errors: result.errors };
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "cash_count_corrected",
+      entity: "cash_handover",
+      entityId: `${riderId}:${day}`,
+      after: { countedCents: counted, note },
+    },
+  ]);
+  return done();
+}
+
+/** The Rider recorded the wrong cash for an Order, before the day is counted. */
+export async function correctOrderCashAction(
+  _prev: DispatchFormState,
+  fd: FormData
+): Promise<DispatchFormState> {
+  const staff = await requireStaff("dispatch", "/admin/cash");
+  const orderId = text(fd, "orderId");
+  const cents = cash(fd);
+  const note = text(fd, "note");
+  const result = await correctCollectedCash(orderId, cents ?? Number.NaN, note);
+  if (!result.ok) return { errors: result.errors };
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "order_cash_corrected",
+      entity: "order",
+      entityId: orderId,
+      after: { cashCents: cents, note },
     },
   ]);
   return done();

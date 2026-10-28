@@ -7,6 +7,8 @@ import { formatTime } from "@/lib/dates";
 import { recordAudits, requireStaff } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
 import {
+  addOrderNote,
+  answerSubstitutionByPhone,
   finishPicking,
   proposeSubstitution,
   recordPick,
@@ -151,4 +153,35 @@ export async function finishPickingAction(
   sendNow();
   refresh();
   return { errors: {}, saved: true };
+}
+
+/**
+ * The Customer answered the substitute on the phone instead of the link.
+ * Same rules as the link; the answer goes in the Order's notes.
+ */
+export async function phoneAnswerAction(
+  orderId: string,
+  lineId: string,
+  orderNo: string,
+  accept: boolean
+): Promise<void> {
+  const staff = await picker(orderNo);
+  const answer = await answerSubstitutionByPhone(lineId, accept);
+  if (answer === "accepted" || answer === "refused") {
+    await addOrderNote(
+      orderId,
+      staff.id,
+      `Customer said ${accept ? "yes" : "no"} to the substitute by phone.`
+    );
+    await recordAudits([
+      {
+        staffId: staff.id,
+        action: "substitution_by_phone",
+        entity: "order",
+        entityId: orderId,
+        after: { lineId, accept },
+      },
+    ]);
+  }
+  refresh();
 }

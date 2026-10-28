@@ -6,7 +6,11 @@ import { manilaDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { listCashDay, riderCashDay } from "@/modules/payments";
 
-import { CountCashForm } from "../dispatch/forms";
+import {
+  CorrectCountForm,
+  CorrectOrderCashForm,
+  CountCashForm,
+} from "../dispatch/forms";
 import { AdminSkeleton, StaffGate } from "../staff-gate";
 
 export const metadata: Metadata = { title: "Cash" };
@@ -115,6 +119,11 @@ async function Cash({ searchParams }: { searchParams: Props["searchParams"] }) {
                   </p>
                 ) : (
                   <CountCashForm riderId={r.riderId} day={day} />
+                )}
+                {d.handover ? (
+                  <CorrectCountForm riderId={r.riderId} day={day} />
+                ) : (
+                  <CorrectOrderCashForm orders={d.orders} />
                 )}
               </li>
             );

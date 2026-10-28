@@ -9,7 +9,9 @@ import {
   PAYMENT_STATUS_LABEL,
 } from "@/components/order/status-labels";
 import type { OrderStatus } from "@/generated/prisma/enums";
-import { formatDateTime } from "@/lib/dates";
+import { formatDateTime, formatSlot } from "@/lib/dates";
+import { listAddresses } from "@/modules/customers";
+import { listSlots } from "@/modules/delivery";
 import { formatMoney } from "@/lib/money";
 import { currentStaff, staffAreas } from "@/modules/identity";
 import {
@@ -20,7 +22,9 @@ import {
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
 import {
+  ChangeAddressForm,
   MoveForm,
+  MoveSlotForm,
   NoteForm,
   RecordPaymentForm,
   TextCustomerForm,
@@ -69,6 +73,16 @@ async function Order({ params }: { params: Props["params"] }) {
   if (!order) notFound();
   // Money tools for those who handle refunds (docs/runbook.md).
   const money = !!staff && staffAreas(staff.role).includes("refunds");
+  // Still at the Hub: its Slot and address can change (docs/runbook.md).
+  const atHub = ["confirmed", "picking", "picked", "delivery_failed"].includes(
+    order.status
+  );
+  const [slots, addresses] = atHub
+    ? await Promise.all([
+        listSlots(order.hubId),
+        listAddresses(order.customerId),
+      ])
+    : [[], []];
   const unpaidOnline =
     order.payment &&
     order.payment.method !== "cod" &&
@@ -211,6 +225,35 @@ async function Order({ params }: { params: Props["params"] }) {
                 orderId={order.id}
                 orderNo={order.orderNo}
                 amount={formatMoney(order.payment!.amountCents)}
+              />
+            </section>
+          )}
+          {atHub && (
+            <section aria-labelledby="h-delivery" className={PANEL}>
+              <h2 id="h-delivery" className="type-h3">
+                Delivery
+              </h2>
+              <MoveSlotForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                slots={slots
+                  .filter(
+                    (s) =>
+                      s.state !== "full" &&
+                      s.startsAt.getTime() !== order.slot.startsAt.getTime()
+                  )
+                  .map((s) => ({
+                    id: s.id,
+                    label: formatSlot(s.startsAt, s.endsAt),
+                  }))}
+              />
+              <ChangeAddressForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                addresses={addresses.map((a) => ({
+                  id: a.id,
+                  label: `${a.label}: ${a.line1}, ${a.barangay}`,
+                }))}
               />
             </section>
           )}

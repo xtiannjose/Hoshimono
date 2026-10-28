@@ -106,6 +106,7 @@ export type StaffOrderDetail = OrderDetail & {
   notes: { text: string; at: Date; staffName: string }[];
   refunds: { amountCents: number; reason: string; status: RefundStatus }[];
   customerId: string;
+  hubId: string;
   /** The newest Payment, for the staff tools that act on it. */
   payment: {
     method: PaymentMethod;
@@ -129,6 +130,7 @@ export async function getOrderForStaff(
     where: { id: detail.id },
     select: {
       customerId: true,
+      hubId: true,
       customer: { select: { name: true, email: true, phone: true } },
       statusEvents: {
         orderBy: { at: "asc" },
@@ -198,6 +200,7 @@ export async function getOrderForStaff(
     })),
     refunds: order.payments.flatMap((p) => p.refunds),
     customerId: order.customerId,
+    hubId: order.hubId,
     payment: order.payments[0]
       ? {
           method: order.payments[0].method,

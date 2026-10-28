@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { ORDER_STATUS_LABEL } from "@/components/order/status-labels";
+import { Button } from "@/components/ui/button";
 import { formatSlot, formatTime } from "@/lib/dates";
 import { listRelatedProducts } from "@/modules/catalog";
 import { getPickList, type PickLine } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
+import { phoneAnswerAction } from "../actions";
 import { FinishPicking, PickLineControls, StartPicking } from "./pick-controls";
 
 export const metadata: Metadata = { title: "Pick List" };
@@ -86,6 +88,39 @@ async function Pick({ params }: { params: Props["params"] }) {
             className="rounded-card border-border bg-card grid gap-3 border p-4"
           >
             <LineSummary line={line} />
+            {line.substitution?.answer === "waiting" && (
+              <form className="flex flex-wrap gap-2">
+                <span className="text-muted-foreground basis-full text-sm">
+                  They answered by phone?
+                </span>
+                <Button
+                  formAction={phoneAnswerAction.bind(
+                    null,
+                    list.id,
+                    line.id,
+                    list.orderNo,
+                    true
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Yes, pack it
+                </Button>
+                <Button
+                  formAction={phoneAnswerAction.bind(
+                    null,
+                    list.id,
+                    line.id,
+                    list.orderNo,
+                    false
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  No, leave it out
+                </Button>
+              </form>
+            )}
             {picking && !line.substitution && (
               <PickLineControls
                 line={line}

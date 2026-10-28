@@ -23,6 +23,7 @@ import {
   getSlotHold,
   listServiceAreas,
   listSlots,
+  onlinePaused,
   resolveZone,
 } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
@@ -155,7 +156,10 @@ async function Checkout({
         heldSlotId={hold?.slotId ?? null}
         heldExpiresAt={hold?.expiresAt ?? null}
         phone={customer.phone ? displayPhone(customer.phone) : ""}
-        onlinePayments={paymentProvider() !== null}
+        onlinePayments={
+          paymentProvider() !== null &&
+          !(zone && (await onlinePaused(zone.hubId)))
+        }
       />
     </>
   );

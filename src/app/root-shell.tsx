@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import { Epilogue, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import { LiveRegion } from "@/components/live-region";
 import { Footer } from "@/components/shell/footer";
 import { Header } from "@/components/shell/header";
+import { ShopNotice } from "@/components/shell/shop-notice";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/i18n/client";
 import { HTML_LANG, type Lang } from "@/i18n/lang";
@@ -81,6 +82,9 @@ export function RootShell({
 }) {
   return (
     <Document lang={lang}>
+      <Suspense fallback={null}>
+        <ShopNotice />
+      </Suspense>
       <Header lang={lang} />
       <main id="main" className="flex-1">
         {children}

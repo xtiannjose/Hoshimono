@@ -171,3 +171,23 @@ export async function paymentsHealth(
   ]);
   return { unmatchedEvents, refundsToCheck };
 }
+
+/** The newest provider events, for staff (/admin/system), with their Order. */
+export async function listPaymentEvents(limit = 30) {
+  const events = await db.paymentEvent.findMany({
+    orderBy: { receivedAt: "desc" },
+    take: limit,
+    select: {
+      provider: true,
+      providerEventId: true,
+      type: true,
+      receivedAt: true,
+      processedAt: true,
+      payment: { select: { order: { select: { orderNo: true } } } },
+    },
+  });
+  return events.map(({ payment, ...e }) => ({
+    ...e,
+    orderNo: payment?.order.orderNo ?? null,
+  }));
+}

@@ -88,6 +88,14 @@ test("an Admin records a missed payment, texts, gives a Voucher and cancels", as
     .poll(texts)
     .toMatch(/₱50\.00 off your next order with code CREDIT-/);
 
+  // Plans change: another Slot, and the Customer gets the new time.
+  await admin.getByLabel("Deliver in another Slot").selectOption({ index: 0 });
+  await admin.getByRole("button", { name: "Move it" }).click();
+  await expect(admin.getByText("Moved, and the Customer is told.")).toBeVisible(
+    { timeout: 30_000 }
+  );
+  await expect.poll(texts).toContain(`Order ${orderNo} now arrives`);
+
   await admin.getByLabel(/Cancel the Order/).check();
   await admin
     .getByLabel("Reason (needed to cancel or for a failed delivery)")
