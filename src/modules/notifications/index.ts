@@ -23,3 +23,4 @@ export type {
 } from "./internal/retention";
 export { sendSignInCode, sendSignInLink } from "./internal/sign-in";
 export type { EmailProvider, Sent, SmsProvider } from "./internal/providers";
+export { eraseRecipients, messageData } from "./internal/privacy";

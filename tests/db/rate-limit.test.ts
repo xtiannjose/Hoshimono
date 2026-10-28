@@ -112,7 +112,7 @@ describe("sign-in code limits", () => {
     expect(await codeLimits("+639179999999", "10.2.0.1", NOW)).toBe(
       "We can't text codes right now. Please use the email link instead."
     );
-  });
+  }, 30_000); // 800 counter updates
 
   it("counts one inbox once, however the address is written", () => {
     expect(linkKey("J.Uan+shop@Gmail.com")).toBe("juan@gmail.com");

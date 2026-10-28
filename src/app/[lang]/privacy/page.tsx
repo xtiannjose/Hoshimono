@@ -220,8 +220,10 @@ export default function PrivacyPage() {
             Orders, payments, refunds, receipts and Freshness Claims
           </strong>{" "}
           (with their photos and the messages about them): for as long as tax
-          and accounting law requires, {legal.taxRecordYears}. We keep them even
-          after you close your account.
+          and accounting law requires, {legal.taxRecordYears}. If you delete
+          your account, we keep the Orders, payments and refunds for that time
+          without your name, number, address or notes, and delete what you wrote
+          in your claims and their photos.
         </li>
         <li>
           <strong>Your Cart:</strong> while your account is open. A Cart that
@@ -336,7 +338,11 @@ export default function PrivacyPage() {
           object to how we use it, and withdraw consent you gave, such as for
           reminders and offers;
         </li>
-        <li>receive your data in a common electronic format;</li>
+        <li>
+          receive your data in a common electronic format: under{" "}
+          <strong>Your data</strong> on your account page, download it all, or
+          delete your account yourself;
+        </li>
         <li>claim damages if your rights are violated; and</li>
         <li>
           complain to the National Privacy Commission at{" "}

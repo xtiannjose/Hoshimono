@@ -26,6 +26,7 @@ const SHOP = [
   "/sign-in",
   "/cart",
   "/offline",
+  "/goodbye",
   "/no-such-page",
   "/fil",
   "/fil/c/fruit-and-vegetables",

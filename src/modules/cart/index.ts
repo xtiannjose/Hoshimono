@@ -52,3 +52,4 @@ export {
   getCartReminder,
   queueCartReminders,
 } from "./internal/reminders";
+export { eraseCustomerCarts, shoppingListData } from "./internal/privacy";

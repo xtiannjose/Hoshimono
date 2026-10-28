@@ -582,6 +582,24 @@ export const en = {
     remindersHint:
       "Such as a note when you leave items in your cart. Order and delivery messages come either way. Turn this off any time.",
     signOut: "Sign out",
+    yourData: "Your data",
+    yourDataBody:
+      "Download everything we keep about you, or delete your account. Past orders stay in our books for tax, without your name, number or address.",
+    download: "Download my data",
+    deleteAccount: "Delete my account",
+    deleteConfirm: "I understand this can't be undone",
+    deleteNow: "Yes, delete my account",
+    deleteProblems: {
+      confirm: "Tick the box first.",
+      open_orders:
+        "You have an order on its way. You can delete your account once it arrives, or after you cancel it.",
+      claim_open:
+        "We're still looking at your report about an item. You can delete your account once we've answered.",
+    },
+    goodbyeTitle: "Your account is deleted",
+    goodbyeBody:
+      "Salamat for shopping with us. You're welcome back any time with a new account.",
+    goodbyeHome: "Back to the shop",
   },
   history: {
     title: "Your orders",

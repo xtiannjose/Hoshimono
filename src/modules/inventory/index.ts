@@ -27,3 +27,4 @@ export {
   requestStockAlert,
   STOCK_ALERT_JOB,
 } from "./internal/alerts";
+export { eraseStockAlerts, stockAlertData } from "./internal/privacy";

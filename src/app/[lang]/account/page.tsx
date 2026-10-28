@@ -3,13 +3,14 @@ import Link from "@/components/link";
 import { Suspense } from "react";
 
 import { SignOutForm } from "@/components/sign-out-form";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getLang, getMessages } from "@/i18n/server";
 import { displayPhone } from "@/lib/phone";
 import { getProfile } from "@/modules/customers";
 import { requireCustomer } from "@/modules/identity";
 
+import { DeleteAccount } from "./delete-account";
 import { NameForm } from "./name-form";
 import { RemindersToggle } from "./reminders-toggle";
 
@@ -72,6 +73,23 @@ async function Account() {
           {t.messages}
         </h2>
         <RemindersToggle on={profile.marketingOptIn} />
+      </section>
+      <section
+        aria-labelledby="h-data"
+        className="grid justify-items-start gap-2"
+      >
+        <h2 id="h-data" className="type-h3">
+          {t.yourData}
+        </h2>
+        <p className="text-muted-foreground text-sm">{t.yourDataBody}</p>
+        <a
+          href="/api/account/data"
+          download
+          className={buttonVariants({ variant: "secondary" })}
+        >
+          {t.download}
+        </a>
+        <DeleteAccount lang={lang} />
       </section>
       <SignOutForm>
         <input type="hidden" name="lang" value={lang} />

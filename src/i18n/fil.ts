@@ -585,6 +585,24 @@ export const fil: Messages = {
     remindersHint:
       "Tulad ng paalala kapag may naiwan kang item sa cart. Darating pa rin ang mga mensahe tungkol sa order at delivery. Puwede mo itong i-off kahit kailan.",
     signOut: "Mag-sign out",
+    yourData: "Ang data mo",
+    yourDataBody:
+      "I-download ang lahat ng hawak namin tungkol sa'yo, o burahin ang account mo. Mananatili sa records namin ang mga dating order para sa tax, pero wala na ang pangalan, number at address mo.",
+    download: "I-download ang data ko",
+    deleteAccount: "Burahin ang account ko",
+    deleteConfirm: "Naiintindihan kong hindi na ito maibabalik",
+    deleteNow: "Oo, burahin ang account ko",
+    deleteProblems: {
+      confirm: "I-tick muna ang box.",
+      open_orders:
+        "May order ka pang papunta. Puwede mong burahin ang account mo kapag dumating na ito, o kapag na-cancel mo.",
+      claim_open:
+        "Tinitingnan pa namin ang report mo tungkol sa isang item. Puwede mong burahin ang account mo kapag nasagot na namin.",
+    },
+    goodbyeTitle: "Nabura na ang account mo",
+    goodbyeBody:
+      "Salamat sa pamimili sa amin. Welcome ka ulit anumang oras sa bagong account.",
+    goodbyeHome: "Bumalik sa shop",
   },
   history: {
     title: "Ang mga order mo",

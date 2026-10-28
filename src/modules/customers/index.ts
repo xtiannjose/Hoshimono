@@ -27,3 +27,4 @@ export {
   rewardReferral,
 } from "./internal/referrals";
 export type { ReferralRefusal } from "./internal/referrals";
+export { customerProfileData, eraseCustomerProfile } from "./internal/privacy";

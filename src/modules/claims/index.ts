@@ -23,3 +23,4 @@ export {
 export type { ClaimDecision, DecideResult } from "./internal/decide";
 export { MAX_PHOTOS } from "./internal/photos";
 export { claimValue } from "./internal/value";
+export { claimData, eraseClaimDetails, hasOpenClaim } from "./internal/privacy";

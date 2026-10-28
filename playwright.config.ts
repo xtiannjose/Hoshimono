@@ -34,7 +34,9 @@ export default defineConfig({
       : `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    timeout: process.env.E2E_PROD ? 600_000 : 240_000,
+    // A production build takes about 5 minutes on a laptop, and twice that
+    // when the machine is busy.
+    timeout: process.env.E2E_PROD ? 1_200_000 : 240_000,
     env: {
       DATABASE_URL: E2E_DATABASE_URL,
       DIRECT_URL: E2E_DATABASE_URL,
