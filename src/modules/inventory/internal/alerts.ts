@@ -6,8 +6,14 @@ import { enqueueJob } from "@/modules/jobs";
 
 export const STOCK_ALERT_JOB = "stock.back";
 const ALERT_DAYS = 30;
+/** Alerts one Customer may have waiting, so a script cannot queue thousands. */
+export const MAX_STOCK_ALERTS = 20;
 
-/** True once the Customer has an alert for the Product (asking twice is fine). */
+/**
+ * True once the Customer has an alert for the Product (asking twice is
+ * fine). Only for a sold-out Product: one in stock would be sent at the
+ * next cron tick, and could be asked for again every minute.
+ */
 export async function requestStockAlert(
   customerId: string,
   productId: string
@@ -17,6 +23,14 @@ export async function requestStockAlert(
     where: { id: productId, status: "active" },
   });
   if (!product) return false;
+  if (await hasStockAlert(customerId, productId)) return true;
+  const [{ inStock }] = await db.$queryRaw<{ inStock: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM stock_levels
+      WHERE product_id = ${productId}::uuid AND on_hand - reserved > 0
+    ) AS "inStock"`;
+  if (inStock) return false;
+  const open = await db.stockAlert.count({ where: { customerId } });
+  if (open >= MAX_STOCK_ALERTS) return false;
   await db.stockAlert.upsert({
     where: { customerId_productId: { customerId, productId } },
     create: { customerId, productId },

@@ -4,7 +4,7 @@ import {
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
 
 export type SubstitutionNotice = {
   orderId: string;
@@ -37,25 +37,25 @@ export async function sendSubstitutionAsked(
   const template = `substitution_${notice.substitutionId}`;
   const { orderId } = notice;
 
-  if (notice.email) {
-    const email = notice.email;
-    await sendOnce(
-      { template, channel: "email", orderId, recipient: email },
-      () =>
+  const email = notice.email;
+  await sendAll([
+    () =>
+      email &&
+      sendOnce({ template, channel: "email", orderId, recipient: email }, () =>
         (providers.email ?? emailProvider()).send({
           to: email,
           subject: `A substitute for order ${notice.orderNo}`,
           text: [offer, "", ask].join("\n"),
         })
-    );
-  }
-
-  await sendOnce(
-    { template, channel: "sms", orderId, recipient: notice.phone },
+      ),
     () =>
-      (providers.sms ?? smsProvider()).send({
-        to: notice.phone,
-        text: `Hoshimono: ${offer} ${ask}`,
-      })
-  );
+      sendOnce(
+        { template, channel: "sms", orderId, recipient: notice.phone },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: notice.phone,
+            text: `Hoshimono: ${offer} ${ask}`,
+          })
+      ),
+  ]);
 }

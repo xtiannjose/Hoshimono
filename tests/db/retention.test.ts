@@ -31,6 +31,7 @@ import { getDefaultHubId, resolveZone } from "@/modules/delivery";
 import {
   cancelStockAlert,
   hasStockAlert,
+  MAX_STOCK_ALERTS,
   queueStockAlerts,
   requestStockAlert,
   STOCK_ALERT_JOB,
@@ -352,6 +353,48 @@ describe("Stock Alerts (ADR 0014)", () => {
     expect(await hasStockAlert(ligaya, UBE)).toBe(false);
     const [job] = await db.job.findMany({ where: { kind: STOCK_ALERT_JOB } });
     expect(job.payload).toMatchObject({ customerId: ligaya, productId: UBE });
+  });
+
+  it("is only for a sold-out Product, and at most 20 open at once", async () => {
+    // In stock: the alert would go out at the next tick, again and again.
+    expect(await requestStockAlert(ligaya, MILK)).toBe(false);
+
+    const others = await db.product.findMany({
+      where: { status: "active", id: { notIn: [MILK, EGGS, SOY, UBE] } },
+      orderBy: { id: "asc" },
+      take: MAX_STOCK_ALERTS + 1,
+      select: { id: true },
+    });
+    const ids = others.map((p) => p.id);
+    const before = await db.stockLevel.findMany({
+      where: { productId: { in: ids } },
+    });
+    await db.stockLevel.updateMany({
+      where: { productId: { in: ids } },
+      data: { onHand: 0, reserved: 0 },
+    });
+    try {
+      for (const id of ids.slice(0, MAX_STOCK_ALERTS)) {
+        expect(await requestStockAlert(ligaya, id)).toBe(true);
+      }
+      expect(await requestStockAlert(ligaya, ids[MAX_STOCK_ALERTS])).toBe(
+        false
+      );
+      // Asking again for one already held is still fine.
+      expect(await requestStockAlert(ligaya, ids[0])).toBe(true);
+    } finally {
+      for (const level of before) {
+        await db.stockLevel.update({
+          where: {
+            productId_hubId: {
+              productId: level.productId,
+              hubId: level.hubId,
+            },
+          },
+          data: { onHand: level.onHand, reserved: level.reserved },
+        });
+      }
+    }
   });
 
   it("ends alerts older than 30 days unsent, and can be cancelled", async () => {

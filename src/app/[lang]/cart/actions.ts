@@ -1,10 +1,12 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 
 import type { CartNotice } from "@/i18n/messages";
 import { productName } from "@/lib/product-name";
+import { clientIp, takeToken } from "@/lib/rate-limit";
 import {
   clearCartVoucher,
   getCart,
@@ -161,9 +163,20 @@ export async function listAlternatives(
   }));
 }
 
+// Voucher codes tried per IP and per account in a quarter hour, so staff
+// codes cannot be guessed by trying many.
+const CODE_TRIES = 10;
+
 /** Keep a Voucher on the Cart (ADR 0015); the reply says why if it cannot. */
 export async function applyVoucherAction(code: string): Promise<CartResult> {
   const owner = await readCartOwner();
+  const keys = [`voucher:ip:${clientIp(await headers())}`];
+  if (owner && "customerId" in owner) keys.push(`voucher:${owner.customerId}`);
+  for (const key of keys) {
+    if (!(await takeToken(key, CODE_TRIES, 15 * 60)).ok) {
+      return { cart: await currentCart(), notice: "too_many_codes" };
+    }
+  }
   const result = owner
     ? await setCartVoucher(owner, String(code).slice(0, 40))
     : { ok: false as const, reason: "empty_cart" as const };

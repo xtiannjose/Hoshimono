@@ -4,7 +4,7 @@ import {
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
 
 // Cart Reminders and Stock Alerts (ADR 0014).
 
@@ -67,33 +67,34 @@ export async function sendBackInStock(
 ): Promise<void> {
   const ref = `stock-alert:${notice.alertId}`;
   const line = `${notice.product} is back in stock.`;
-  if (notice.email) {
-    const email = notice.email;
-    await sendOnce(
-      { template: "back_in_stock", channel: "email", ref, recipient: email },
-      () =>
-        (providers.email ?? emailProvider()).send({
-          to: email,
-          subject: `${notice.product} is back`,
-          text: [
-            `${line} You asked us to tell you.`,
-            "",
-            `Add it to your cart: ${notice.productUrl}`,
-          ].join("\n"),
-        })
-    );
-  }
-  if (notice.phone) {
-    const phone = notice.phone;
-    await sendOnce(
-      { template: "back_in_stock", channel: "sms", ref, recipient: phone },
-      () =>
-        (providers.sms ?? smsProvider()).send({
-          to: phone,
-          text: `Hoshimono: ${line} ${notice.productUrl}`,
-        })
-    );
-  }
+  const { email, phone } = notice;
+  await sendAll([
+    () =>
+      email &&
+      sendOnce(
+        { template: "back_in_stock", channel: "email", ref, recipient: email },
+        () =>
+          (providers.email ?? emailProvider()).send({
+            to: email,
+            subject: `${notice.product} is back`,
+            text: [
+              `${line} You asked us to tell you.`,
+              "",
+              `Add it to your cart: ${notice.productUrl}`,
+            ].join("\n"),
+          })
+      ),
+    () =>
+      phone &&
+      sendOnce(
+        { template: "back_in_stock", channel: "sms", ref, recipient: phone },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: phone,
+            text: `Hoshimono: ${line} ${notice.productUrl}`,
+          })
+      ),
+  ]);
 }
 
 export type ReferralRewardNotice = {

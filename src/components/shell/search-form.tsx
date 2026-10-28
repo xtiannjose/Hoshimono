@@ -3,7 +3,10 @@ import { MagnifyingGlassIcon } from "@phosphor-icons/react/ssr";
 import { localPath, type Lang } from "@/i18n/lang";
 import { MESSAGES } from "@/i18n/messages";
 
-/** Plain GET form that works without JavaScript; the header SearchBox adds suggestions. */
+/**
+ * Plain GET form that works without JavaScript; the header SearchBox adds
+ * suggestions. No search landmark of its own: the header's is the page's.
+ */
 export function SearchForm({
   id,
   lang,
@@ -16,7 +19,6 @@ export function SearchForm({
   const t = MESSAGES[lang].shell;
   return (
     <form
-      role="search"
       action={localPath(lang, "/search")}
       className={`rounded-pill border-input bg-card focus-within:outline-ring flex h-12 items-center gap-2.5 border px-[18px] focus-within:outline-2 focus-within:outline-offset-2 ${className}`}
     >

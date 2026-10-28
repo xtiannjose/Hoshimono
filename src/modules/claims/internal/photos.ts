@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import sharp from "sharp";
 
-import { mediaStore } from "@/lib/media";
+import { MAX_IMAGE_PIXELS, mediaStore } from "@/lib/media";
 
 // Claim photos (ADR 0016): checked, then kept as WebP no larger than
 // 1600 pixels a side, through the same media store as Product photos.
@@ -20,6 +20,8 @@ export async function checkPhotos(photos: Buffer[]): Promise<string | null> {
       const meta = await sharp(bytes).metadata();
       if (!meta.format || !FORMATS.has(meta.format))
         return "Use a JPEG, PNG or WebP photo.";
+      if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS)
+        return "That photo is too large. Take a new one with your phone's camera.";
     } catch {
       return "Use a JPEG, PNG or WebP photo.";
     }
@@ -33,7 +35,7 @@ export async function storePhotos(
 ): Promise<string[]> {
   return Promise.all(
     photos.map(async (bytes) => {
-      const webp = await sharp(bytes)
+      const webp = await sharp(bytes, { limitInputPixels: MAX_IMAGE_PIXELS })
         .rotate() // respect camera orientation
         .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
         .webp({ quality: 80 })

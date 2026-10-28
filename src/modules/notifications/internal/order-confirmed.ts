@@ -4,7 +4,7 @@ import {
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
 
 export type OrderConfirmedNotice = {
   orderId: string;
@@ -42,34 +42,41 @@ export async function sendOrderConfirmed(
       : `Total ${notice.total}.`;
   const { orderId } = notice;
 
-  if (notice.email) {
-    const to = notice.email;
-    await sendOnce(
-      { template: TEMPLATE, channel: "email", orderId, recipient: to },
-      () =>
-        (providers.email ?? emailProvider()).send({
-          to,
-          subject: `Order ${notice.orderNo} is confirmed`,
-          text: [
-            `Salamat! We got your order ${notice.orderNo}.`,
-            "",
-            `Delivery: ${notice.slot}`,
-            pay,
-            "",
-            ...notice.lines.map((l) => `${l.quantity} x ${l.name}`),
-            "",
-            `Track your order: ${notice.trackingUrl}`,
-          ].join("\n"),
-        })
-    );
-  }
-
-  await sendOnce(
-    { template: TEMPLATE, channel: "sms", orderId, recipient: notice.phone },
+  const to = notice.email;
+  await sendAll([
     () =>
-      (providers.sms ?? smsProvider()).send({
-        to: notice.phone,
-        text: `Hoshimono: order ${notice.orderNo} is confirmed for ${notice.slot}. ${pay} Track: ${notice.trackingUrl}`,
-      })
-  );
+      to &&
+      sendOnce(
+        { template: TEMPLATE, channel: "email", orderId, recipient: to },
+        () =>
+          (providers.email ?? emailProvider()).send({
+            to,
+            subject: `Order ${notice.orderNo} is confirmed`,
+            text: [
+              `Salamat! We got your order ${notice.orderNo}.`,
+              "",
+              `Delivery: ${notice.slot}`,
+              pay,
+              "",
+              ...notice.lines.map((l) => `${l.quantity} x ${l.name}`),
+              "",
+              `Track your order: ${notice.trackingUrl}`,
+            ].join("\n"),
+          })
+      ),
+    () =>
+      sendOnce(
+        {
+          template: TEMPLATE,
+          channel: "sms",
+          orderId,
+          recipient: notice.phone,
+        },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: notice.phone,
+            text: `Hoshimono: order ${notice.orderNo} is confirmed for ${notice.slot}. ${pay} Track: ${notice.trackingUrl}`,
+          })
+      ),
+  ]);
 }

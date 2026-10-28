@@ -4,7 +4,7 @@ import {
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
 
 export type RefundNotice = {
   orderId: string;
@@ -39,11 +39,11 @@ export async function sendRefundIssued(
   const template = `refund_${notice.reason}`;
   const { orderId } = notice;
 
-  if (notice.email) {
-    const email = notice.email;
-    await sendOnce(
-      { template, channel: "email", orderId, recipient: email },
-      () =>
+  const email = notice.email;
+  await sendAll([
+    () =>
+      email &&
+      sendOnce({ template, channel: "email", orderId, recipient: email }, () =>
         (providers.email ?? emailProvider()).send({
           to: email,
           subject: `Refund for order ${notice.orderNo}`,
@@ -51,15 +51,15 @@ export async function sendRefundIssued(
             "\n"
           ),
         })
-    );
-  }
-
-  await sendOnce(
-    { template, channel: "sms", orderId, recipient: notice.phone },
+      ),
     () =>
-      (providers.sms ?? smsProvider()).send({
-        to: notice.phone,
-        text: `Hoshimono: ${what} ${when}`,
-      })
-  );
+      sendOnce(
+        { template, channel: "sms", orderId, recipient: notice.phone },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: notice.phone,
+            text: `Hoshimono: ${what} ${when}`,
+          })
+      ),
+  ]);
 }

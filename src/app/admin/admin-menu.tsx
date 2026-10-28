@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
-import { signOutAction } from "@/app/[lang]/account/actions";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
+import { SignOutForm } from "@/components/sign-out-form";
 import { ICON_BUTTON } from "@/components/ui/button-classes";
 
 export type MenuGroup = {
@@ -87,11 +87,11 @@ export function AdminMenu({
                 <Link href="/" className={ITEM}>
                   View shop
                 </Link>
-                <form action={signOutAction}>
+                <SignOutForm>
                   <button type="submit" className={ITEM}>
                     Sign out
                   </button>
-                </form>
+                </SignOutForm>
               </div>
               <ThemeToggle />
             </div>

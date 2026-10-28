@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "@/components/link";
 import { Suspense } from "react";
 
+import { SignOutForm } from "@/components/sign-out-form";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { displayPhone } from "@/lib/phone";
 import { getProfile } from "@/modules/customers";
 import { requireCustomer } from "@/modules/identity";
 
-import { signOutAction } from "./actions";
 import { NameForm } from "./name-form";
 import { RemindersToggle } from "./reminders-toggle";
 
@@ -76,11 +76,11 @@ async function Account() {
         </h2>
         <RemindersToggle on={profile.marketingOptIn} />
       </section>
-      <form action={signOutAction}>
+      <SignOutForm>
         <Button type="submit" variant="secondary">
           Sign out
         </Button>
-      </form>
+      </SignOutForm>
     </div>
   );
 }

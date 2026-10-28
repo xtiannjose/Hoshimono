@@ -111,6 +111,29 @@ describe("sendOrderConfirmed", () => {
     expect(await db.notification.count({ where: { orderId } })).toBe(2);
   });
 
+  it("still texts when the email fails, and the retry sends only the email", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    const { sent, providers } = recorder();
+    let emailDown = true;
+    const flaky = {
+      sms: providers.sms,
+      email: {
+        send: async (m: { to: string; text: string }) => {
+          if (emailDown) throw new Error("Email provider down");
+          return providers.email.send(m);
+        },
+      },
+    };
+    await expect(sendOrderConfirmed(notice(), flaky)).rejects.toThrow(
+      "Email provider down"
+    );
+    expect(sent.map((s) => s.channel)).toEqual(["sms"]);
+    emailDown = false;
+    await sendOrderConfirmed(notice(), flaky);
+    expect(sent.map((s) => s.channel)).toEqual(["sms", "email"]);
+    expect(await db.notification.count({ where: { orderId } })).toBe(2);
+  });
+
   it("calls a weighed total an estimate", async () => {
     await db.notification.deleteMany({ where: { orderId } });
     const { sent, providers } = recorder();

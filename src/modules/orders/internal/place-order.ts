@@ -30,6 +30,11 @@ import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
  */
 export const MAX_OPEN_COD_ORDERS = 3;
 export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
+/**
+ * Items (counted as units) in one Order, so one account cannot reserve the
+ * whole Hub. A big family week is under 100.
+ */
+export const MAX_ORDER_ITEMS = 200;
 
 export type PlaceOrderInput = {
   customerId: string;
@@ -52,6 +57,7 @@ export type PlaceOrderResult =
   | { ok: false; reason: "below_minimum"; shortByCents: number }
   | { ok: false; reason: "out_of_stock"; productIds: string[] }
   | { ok: false; reason: "over_cod_limit"; limitCents: number }
+  | { ok: false; reason: "too_many_items"; limit: number }
   /** The Cart's Voucher stopped applying, such as its last use going (ADR 0015). */
   | { ok: false; reason: "voucher_unavailable"; problem: VoucherProblem }
   | {
@@ -66,6 +72,7 @@ export type PlaceOrderResult =
         | "already_placed"
         | "nothing_in_stock"
         | "too_many_open_orders"
+        | "unpaid_order_waiting"
         | "cart_changed";
     };
 
@@ -173,6 +180,9 @@ export async function placeOrder(
     return { ok: false, reason: "empty_cart" };
   }
   if (lines.length === 0) return { ok: false, reason: "nothing_in_stock" };
+  if (lines.reduce((n, l) => n + l.quantity, 0) > MAX_ORDER_ITEMS) {
+    return { ok: false, reason: "too_many_items", limit: MAX_ORDER_ITEMS };
+  }
   if (priced.belowMinimumByCents > 0) {
     return {
       ok: false,
@@ -222,6 +232,16 @@ export async function placeOrder(
       : 0;
     if (open >= MAX_OPEN_COD_ORDERS) {
       throw new Refused({ ok: false, reason: "too_many_open_orders" });
+    }
+    // One unpaid online Order at a time: each holds stock for the Payment
+    // Window, and placing them back to back would hold it for good.
+    if (
+      !cod &&
+      (await tx.order.count({
+        where: { customerId: order.customerId, status: "pending_payment" },
+      }))
+    ) {
+      throw new Refused({ ok: false, reason: "unpaid_order_waiting" });
     }
     if (
       !(await bookSlot(tx, {

@@ -317,6 +317,8 @@ export const fil: Messages = {
       used_by_you: "Nagamit mo na ang Voucher na ito.",
       sign_in: "Mag-sign in para magamit ang Voucher.",
       empty_cart: "Maglagay muna ng item sa cart mo.",
+      too_many_codes:
+        "Masyadong maraming code ang sinubukan. Maghintay muna ng ilang minuto.",
       gone: "Wala na ang Recipe na ito.",
     },
     failed: {
@@ -430,6 +432,10 @@ export const fil: Messages = {
         "Nagbago ang cart mo sa ibang tab. Pakicheck at i-order ulit.",
       too_many_open_orders:
         "Marami ka pang order na papunta. Hintayin munang dumating ang isa, o mag-cancel ng isa.",
+      unpaid_order_waiting:
+        "May order ka pang naghihintay ng bayad. Bayaran muna ito, o bumalik sa cart mula roon.",
+      too_many_items: (limit) =>
+        `Hanggang ${limit} item lang ang isang order. Magbawas o hatiin ang order mo.`,
       over_cod_limit: (limit) =>
         `Hanggang ${limit} lang ang cash on delivery na order. Magbawas ng item o hatiin ang order mo.`,
       already_placed:

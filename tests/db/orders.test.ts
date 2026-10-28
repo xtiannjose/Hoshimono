@@ -37,6 +37,7 @@ import {
   listOrdersForStaff,
   MAX_COD_TOTAL_CENTS,
   MAX_OPEN_COD_ORDERS,
+  MAX_ORDER_ITEMS,
   ORDER_CONFIRMED_JOB,
   placeOrder,
   proposeSubstitution,
@@ -402,6 +403,34 @@ describe("placeOrder refusals", () => {
     });
     await db.slot.delete({ where: { id: foreign.id } });
     await db.hub.delete({ where: { id: other.id } });
+  });
+});
+
+describe("limits against holding stock", () => {
+  it("lets a Customer wait on one unpaid online Order at a time", async () => {
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(
+      (await placeOrder(await checkout(ligaya, { paymentMethod: "gcash" }))).ok
+    ).toBe(true);
+    await setLineQuantity(owner(ligaya), MILK, 1, HUB);
+    expect(
+      await placeOrder(await checkout(ligaya, { paymentMethod: "card" }))
+    ).toEqual({ ok: false, reason: "unpaid_order_waiting" });
+    // Cash on delivery is still open to them.
+    expect((await placeOrder(await checkout(ligaya))).ok).toBe(true);
+  });
+
+  it(`refuses an Order of more than ${MAX_ORDER_ITEMS} items`, async () => {
+    await db.stockLevel.updateMany({
+      where: { productId: { in: [MILK, ALT_MILK, LIEMPO] } },
+      data: { onHand: 200 },
+    });
+    await setLineQuantity(owner(ligaya), MILK, 99, HUB);
+    await setLineQuantity(owner(ligaya), ALT_MILK, 99, HUB);
+    await setLineQuantity(owner(ligaya), LIEMPO, 3, HUB);
+    expect(
+      await placeOrder(await checkout(ligaya, { paymentMethod: "gcash" }))
+    ).toEqual({ ok: false, reason: "too_many_items", limit: MAX_ORDER_ITEMS });
   });
 });
 
@@ -1328,6 +1357,29 @@ describe("dispatch and delivery (ADR 0011)", () => {
       to: "delivered",
       actorType: "staff",
       actorId: rider,
+    });
+  });
+
+  it("checks no more than 5 wrong PINs, even tried all at once", async () => {
+    const { orderId } = await ready("gcash");
+    await dispatchOrder(orderId, rider, dispatcher);
+    const { deliveryPin } = await db.order.findUniqueOrThrow({
+      where: { id: orderId },
+    });
+    const guesses = Array.from({ length: 30 }, (_, i) =>
+      String(i).padStart(4, "0")
+    ).filter((pin) => pin !== deliveryPin);
+    await Promise.all(
+      guesses.map((pin) => completeDelivery(orderId, rider, { pin }))
+    );
+    expect(
+      (await db.order.findUniqueOrThrow({ where: { id: orderId } })).pinAttempts
+    ).toBe(5);
+    expect(
+      await completeDelivery(orderId, rider, { pin: deliveryPin! })
+    ).toEqual({
+      ok: false,
+      errors: { pin: "Too many tries. Call the Dispatcher." },
     });
   });
 

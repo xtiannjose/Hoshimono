@@ -23,6 +23,7 @@ export {
   cancelStockAlert,
   hasStockAlert,
   queueStockAlerts,
+  MAX_STOCK_ALERTS,
   requestStockAlert,
   STOCK_ALERT_JOB,
 } from "./internal/alerts";

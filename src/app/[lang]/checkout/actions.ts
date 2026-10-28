@@ -78,6 +78,8 @@ function explain(
       return no.below_minimum(formatMoney(result.shortByCents));
     case "over_cod_limit":
       return no.over_cod_limit(formatMoney(result.limitCents));
+    case "too_many_items":
+      return no.too_many_items(result.limit);
     case "voucher_unavailable":
       return no.voucher_unavailable(t.cart.notices[result.problem]);
     default:

@@ -4,7 +4,7 @@ import {
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
 
 type Providers = { email?: EmailProvider; sms?: SmsProvider };
 
@@ -24,22 +24,29 @@ async function sendBoth(
   text: string,
   providers: Providers
 ) {
-  if (r.email) {
-    const email = r.email;
-    await sendOnce(
-      { template, channel: "email", orderId: r.orderId, recipient: email },
-      () =>
-        (providers.email ?? emailProvider()).send({ to: email, subject, text })
-    );
-  }
-  await sendOnce(
-    { template, channel: "sms", orderId: r.orderId, recipient: r.phone },
+  const email = r.email;
+  await sendAll([
     () =>
-      (providers.sms ?? smsProvider()).send({
-        to: r.phone,
-        text: `Hoshimono: ${text}`,
-      })
-  );
+      email &&
+      sendOnce(
+        { template, channel: "email", orderId: r.orderId, recipient: email },
+        () =>
+          (providers.email ?? emailProvider()).send({
+            to: email,
+            subject,
+            text,
+          })
+      ),
+    () =>
+      sendOnce(
+        { template, channel: "sms", orderId: r.orderId, recipient: r.phone },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: r.phone,
+            text: `Hoshimono: ${text}`,
+          })
+      ),
+  ]);
 }
 
 export type OutForDeliveryNotice = Recipient & {

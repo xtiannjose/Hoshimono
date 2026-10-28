@@ -3,6 +3,7 @@
 export {
   MAX_COD_TOTAL_CENTS,
   MAX_OPEN_COD_ORDERS,
+  MAX_ORDER_ITEMS,
   placeOrder,
 } from "./internal/place-order";
 export type { PlaceOrderInput, PlaceOrderResult } from "./internal/place-order";

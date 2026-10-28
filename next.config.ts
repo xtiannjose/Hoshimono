@@ -9,6 +9,21 @@ const nextConfig: NextConfig = {
   // Product photos are stored as one WebP master; serve AVIF where supported.
   images: { formats: ["image/avif", "image/webp"] },
   partialPrefetching: true,
+  // No page may be framed (clickjacking), sniffed as another type, or leak
+  // its full address to other sites.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

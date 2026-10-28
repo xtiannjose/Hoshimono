@@ -76,7 +76,13 @@ export const jobHandlers: JobHandlers = {
       createRewardVoucher(tx, id)
     );
     if (!reward) return;
-    const friend = reward.referee.name.split(" ")[0] || "A friend";
+    // The friend typed their own name: only letters reach our message, so
+    // it cannot carry a link.
+    const friend =
+      reward.referee.name
+        .split(" ")[0]
+        .replace(/[^\p{L}'-]/gu, "")
+        .slice(0, 20) || "A friend";
     for (const role of ["referrer", "referee"] as const) {
       const who = reward[role];
       await sendReferralReward({

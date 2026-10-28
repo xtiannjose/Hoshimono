@@ -148,19 +148,22 @@ export async function completeDelivery(
   if (!order || order.riderId !== riderId) {
     return { ok: false, errors: { form: "This Order is not one of yours." } };
   }
-  if (order.pinAttempts >= MAX_PIN_TRIES) {
+  // One guarded UPDATE checks the PIN and counts a wrong one under the
+  // row's lock, so tries sent all at once still stop at the limit.
+  const pin = input.pin.trim();
+  const [tried] = await db.$queryRaw<{ attempts: number; right: boolean }[]>`
+    UPDATE orders SET pin_attempts = pin_attempts
+      + CASE WHEN delivery_pin = ${pin} THEN 0 ELSE 1 END
+    WHERE id = ${orderId}::uuid AND pin_attempts < ${MAX_PIN_TRIES}
+    RETURNING pin_attempts AS attempts, delivery_pin = ${pin} AS "right"`;
+  if (!tried) {
     return {
       ok: false,
       errors: { pin: "Too many tries. Call the Dispatcher." },
     };
   }
-  if (input.pin.trim() !== order.deliveryPin) {
-    const { pinAttempts } = await db.order.update({
-      where: { id: orderId },
-      data: { pinAttempts: { increment: 1 } },
-      select: { pinAttempts: true },
-    });
-    const left = MAX_PIN_TRIES - pinAttempts;
+  if (!tried.right) {
+    const left = MAX_PIN_TRIES - tried.attempts;
     return {
       ok: false,
       errors: {
