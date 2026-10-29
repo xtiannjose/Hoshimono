@@ -10,7 +10,7 @@ import { formatMoney } from "@/lib/money";
 import { getClaimForStaff } from "@/modules/claims";
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
-import { ApproveForm, RejectForm } from "../decision-forms";
+import { ApproveForm, RejectForm, ReopenForm } from "../decision-forms";
 
 export const metadata: Metadata = { title: "Freshness Claim" };
 
@@ -124,12 +124,15 @@ async function Claim({ params }: { params: Props["params"] }) {
           <RejectForm claimId={claim.id} />
         </div>
       ) : (
-        <p className="rounded-card bg-muted p-4">
-          {CLAIM_STATUS[claim.status]} by {claim.decidedBy?.name}
-          {claim.decidedAt && `, ${formatDateTime(claim.decidedAt)}`}.{" "}
-          {claim.status === "approved" && paidBack(claim)}
-          {claim.decisionNote && ` Note: ${claim.decisionNote}`}
-        </p>
+        <div className="grid gap-3">
+          <p className="rounded-card bg-muted p-4">
+            {CLAIM_STATUS[claim.status]} by {claim.decidedBy?.name}
+            {claim.decidedAt && `, ${formatDateTime(claim.decidedAt)}`}.{" "}
+            {claim.status === "approved" && paidBack(claim)}
+            {claim.decisionNote && ` Note: ${claim.decisionNote}`}
+          </p>
+          {claim.status === "rejected" && <ReopenForm claimId={claim.id} />}
+        </div>
       )}
     </section>
   );

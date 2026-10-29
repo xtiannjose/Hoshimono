@@ -125,17 +125,17 @@ flowchart LR
 
 ## 1.7 A day at the Hub
 
-| When             | Who        | Screen                         | What happens                                                                                        |
-| ---------------- | ---------- | ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| Morning          | Dispatcher | Stock (`/admin/stock`)         | Receives supplier deliveries, records Shrink, checks what is low                                    |
-| Before each Slot | Picker     | Picking (`/admin/pick`)        | Opens confirmed Orders in Slot order, walks the Pick List, prints a Pick Sheet if wanted            |
-| During Picking   | Customer   | Text or email link (`/s/...`)  | Says yes or no to a similar-item swap within 10 minutes                                             |
-| When picked      | Dispatcher | Dispatch (`/admin/dispatch`)   | Chooses a Rider for each picked Order and sends it out                                              |
-| At each door     | Rider      | My deliveries                  | Enters the Customer's Delivery PIN, records cash for COD, or marks the delivery failed              |
-| Any time         | Dispatcher | Orders (`/admin/orders`)       | Finds an Order, reads its history, adds an Order Note, cancels with a reason                        |
-| Any time         | Dispatcher | Freshness Claims               | Approves (full or less) or rejects claims filed within 24 hours of delivery                         |
-| End of day       | Dispatcher | Cash (`/admin/cash`)           | Counts each Rider's cash against what they recorded                                                 |
-| End of day       | Admin      | Daily report (`/admin/report`) | Orders placed, delivered and cancelled, revenue, basket, fill rate, late deliveries, claims, Funnel |
+| When             | Who        | Screen                         | What happens                                                                                                                                                                                                         |
+| ---------------- | ---------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Morning          | Dispatcher | Stock (`/admin/stock`)         | Receives supplier deliveries, records Shrink, checks what is low                                                                                                                                                     |
+| Before each Slot | Picker     | Picking (`/admin/pick`)        | Opens confirmed Orders in Slot order, walks the Pick List, prints a Pick Sheet if wanted                                                                                                                             |
+| During Picking   | Customer   | Text or email link (`/s/...`)  | Says yes or no to a similar-item swap within 10 minutes                                                                                                                                                              |
+| When picked      | Dispatcher | Dispatch (`/admin/dispatch`)   | Chooses a Rider for each picked Order and sends it out                                                                                                                                                               |
+| At each door     | Rider      | My deliveries                  | Enters the Customer's Delivery PIN, records cash for COD, or marks the delivery failed                                                                                                                               |
+| Any time         | Dispatcher | Orders (`/admin/orders`)       | Finds an Order, reads its history, adds an Order Note, cancels with a reason                                                                                                                                         |
+| Any time         | Dispatcher | Freshness Claims               | Approves (full or less) or rejects claims: the Customer's own, filed within 24 hours of delivery, or one staff filed for a Customer who called in ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)) |
+| End of day       | Dispatcher | Cash (`/admin/cash`)           | Counts each Rider's cash against what they recorded                                                                                                                                                                  |
+| End of day       | Admin      | Daily report (`/admin/report`) | Orders placed, delivered and cancelled, revenue, basket, fill rate, late deliveries, claims, Funnel                                                                                                                  |
 
 ## 1.8 What is still pretend
 

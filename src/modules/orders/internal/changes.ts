@@ -64,19 +64,20 @@ export async function moveOrderSlot(
 }
 
 /**
- * Deliver to another of the Customer's saved addresses, in the same Zone
- * (the Delivery Fee was priced for it). Another Zone means a new Order.
+ * Deliver to another of the Customer's saved addresses that the Order's
+ * Hub serves. In another Zone the Delivery Fee stays as placed (ADR 0022).
+ * Another Hub means a new Order: its stock and Slots are not this one's.
  */
 export async function changeOrderAddress(
   orderId: string,
   addressId: string
 ): Promise<
   | { ok: true }
-  | { ok: false; reason: "not_movable" | "address_not_found" | "other_zone" }
+  | { ok: false; reason: "not_movable" | "address_not_found" | "other_hub" }
 > {
   const order = await db.order.findUnique({
     where: { id: orderId },
-    select: { customerId: true, status: true, addressSnapshot: true },
+    select: { customerId: true, status: true, hubId: true },
   });
   if (!order || !AT_HUB.includes(order.status)) {
     return { ok: false, reason: "not_movable" };
@@ -84,12 +85,7 @@ export async function changeOrderAddress(
   const address = await getAddress(order.customerId, addressId);
   if (!address) return { ok: false, reason: "address_not_found" };
   const zone = await resolveZone(address);
-  if (
-    !zone ||
-    zone.name !== (order.addressSnapshot as { zone?: string }).zone
-  ) {
-    return { ok: false, reason: "other_zone" };
-  }
+  if (zone?.hubId !== order.hubId) return { ok: false, reason: "other_hub" };
   const { count } = await db.order.updateMany({
     where: { id: orderId, status: { in: AT_HUB } },
     data: {

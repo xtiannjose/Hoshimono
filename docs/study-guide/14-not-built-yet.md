@@ -30,6 +30,7 @@ From roadmap section 0, as of 29 October:
 - The security review and its fixes, abuse tests included ([`docs/security-review.md`](../security-review.md), chapter 11.8).
 - An automated accessibility sweep of every page a guest, a Customer and an Admin can open, light and dark (`e2e/a11y-sweep.spec.ts`).
 - Draft policy pages, the runbook, and this study guide.
+- Staff tools for what the runbook said the app could not do (28 and 29 Oct, chapter 8 and [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)): cancelling an Order on the way, claims filed for a Customer and reopened, counts below what is reserved, a new address in another Zone, and the PayMongo ids on the Order page. The few gaps left, such as charging a Customer more after checkout or changing an Order's Hub, are in the runbook's last section, "Things the app cannot do yet".
 
 **Left:**
 
@@ -116,7 +117,7 @@ Each ADR lists what it chose not to build "now". In one place:
 - **Recipes and Articles**: Recipes in search, ratings and comments, nutrition, video, rich text, scheduled publishing, more than one photo.
 - **Retention**: SMS Cart Reminders, more than one reminder, offers in reminders, shared Shopping Lists, price-drop alerts.
 - **Offers**: buy-X-get-Y, store credit beyond claims, Vouchers for guests, two Vouchers on one Order, a cap on Referral rewards per Customer.
-- **Claims**: claims after 24 hours, automatic approval, returning items, claims on substitutes separately from their line.
+- **Claims**: a Customer filing after 24 hours on their own (staff can file it for them, [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)), automatic approval, returning items, claims on substitutes separately from their line.
 - **Filipino and the app**: Filipino for the remaining pages and all messages, push notifications, offline Cart changes, Vercel Analytics, per-visitor journeys.
 - **Dispatch**: photo proof of delivery, partner delivery apps.
 - **Design**: a new logo, real photos.

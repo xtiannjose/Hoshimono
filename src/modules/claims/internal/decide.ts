@@ -99,6 +99,31 @@ export async function decideClaim(
   });
 }
 
+/**
+ * A rejected claim back to open for another look (ADR 0022). An approved
+ * one is paid and final: make up more with a Voucher. Audited by the caller.
+ */
+export async function reopenClaim(
+  claimId: string
+): Promise<{ ok: true } | { ok: false; reason: "not_found" | "not_rejected" }> {
+  if (!isUuid(claimId)) return { ok: false, reason: "not_found" };
+  const { count } = await db.freshnessClaim.updateMany({
+    where: { id: claimId, status: "rejected" },
+    data: {
+      status: "open",
+      decidedById: null,
+      decidedAt: null,
+      decisionNote: "",
+    },
+  });
+  if (count) return { ok: true };
+  const claim = await db.freshnessClaim.findUnique({
+    where: { id: claimId },
+    select: { id: true },
+  });
+  return { ok: false, reason: claim ? "not_rejected" : "not_found" };
+}
+
 /** What the decision message says; null while the claim is open. */
 export async function getClaimNotice(claimId: string) {
   if (!isUuid(claimId)) return null;

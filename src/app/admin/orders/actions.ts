@@ -169,7 +169,7 @@ export async function recordPaymentAction(
   if (fd.get("amountMatches") !== "yes") {
     return {
       errors: {
-        form: "Tick the box only if PayMongo shows this amount paid. A different amount: refund it in PayMongo and cancel the Order.",
+        form: "Tick the box only if PayMongo shows this amount paid. A different amount: refund it in PayMongo and call the technical person (runbook 1a).",
       },
     };
   }
@@ -364,7 +364,7 @@ export async function moveSlotAction(
   return { errors: {}, saved: true };
 }
 
-/** Deliver to another of the Customer's saved addresses in the same Zone. */
+/** Deliver to another of the Customer's saved addresses the Hub serves. */
 export async function changeAddressAction(
   orderId: string,
   orderNo: string,
@@ -378,8 +378,8 @@ export async function changeAddressAction(
     return {
       errors: {
         addressId:
-          result.reason === "other_zone"
-            ? "That address is in another Zone, with another fee: cancel and let the Customer order again."
+          result.reason === "other_hub"
+            ? "Another Hub delivers there: cancel, and the Customer orders again."
             : result.reason === "not_movable"
               ? "This Order has left the Hub: it can't change address now."
               : "Choose one of the Customer's addresses.",

@@ -10,6 +10,8 @@ Resume here: read this section, then the batch named first under Next.
 
 **Done**
 
+- 29 Oct, after `phase-5/filipino-messages`, the runbook's last gaps that need no account ([ADR 0022](adr/0022-staff-tools-for-the-last-runbook-gaps.md)):
+  - `phase-6/staff-gaps`: cancel an Order On the way (the Rider brings it back); staff file a Freshness Claim for a Customer who called, and reopen a rejected one; a shelf count below what is reserved (the Product stops selling, the Stock screens show how many are short); an address in another Zone of the same Hub at the placed fee; PayMongo checkout, payment and refund ids on the Order page. The runbook's stale "not possible yet" notes now point to the tools.
 - 28 and 29 Oct, the development backlog besides feature ideas, on eight more branches after `phase-5/filipino-rest`, each built on the one before (not yet pushed):
   - `phase-6/privacy`: a Customer downloads their data or deletes their account ([ADR 0020](adr/0020-customer-data-export-and-deletion.md)).
   - `phase-6/hub-money-tools`: record a payment PayMongo shows but no webhook applied; a second "paid" event no longer refunds; cancel a packed Order; text a Customer; give a Voucher; staff cancels tell the Customer.
@@ -44,7 +46,7 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Where the code lives:** no git host for now, so no remote and no pull requests. The code moves between computers as one file in Google Drive, `hoshimono.bundle` with every branch (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11). `main` is at `6477f88` (Phases 0 to 4 and Batches 5.1 to 5.3). These branches wait to be merged into `main`, each built on the one before, in this order: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`. The newest, `phase-5/filipino-messages`, holds all of them. The CI run on `6477f88` never reported; a local production build and the full test suites passed on the same code.
+**Where the code lives:** no git host for now, so no remote and no pull requests. The code moves between computers as one file in Google Drive, `hoshimono.bundle` with every branch (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11). `main` is at `6477f88` (Phases 0 to 4 and Batches 5.1 to 5.3). These branches wait to be merged into `main`, each built on the one before, in this order: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`, `phase-6/staff-gaps`. The newest, `phase-6/staff-gaps`, holds all of them. The CI run on `6477f88` never reported; a local production build and the full test suites passed on the same code.
 
 **Current phase:** 6, Launch hardening: everything that needs no outside account is done. Phase 5 is done. Phase 4 waits on the dry run with people (the simulated one passed). Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
@@ -55,7 +57,7 @@ Resume here: read this section, then the batch named first under Next.
 3. A lawyer reviews the draft policy pages; the owner fills in `src/config/legal.ts`. The lawyer's questions are in the Batch 6.3 notes (section 10).
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 5. The rest of Phase 6, as accounts arrive: Sentry and an uptime monitor on `/api/health?deep=1`, the load test on a Vercel preview, a Neon restore drill, the TalkBack and VoiceOver pass, the domain, email DNS and SMS sender.
-6. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled), and the few gaps the runbook still lists ([docs/runbook.md](runbook.md), "Things the app cannot do yet").
+6. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled). The runbook's "Things the app cannot do yet" now lists only what needs an account or a rule change ([docs/runbook.md](runbook.md)).
 
 **Waiting on the owner**
 

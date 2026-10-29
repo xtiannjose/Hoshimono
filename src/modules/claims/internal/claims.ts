@@ -156,28 +156,56 @@ type Errors = Partial<
   Record<"form" | "units" | "note" | "photos", ClaimProblem>
 >;
 
+type FileResult = { ok: true; id: string } | { ok: false; errors: Errors };
+
 /**
  * File a claim on one delivered Order Line, within 24 hours (ADR 0016). A
  * form result (ADR 0009): its id, or what to fix.
  */
-export async function fileClaim(
+export function fileClaim(
   customerId: string,
   input: ClaimInput,
   now = new Date()
-): Promise<{ ok: true; id: string } | { ok: false; errors: Errors }> {
+): Promise<FileResult> {
+  return file(customerId, input, now);
+}
+
+/**
+ * Staff file a claim for the Order's Customer, who called or wrote in:
+ * any time after delivery, a photo optional (ADR 0022). Audited by the
+ * caller.
+ */
+export function fileClaimForCustomer(
+  input: ClaimInput,
+  now = new Date()
+): Promise<FileResult> {
+  return file(null, input, now);
+}
+
+// customerId null: staff, for whoever placed the Order.
+async function file(
+  customerId: string | null,
+  input: ClaimInput,
+  now: Date
+): Promise<FileResult> {
   const refuse = (form: ClaimProblem) => ({
     ok: false as const,
     errors: { form },
   });
   if (!isUuid(input.orderLineId)) return refuse("not_found");
   const order = await db.order.findFirst({
-    where: { customerId, lines: { some: { id: input.orderLineId } } },
+    where: {
+      ...(customerId ? { customerId } : {}),
+      lines: { some: { id: input.orderLineId } },
+    },
     select: orderSelect,
   });
   if (!order) return refuse("not_found");
   if (order.status !== "delivered" || !order.deliveredAt)
     return refuse("not_delivered");
-  if (now >= windowEnds(order.deliveredAt)) return refuse("window_passed");
+  const staff = customerId === null;
+  if (!staff && now >= windowEnds(order.deliveredAt))
+    return refuse("window_passed");
   const line = valued(order).find((l) => l.row.id === input.orderLineId)!;
   if (line.row.claim) return refuse("already_reported");
   if (line.units === 0) return refuse("not_charged");
@@ -190,7 +218,11 @@ export async function fileClaim(
   if (note.length > 500) errors.note = "note_too_long";
   const photoProblem = await checkPhotos(input.photos);
   if (photoProblem) errors.photos = photoProblem;
-  else if (PHOTO_NEEDED.includes(input.reason) && input.photos.length === 0)
+  else if (
+    !staff &&
+    PHOTO_NEEDED.includes(input.reason) &&
+    input.photos.length === 0
+  )
     errors.photos = "photo_needed";
   if (Object.keys(errors).length) return { ok: false, errors };
 
@@ -200,7 +232,7 @@ export async function fileClaim(
       data: {
         orderId: order.id,
         orderLineId: line.row.id,
-        customerId,
+        customerId: order.customerId,
         reason: input.reason,
         units,
         note,

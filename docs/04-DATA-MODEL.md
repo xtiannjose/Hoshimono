@@ -81,7 +81,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 ### inventory
 
-**`stock_levels`**: `(product_id, hub_id)` primary key, `on_hand`, `reserved`, `low_stock_threshold`. Check: `reserved >= 0 AND on_hand >= 0 AND reserved <= on_hand`.
+**`stock_levels`**: `(product_id, hub_id)` primary key, `on_hand`, `reserved`, `low_stock_threshold`. Check: `reserved >= 0 AND on_hand >= 0`. A count may find fewer than reserved, so `reserved` can exceed `on_hand`; free stock is `max(0, on_hand - reserved)` ([ADR 0022](adr/0022-staff-tools-for-the-last-runbook-gaps.md)).
 
 **`stock_movements`**: append-only. `product_id`, `hub_id`, `delta`, `reason` (receipt, reserve, release, pick, shrink, adjustment, return), `order_id?`, `staff_id?`, `note`.
 

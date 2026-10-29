@@ -310,7 +310,7 @@ export function MoveSlotForm({
   );
 }
 
-/** Another of the Customer's saved addresses in the same Zone. */
+/** Another of the Customer's saved addresses; the Delivery Fee stays. */
 export function ChangeAddressForm({
   orderId,
   orderNo,
@@ -327,7 +327,7 @@ export function ChangeAddressForm({
       label="Deliver to another of their addresses"
       choices={addresses}
       submit="Change the address"
-      done="Changed."
+      done="Changed. The Delivery Fee stays as placed."
     />
   );
 }

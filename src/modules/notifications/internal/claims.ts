@@ -53,7 +53,8 @@ export async function sendClaimDecided(
         ...(notice.note ? [notice.note] : []),
       ]
     : [t.rejected(notice.product, notice.orderNo), notice.note];
-  const ref = `claim:${notice.claimId}`;
+  // Per outcome: a rejected claim reopened and approved is told again (ADR 0022).
+  const ref = `claim:${notice.claimId}:${notice.approved ? "approved" : "rejected"}`;
   if (notice.email) {
     const email = notice.email;
     await sendOnce(

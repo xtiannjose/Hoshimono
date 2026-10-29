@@ -11,6 +11,7 @@ import {
   resolveZone,
   setHubStatus,
 } from "@/modules/delivery";
+import { countStock } from "@/modules/inventory";
 import { CRON_TICK, lastHeartbeat, recordHeartbeat } from "@/modules/jobs";
 import {
   changeOrderAddress,
@@ -20,6 +21,7 @@ import {
   handOverOrder,
   moveOrderSlot,
   placeOrder,
+  staffMoves,
   transitionOrder,
 } from "@/modules/orders";
 import {
@@ -128,7 +130,7 @@ describe("moveOrderSlot", () => {
 });
 
 describe("changeOrderAddress", () => {
-  it("takes another saved address in the same Zone, not another Zone", async () => {
+  it("takes another saved address of the Hub, keeping what the Order costs", async () => {
     const orderId = await placed();
     const office = await saveAddress(ligaya, {
       label: "Office",
@@ -152,10 +154,90 @@ describe("changeOrderAddress", () => {
       (await db.order.findUniqueOrThrow({ where: { id: orderId } }))
         .addressSnapshot
     ).toMatchObject({ label: "Office", barangay: "San Antonio" });
+    const before = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+    // Another Zone of the same Hub: the Delivery Fee stays as placed.
     expect(await changeOrderAddress(orderId, condo.address.id)).toEqual({
-      ok: false,
-      reason: "other_zone",
+      ok: true,
     });
+    const after = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+    expect(after.addressSnapshot).toMatchObject({
+      label: "Condo",
+      zone: "Makati and Taguig",
+    });
+    expect(after.deliveryFeeCents).toBe(before.deliveryFeeCents);
+    expect(after.totalCents).toBe(before.totalCents);
+
+    // Another Hub's Zone: its stock and Slots are not this Order's.
+    const hub = await db.hub.create({
+      data: { name: "Pasay Hub", address: "Pasay", lat: 14.54, lng: 121 },
+    });
+    const zone = await db.zone.create({
+      data: {
+        hubId: hub.id,
+        name: "Pasay",
+        cities: ["Pasay"],
+        deliveryFeeCents: 5900,
+        minOrderCents: 0,
+      },
+    });
+    const pasay = await saveAddress(ligaya, {
+      label: "Mall",
+      line1: "Seaside Boulevard",
+      barangay: "Barangay 76",
+      city: "Pasay",
+      landmark: "Gate 3",
+    });
+    if (!pasay.ok) throw new Error("address");
+    expect(await changeOrderAddress(orderId, pasay.address.id)).toEqual({
+      ok: false,
+      reason: "other_hub",
+    });
+    await db.address.delete({ where: { id: pasay.address.id } });
+    await db.zone.delete({ where: { id: zone.id } });
+    await db.hub.delete({ where: { id: hub.id } });
+  });
+});
+
+describe("cancelling an Order on its way", () => {
+  it("brings it back: what was picked returns to the shelf and the Customer is told", async () => {
+    const orderId = await placed();
+    await transitionOrder(orderId, "picking", dispatcher);
+    await finishPicking(orderId, dispatcher);
+    await dispatchOrder(orderId, RIDER, dispatcher);
+    expect(staffMoves("out_for_delivery")).toEqual(["cancelled"]);
+
+    expect(
+      await transitionOrder(
+        orderId,
+        "cancelled",
+        dispatcher,
+        "Customer no longer home today"
+      )
+    ).toBe(true);
+    const order = await db.order.findUniqueOrThrow({ where: { id: orderId } });
+    expect(order).toMatchObject({
+      status: "cancelled",
+      paymentStatus: "unpaid",
+    });
+    const milk = await db.stockLevel.findFirstOrThrow({
+      where: { productId: MILK, hubId: HUB },
+    });
+    expect(milk).toMatchObject({ onHand: 40, reserved: 0 });
+    expect(await db.job.count({ where: { kind: "order.cancelled" } })).toBe(1);
+  });
+});
+
+describe("a count below what is reserved", () => {
+  it("is settled by the pick: the shelf ends at 0, nothing reserved (ADR 0022)", async () => {
+    const orderId = await placed();
+    await countStock(HUB, MILK, 1, dispatcher.id, "One carton leaked");
+    await transitionOrder(orderId, "picking", dispatcher);
+    await finishPicking(orderId, dispatcher);
+    expect(
+      await db.stockLevel.findFirstOrThrow({
+        where: { productId: MILK, hubId: HUB },
+      })
+    ).toMatchObject({ onHand: 0, reserved: 0 });
   });
 });
 

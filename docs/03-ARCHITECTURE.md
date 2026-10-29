@@ -142,8 +142,10 @@ stateDiagram-v2
     picking --> picked: all lines resolved
     picking --> cancelled: staff cancels (refund)
     picked --> out_for_delivery: rider dispatched
+    picked --> cancelled: staff cancels (back on the shelf)
     out_for_delivery --> delivered: proof captured
     out_for_delivery --> delivery_failed: nobody home or refused
+    out_for_delivery --> cancelled: staff cancels, rider brings it back (ADR 0022)
     delivery_failed --> out_for_delivery: reattempt
     delivery_failed --> cancelled: give up (refund minus policy)
     delivered --> [*]
@@ -227,7 +229,7 @@ As built (Batch 5.5, [ADR 0017](adr/0017-filipino-pwa-and-funnel.md)).
 - As built (Batch 2.3): places left in a Slot are `capacity - booked - live holds of other carts`. `holdSlot` and `bookSlot` lock the Slot row (`SELECT ... FOR UPDATE`) before counting, so the last place goes to exactly one cart. A Slot stops taking new holds 90 minutes before it starts (`SLOT_CUTOFF_MINUTES`, an assumption until operations set it); a cart holding a place may still book until the Slot starts. `bookSlot` runs inside the caller's Order transaction.
 - Low stock shows as "Only a few left" below a per-Product threshold; the storefront never reveals exact counts.
 - As built (Batch 4.4, [ADR 0012](adr/0012-stock-slots-reports-receipts.md)): stock leaves the shelf when an Order moves to `picked`. `pickStock` releases each line's reservation and takes what was packed (pieces found, or the whole pack for a weighed line, plus an accepted substitute) off `on_hand`. Cancelling after the pick puts it back (`return`); cancelling before it only releases.
-- Staff with the `stock` area receive deliveries, record shrink (a note is required), set the count after a physical count (never below what is reserved) and set the low-stock threshold at `/admin/stock`. Each change is a movement and an audit row.
+- Staff with the `stock` area receive deliveries, record shrink (a note is required), set the count after a physical count (below what is reserved, the Product stops selling and those Orders come up short at the pick: ADR 0022) and set the low-stock threshold at `/admin/stock`. Each change is a movement and an audit row.
 - Slots are made from a weekly schedule (`slot_templates`: weekday, start, end, capacity per Hub). The cron makes the next 7 Manila days' Slots and never touches one that exists, so a change to the schedule applies to days not made yet. Admins edit Zone fees, the schedule and single Slots' capacity at `/admin/setup`; a Slot cannot go below what is booked.
 
 ## 10. Search

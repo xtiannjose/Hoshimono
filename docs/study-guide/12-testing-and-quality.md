@@ -65,7 +65,7 @@ Some test names read like the business rules they protect:
 - "takes silence as a yes once the window ends" (Substitutions).
 - "locks the PIN after 5 wrong tries; the Dispatcher can deliver with a reason".
 
-`tests/db/invariants.test.ts` checks that the database itself refuses what must never happen, with the app out of the way: reserved stock above on hand, a Slot booked past capacity, the same provider event twice, two Orders with one idempotency key, a total that does not add up, two primary photos, two open Carts for one Customer (the invariants in [04-DATA-MODEL.md](../04-DATA-MODEL.md) section 4).
+`tests/db/invariants.test.ts` checks that the database itself refuses what must never happen, with the app out of the way: stock below zero (reserved stock above on hand is allowed since [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)), a Slot booked past capacity, the same provider event twice, two Orders with one idempotency key, a total that does not add up, two primary photos, two open Carts for one Customer (the invariants in [04-DATA-MODEL.md](../04-DATA-MODEL.md) section 4).
 
 ### Test first
 

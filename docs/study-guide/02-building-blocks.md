@@ -129,7 +129,7 @@ A database holds **tables**, like spreadsheets. Each **row** is one thing (one O
 Postgres protects the data with rules it enforces itself, whatever the app does. These are called **constraints**:
 
 - A **unique** constraint forbids two rows with the same value. Two Orders can never share an `idempotency_key`; a provider's event can be recorded only once.
-- A **check** constraint forbids impossible values. `reserved` stock can never exceed `on_hand` stock, and a Slot's `booked` can never exceed its `capacity`.
+- A **check** constraint forbids impossible values. A Slot's `booked` can never exceed its `capacity`, and stock (`on_hand`, `reserved`) can never go below zero.
 - A **foreign key** ties a row to another. An Order Line cannot point to a Product that does not exist.
 
 When a constraint is broken, the database refuses the change and the app sees an error. Hoshimono relies on this on purpose: a bug that would oversell or double-refund fails loudly instead of quietly corrupting the books.
@@ -257,7 +257,7 @@ The admin action calls `updateTag("catalog")`, which throws away every cached re
 </details>
 
 <details>
-<summary>What does a check constraint like <code>reserved &lt;= on_hand</code> protect against, if the code already checks stock?</summary>
+<summary>What does a check constraint like <code>booked &lt;= capacity</code> protect against, if the code already checks the Slot?</summary>
 
-Bugs and races. If any code path, now or in future, tried to reserve more than is on the shelf, the database itself refuses the change and the whole transaction rolls back, so the error is loud and nothing is oversold.
+Bugs and races. If any code path, now or in future, tried to book more places than a Slot has, the database itself refuses the change and the whole transaction rolls back, so the error is loud and nothing is overbooked. (Stock had the same kind of check, `reserved <= on_hand`, until 29 October: [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md) dropped it so a physical count can record the true shelf number even when Orders reserved more.)
 </details>

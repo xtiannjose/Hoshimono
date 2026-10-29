@@ -19,15 +19,17 @@ stateDiagram-v2
     picking --> picked: finishPicking (Final Total set)
     picking --> cancelled: Staff with a reason
     picked --> out_for_delivery: Dispatcher sends it with a Rider
+    picked --> cancelled: Staff with a reason
     out_for_delivery --> delivered: Rider enters the PIN, or Dispatcher with a reason
     out_for_delivery --> delivery_failed: Rider says why
+    out_for_delivery --> cancelled: Staff with a reason, Rider brings it back
     delivery_failed --> out_for_delivery: sent again, new PIN
     delivery_failed --> cancelled: Staff with a reason
     delivered --> [*]
     cancelled --> [*]
 ```
 
-Note what is **not** allowed: a `picked` Order cannot be cancelled directly (it can only go out, and be cancelled if the delivery fails); a `delivered` or `cancelled` Order never moves again.
+Note what is **not** allowed: a `delivered` or `cancelled` Order never moves again. Staff could not cancel a `picked` Order until 28 October, nor one `out_for_delivery` until 29 October ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)): the Dispatcher calls the Rider first, who brings it back, and a Rider cannot mark a cancelled Order delivered.
 
 ### `transitionOrder`: the only way to change status
 
@@ -148,6 +150,7 @@ The Rider (role `rider`, area `delivery`) sees `/admin/deliveries`: only the Ord
 - **Delivered** (`completeDelivery`): the Rider enters the PIN the Customer gives them. A wrong PIN adds one to `pin_attempts` and says how many tries are left. After 5 wrong tries the PIN locks: "Too many tries. Call the Dispatcher." For a COD Order, the Rider also enters the cash taken, pre-filled with the Final Total; a different amount needs a note. The Order moves to `delivered` and, in the same transaction, the cash is recorded on the Payment (`cod_collected`).
 - **Delivered without the PIN** (`deliverWithoutPin`): only the Dispatcher can do this, and only with a reason, stored in the history as "Without PIN: ..." and in the audit log. This covers a Customer who lost the message.
 - **Failed** (`failDelivery`): the Rider says why ("nobody home"). The Order moves to `delivery_failed` and the job `order.delivery_failed` sends a "we missed you" message. The Dispatcher then sends it out again (new PIN) or cancels it (a paid Order is refunded in full, and the picked stock goes back on the shelf).
+- **Cancelled on the way**: since 29 October staff can also cancel an Order that is out, from the Order page, with a reason ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)). The Rider brings it back; the stock, the money and the Customer's notice work as for any cancel after Picking. Before, the Rider had to press "Could not deliver" first, which sent a "we missed you" message to a Customer who had asked to cancel.
 
 A 4-digit PIN is not a strong secret. It proves that someone at the address had the Customer's message, and the 5-try limit stops a Rider from guessing ([ADR 0011](../adr/0011-dispatch-pin-and-cash.md)). Photo proof waits for image storage (Cloudflare R2).
 
@@ -204,18 +207,18 @@ flowchart LR
     E -->|"cancelled after Picking"| G["return<br/>(on_hand + packed)"]
 ```
 
-Stock leaves the shelf count at `picked`, not at Checkout ([ADR 0012](../adr/0012-stock-slots-reports-receipts.md)). `pickStock` releases each line's reservation and takes off `on_hand` what was actually packed: the pieces found, a weighed line's pack, and an accepted substitute. A substitute was never reserved, so its count is never pushed below what other Orders have reserved; the movement records what was really taken. An Order cancelled after Picking puts those items back (`return`).
+Stock leaves the shelf count at `picked`, not at Checkout ([ADR 0012](../adr/0012-stock-slots-reports-receipts.md)). `pickStock` releases each line's reservation and takes off `on_hand` what was actually packed: the pieces found, a weighed line's pack, and an accepted substitute. The shelf count never goes below 0, but it may end below what other Orders have reserved (a substitute was never reserved); those Orders come up short at their own pick ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)). The movement records what was really taken. An Order cancelled after Picking puts those items back (`return`).
 
 ### What staff do
 
 At `/admin/stock` (area `stock`: Dispatchers and Admins), searchable, with "only what is low":
 
-| Action    | Function               | Rule                                                                      | Movement reason |
-| --------- | ---------------------- | ------------------------------------------------------------------------- | --------------- |
-| Receive   | `receiveStock`         | How many came in from a supplier                                          | `receipt`       |
-| Shrink    | `recordShrink`         | How many spoiled, broke or went missing; a note is required               | `shrink`        |
-| Count     | `countStock`           | Set the shelf number after a physical count; never below what is reserved | `adjustment`    |
-| Threshold | `setLowStockThreshold` | At or under this, the Product is "low" and shows "Only a few left"        | (none)          |
+| Action    | Function               | Rule                                                                                                                                                | Movement reason |
+| --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| Receive   | `receiveStock`         | How many came in from a supplier                                                                                                                    | `receipt`       |
+| Shrink    | `recordShrink`         | How many spoiled, broke or went missing; a note is required                                                                                         | `shrink`        |
+| Count     | `countStock`           | Set the shelf number after a physical count, even below what is reserved (ADR 0022): the Product stops selling and the Stock screens show "N short" | `adjustment`    |
+| Threshold | `setLowStockThreshold` | At or under this, the Product is "low" and shows "Only a few left"                                                                                  | (none)          |
 
 Each Product's page (`/admin/stock/[productId]`) shows its latest movements. The shop never shows counts, only "in stock", "only a few left" or "out of stock".
 
@@ -259,11 +262,13 @@ Every staff write is recorded in `audit_log`: who, what action, which record, an
 
 Most staff Server Actions use one helper, `adminWrite` in `src/app/admin/admin-write.ts`: it runs the write and its audit rows in the same transaction, so a change is never saved without its record, and a refused write records nothing. A few actions record the audit right after the change instead (marked `ponytail:` in the code, with the reason).
 
-## When plans change: the staff tools (28 Oct)
+## When plans change: the staff tools (28 and 29 Oct)
 
 The runbook ([docs/runbook.md](../runbook.md)) first listed what staff could not do in the app. Most of it now has a tool, and each tool goes through the same rules as the rest of the app:
 
-- **Order page.** Record a payment PayMongo shows but no webhook applied: it goes through the same code as a verified webhook (`recordPaidByStaff` in `src/modules/payments/internal/webhooks.ts`), so the Order is confirmed, or refunded if it had closed. Text the Customer; give a Voucher; move the Order to another Slot that still takes Orders, or to another saved address in the same Zone (`src/modules/orders/internal/changes.ts`); cancel even when packed, which puts what was picked back on the shelf; block an account from ordering.
+- **Order page.** Record a payment PayMongo shows but no webhook applied: it goes through the same code as a verified webhook (`recordPaidByStaff` in `src/modules/payments/internal/webhooks.ts`), so the Order is confirmed, or refunded if it had closed. Text the Customer; give a Voucher; move the Order to another Slot that still takes Orders, or to another saved address the same Hub serves, in any of its Zones, keeping the Delivery Fee it was placed with (`src/modules/orders/internal/changes.ts`, [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)); cancel even when packed or on the way, which puts what was picked back on the shelf; block an account from ordering. Admins also see the Order's PayMongo checkout, payment and refund ids.
+- **Freshness Claims.** File a claim for a Customer who called in, from a delivered Order's page; reopen a rejected claim (chapter 9).
+- **Stock.** A physical count may go below what is reserved (section 8.6).
 - **Dispatch.** Hand an Order on its way to another Rider (the PIN stays; the Customer is told who is coming).
 - **Picking.** Record a Customer's answer to a substitute given by phone, through the same function as the link.
 - **Cash.** Correct one Order's cash before the day is counted, or the count after.

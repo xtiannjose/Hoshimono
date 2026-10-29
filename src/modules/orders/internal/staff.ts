@@ -109,7 +109,13 @@ export type StaffOrderDetail = OrderDetail & {
     reason: string | null;
   }[];
   notes: { text: string; at: Date; staffName: string }[];
-  refunds: { amountCents: number; reason: string; status: RefundStatus }[];
+  refunds: {
+    amountCents: number;
+    reason: string;
+    status: RefundStatus;
+    /** The provider's refund id, once sent. */
+    providerRef: string | null;
+  }[];
   customerId: string;
   hubId: string;
   /** The newest Payment, for the staff tools that act on it. */
@@ -117,6 +123,9 @@ export type StaffOrderDetail = OrderDetail & {
     method: PaymentMethod;
     status: PaymentStatus;
     amountCents: number;
+    /** The provider's checkout and payment ids, to find it in its dashboard. */
+    providerRef: string | null;
+    paymentRef: string | null;
   } | null;
 };
 
@@ -164,9 +173,16 @@ export async function getOrderForStaff(
           method: true,
           status: true,
           amountCents: true,
+          providerRef: true,
+          paymentRef: true,
           refunds: {
             orderBy: { createdAt: "asc" },
-            select: { amountCents: true, reason: true, status: true },
+            select: {
+              amountCents: true,
+              reason: true,
+              status: true,
+              providerRef: true,
+            },
           },
         },
       },
@@ -214,6 +230,8 @@ export async function getOrderForStaff(
           method: order.payments[0].method,
           status: order.payments[0].status,
           amountCents: order.payments[0].amountCents,
+          providerRef: order.payments[0].providerRef,
+          paymentRef: order.payments[0].paymentRef,
         }
       : null,
   };

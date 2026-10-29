@@ -115,7 +115,7 @@ Not built: a cap on rewards per Customer (watch for abuse after launch).
 
 ## 9.7 Freshness Claims ([ADR 0016](../adr/0016-freshness-claims.md))
 
-A **Freshness Claim** ([glossary](../../GLOSSARY.md#delivery-and-fulfilment)) is a Customer's report, within 24 hours of delivery, that an Order Line was spoiled, damaged, missing or the wrong item. The launch target is fewer than 3 claims per 100 Orders.
+A **Freshness Claim** ([glossary](../../GLOSSARY.md#delivery-and-fulfilment)) is a Customer's report, within 24 hours of delivery (or later, filed by staff for them), that an Order Line was spoiled, damaged, missing or the wrong item. The launch target is fewer than 3 claims per 100 Orders.
 
 ### Filing
 
@@ -125,6 +125,8 @@ From a delivered Order, the Customer opens `/orders/[orderNo]/claim` and, for on
 - the line has no claim yet (the database allows one claim per Order Line, so two taps at once make one claim);
 - something was charged for it (a refused substitute or a fully short line cannot be claimed);
 - the units are 1 to what was charged.
+
+**Staff can file one for a Customer** who called or wrote in (`claims.fileClaimForCustomer`, from the Freshness Claims panel on a delivered Order's admin page, [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)): any time after delivery, with no photo, and the same one-claim-per-line and value rules. It opens like any other claim, so filing and paying stay two steps. The audit log records it as `file_for_customer`.
 
 **The server works out what the claim is worth.** The Customer never types an amount. `claims.claimValue` takes the line's charged amount after Picking (`pricing.chargedLine`, substitutes included), subtracts its share of the Order's Voucher discount (spread as ADR 0007 says), and takes the share for the units claimed. Photos are resized to WebP (at most 1600 pixels) and stored through the media store.
 
@@ -137,7 +139,9 @@ Admins and Dispatchers (area `claims`) review every claim at `/admin/claims`. `c
   - to GCash or the card, if the Order was paid online, through the refund ledger (`payments.refundOrderPayment(tx, orderId, "claim", amount, claimId)`: one refund per claim, never more than is left of the Payment; chapter 7);
   - and anything that cannot be refunded (a cash Order, or nothing left on the Payment) becomes a personal **store-credit Voucher** (`CREDIT-XXXXXX`, no minimum spend, 90 days).
 
-Both outcomes queue `claim.decided`, which tells the Customer by email (or SMS without one) the amount and how it comes back, or why it was rejected. The Order page lists each claim and its status. Every decision is audited. The daily report counts claims per 100 delivered Orders.
+Both outcomes queue `claim.decided`, which tells the Customer by email (or SMS without one) the amount and how it comes back, or why it was rejected. The Order page lists each claim and its status. Every decision is audited.
+
+**A rejected claim can be reopened** (`claims.reopenClaim`, the claim page's "Reopen for another look", [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)) when the Customer shows more: it goes back to open and can be approved. The message is sent once per outcome, so a Customer told "not approved" hears the approval too. An approved claim is paid and final, because a refund cannot be undone; more is given as a Voucher from the Order page. The daily report counts claims per 100 delivered Orders.
 
 ```mermaid
 sequenceDiagram
@@ -161,7 +165,7 @@ sequenceDiagram
     J->>C: email or SMS with the outcome
 ```
 
-Not built: claims after 24 hours (Staff can still issue a Voucher by hand), automatic approval, asking for the item back.
+Not built: a Customer filing after 24 hours on their own (staff file it for them instead), automatic approval, asking for the item back.
 
 ## 9.8 Filipino pages ([ADR 0017](../adr/0017-filipino-pwa-and-funnel.md))
 

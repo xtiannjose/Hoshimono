@@ -239,12 +239,12 @@ sequenceDiagram
 
 ### Step 3: a person checks the unclear ones
 
-Admins see `/admin/refunds` ("Refunds to check"): every refund marked `needs_review`, and every one still `pending` with an error after its retries (`listRefundsToCheck`). Each shows the PayMongo payment id to look up in PayMongo's dashboard. Two buttons (`settleRefund`):
+Admins see `/admin/refunds` ("Refunds to check"): every refund marked `needs_review`, and every one still `pending` with an error after its retries (`listRefundsToCheck`). Each shows the PayMongo payment id to look up in PayMongo's dashboard. Since 29 October the Order page shows the same to Admins: "In PayMongo: checkout ..., payment ..." under the status line, and each sent refund's PayMongo refund id ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)). Two buttons (`settleRefund`):
 
 - **"It went through"**: mark it `sent` (optionally with PayMongo's refund id); the job then tells the Customer.
 - **"Send again"**: put it back to `pending`; the job sends it.
 
-A runbook for this screen is still to be written (Batch 6.3, chapter 14).
+What staff do on this screen, step by step, is in the [runbook](../runbook.md), section 2c.
 
 ## 7.9 What the Customer sees
 

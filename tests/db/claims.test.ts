@@ -20,6 +20,8 @@ import {
   claimValue,
   decideClaim,
   fileClaim,
+  fileClaimForCustomer,
+  reopenClaim,
 } from "@/modules/claims";
 import { getDefaultAddress } from "@/modules/customers";
 import { getDefaultHubId, resolveZone } from "@/modules/delivery";
@@ -358,5 +360,95 @@ describe("deciding a claim (ADR 0016)", () => {
     expect(
       await db.notification.count({ where: { template: "claim_decided" } })
     ).toBe(1);
+  });
+});
+
+describe("staff claims (ADR 0022)", () => {
+  it("files one for a Customer after the 24 hours, without a photo", async () => {
+    const order = await delivered(ligaya, [[MILK, 5]]);
+    const late = new Date(NOW.getTime() + 3 * 24 * HOUR);
+    const base = {
+      orderLineId: order.line(MILK),
+      reason: "not_fresh" as const,
+      units: 2,
+      note: "Called the Hub: sour on opening",
+      photos: [],
+    };
+    expect(await fileClaimForCustomer({ ...base, units: 6 }, late)).toEqual({
+      ok: false,
+      errors: { units: "bad_units" },
+    });
+    const filed = await fileClaimForCustomer(base, late);
+    if (!filed.ok) throw new Error(JSON.stringify(filed.errors));
+    expect(
+      await db.freshnessClaim.findUniqueOrThrow({ where: { id: filed.id } })
+    ).toMatchObject({
+      customerId: ligaya,
+      status: "open",
+      claimedCents: 23000,
+    });
+    expect(await fileClaimForCustomer(base, late)).toEqual({
+      ok: false,
+      errors: { form: "already_reported" },
+    });
+  });
+
+  it("reopens a rejected claim for another look, never an approved one", async () => {
+    const order = await delivered(ligaya, [
+      [MILK, 5],
+      [SOY, 1],
+    ]);
+    const missing = (orderLineId: string) => ({
+      orderLineId,
+      reason: "missing" as const,
+      units: 1,
+      note: "",
+      photos: [],
+    });
+    const rejected = await fileClaim(ligaya, missing(order.line(MILK)), NOW);
+    const approved = await fileClaim(ligaya, missing(order.line(SOY)), NOW);
+    if (!rejected.ok || !approved.ok) throw new Error("not filed");
+    await decideClaim(
+      rejected.id,
+      staffId,
+      { approve: false, note: "It was in the bag." },
+      NOW
+    );
+    const quiet = vi.spyOn(console, "info").mockImplementation(() => {});
+    await jobHandlers[CLAIM_DECIDED_JOB]({ claimId: rejected.id });
+    await decideClaim(
+      approved.id,
+      staffId,
+      { approve: true, amountCents: 6500, note: "" },
+      NOW
+    );
+
+    expect(await reopenClaim(approved.id)).toEqual({
+      ok: false,
+      reason: "not_rejected",
+    });
+    expect(await reopenClaim(rejected.id)).toEqual({ ok: true });
+    expect(
+      await db.freshnessClaim.findUniqueOrThrow({ where: { id: rejected.id } })
+    ).toMatchObject({ status: "open", decidedAt: null });
+    expect(
+      await decideClaim(
+        rejected.id,
+        staffId,
+        { approve: true, amountCents: 11500, note: "Found the Picker's note." },
+        NOW
+      )
+    ).toEqual({ ok: true });
+    // The Customer hears the new decision too.
+    await jobHandlers[CLAIM_DECIDED_JOB]({ claimId: rejected.id });
+    quiet.mockRestore();
+    expect(
+      await db.notification.count({
+        where: {
+          template: "claim_decided",
+          ref: { startsWith: `claim:${rejected.id}` },
+        },
+      })
+    ).toBe(2);
   });
 });

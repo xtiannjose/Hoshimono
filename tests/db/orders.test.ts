@@ -915,7 +915,8 @@ describe("the staff order queue", () => {
     expect(staffMoves("confirmed")).toEqual(["picking", "cancelled"]);
     // Leaving the Hub and arriving go through dispatch: Rider, PIN, cash.
     expect(staffMoves("picked")).toEqual(["cancelled"]);
-    expect(staffMoves("out_for_delivery")).toEqual([]);
+    // Cancelling on the way: the Rider brings it back (ADR 0022).
+    expect(staffMoves("out_for_delivery")).toEqual(["cancelled"]);
     expect(staffMoves("delivery_failed")).toEqual(["cancelled"]);
     expect(staffMoves("delivered")).toEqual([]);
   });

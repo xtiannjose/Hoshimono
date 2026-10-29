@@ -160,7 +160,7 @@ Each entry lists what the module owns, its most important public functions, and 
 ### claims: Freshness Claims
 
 - **Owns:** `freshness_claims`.
-- **Functions:** `claimableLines`, `fileClaim`, `listOrderClaims`, `decideClaim`, `listClaimsForStaff`, `getClaimForStaff`, `countClaims`, `claimValue`. Constant: `CLAIM_WINDOW_HOURS = 24`.
+- **Functions:** `claimableLines`, `fileClaim`, `fileClaimForCustomer` (staff, ADR 0022), `listOrderClaims`, `decideClaim`, `reopenClaim` (a rejected claim, ADR 0022), `listClaimsForStaff`, `getClaimForStaff`, `countClaims`, `claimValue`. Constant: `CLAIM_WINDOW_HOURS = 24`.
 - **Depends on:** `payments` (refund), `pricing` (charged amounts, credit Vouchers), `jobs`.
 - **Read:** `src/modules/claims/internal/claims.ts`, `decide.ts`, `value.ts`. Chapter 9.
 

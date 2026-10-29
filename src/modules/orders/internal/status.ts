@@ -26,7 +26,8 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   picking: ["picked", "cancelled"],
   // Cancelling a packed Order puts what was picked back on the shelf.
   picked: ["out_for_delivery", "cancelled"],
-  out_for_delivery: ["delivered", "delivery_failed"],
+  // Cancelling on the way: the Rider brings it back (ADR 0022).
+  out_for_delivery: ["delivered", "delivery_failed", "cancelled"],
   delivery_failed: ["out_for_delivery", "cancelled"],
   delivered: [],
   cancelled: [],

@@ -66,6 +66,10 @@ test("an Admin records a missed payment, texts, gives a Voucher and cancels", as
   await expect(
     admin.getByText("Confirmed", { exact: true }).first()
   ).toBeVisible({ timeout: 30_000 });
+  // The ids to find it in PayMongo's dashboard (ADR 0022).
+  await expect(
+    admin.getByText(/^In PayMongo: checkout fake_cs_/)
+  ).toContainText("payment pay_seen_in_dashboard");
 
   await admin
     .getByLabel("Text the Customer")

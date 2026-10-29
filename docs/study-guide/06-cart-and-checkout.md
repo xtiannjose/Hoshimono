@@ -200,7 +200,7 @@ Why not read the stock, check it in code, then write? Because between the read a
 Two more details:
 
 - **Same order every time.** Lines are reserved sorted by Product id. If Order A wanted milk then eggs and Order B eggs then milk, each could lock one row and wait forever for the other (a deadlock). Sorting means both lock milk first, so one simply waits for the other.
-- **A database check behind the code.** `stock_levels` has a check constraint: `reserved <= on_hand`, and neither below zero. Even a buggy path could not oversell; the database would refuse it. Releasing more than was reserved also breaks the check and fails loudly, instead of being quietly clamped to zero.
+- **A database check behind the code.** `stock_levels` has a check constraint: neither `on_hand` nor `reserved` below zero. Releasing more than was reserved breaks it and fails loudly, instead of being quietly clamped to zero. Until 29 October it also refused `reserved` above `on_hand`; [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md) dropped that part so a physical count can record what is really on the shelf, even below what Orders reserved (those Orders come up short at the pick). Checkout still cannot oversell: the guarded update above reserves only what is free, and free is never below zero.
 
 Every reservation is logged in `stock_movements` (reason `reserve`, the Order's id, the quantity).
 
@@ -214,7 +214,7 @@ Every reservation is logged in `stock_movements` (reason `reserve`, the Order's 
 | Two tabs check out the same Cart                      | `checkOutCart` only succeeds while `checked_out_at` is empty                                                | `cart.ts` (`checkOutCart`)                |
 | A line added in another tab after the Cart was priced | The Cart version is re-read under the lock; a difference is `cart_changed`                                  | `cart.ts` (`readCartVersion`)             |
 | A line saved into a Cart that just became an Order    | Line writes take a share lock on the open Cart; Checkout's close waits for them, and vice versa             | `cart.ts` (`setLineQuantity`)             |
-| Two Orders take the last unit                         | Guarded `UPDATE ... WHERE on_hand - reserved >= qty`, plus the database check                               | `reserve.ts`, the database                |
+| Two Orders take the last unit                         | Guarded `UPDATE ... WHERE on_hand - reserved >= qty`, with the row locked                                   | `reserve.ts`                              |
 | Two Orders deadlock on shared Products                | Products locked in sorted order; a deadlock that still happens is retried                                   | `reserve.ts`, `place-order.ts`            |
 | Two Carts take the last Slot place                    | The Slot row is locked while counting; `booked <= capacity` is a database check                             | `slots.ts`, the database                  |
 | Two Orders take a Voucher's last use                  | The Voucher row is locked and every rule re-checked inside the Order transaction                            | `vouchers.ts` (`redeemVoucher`)           |

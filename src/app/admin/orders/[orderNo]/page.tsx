@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { CLAIM_STATUS } from "@/components/order/claim-labels";
 import { OrderDetails } from "@/components/order/order-details";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/components/order/status-labels";
 import type { OrderStatus } from "@/generated/prisma/enums";
 import { formatDateTime, formatSlot } from "@/lib/dates";
+import { claimableLines, listOrderClaims } from "@/modules/claims";
 import { listAddresses } from "@/modules/customers";
 import { listSlots } from "@/modules/delivery";
 import { formatMoney } from "@/lib/money";
@@ -21,6 +23,7 @@ import {
   staffMoves,
 } from "@/modules/orders";
 
+import { FileClaimForm } from "../../claims/decision-forms";
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
 import { blockCustomerAction } from "../actions";
 import {
@@ -75,6 +78,16 @@ async function Order({ params }: { params: Props["params"] }) {
   if (!order) notFound();
   // Money tools for those who handle refunds (docs/runbook.md).
   const money = !!staff && staffAreas(staff.role).includes("refunds");
+  // Claims for a Customer who called in (ADR 0022).
+  const claims =
+    !!staff &&
+    staffAreas(staff.role).includes("claims") &&
+    order.status === "delivered"
+      ? await Promise.all([
+          claimableLines(order.orderNo, order.customerId),
+          listOrderClaims(order.id, order.customerId),
+        ])
+      : null;
   // Still at the Hub: its Slot and address can change (docs/runbook.md).
   const atHub = ["confirmed", "picking", "picked", "delivery_failed"].includes(
     order.status
@@ -117,6 +130,28 @@ async function Order({ params }: { params: Props["params"] }) {
             Payment: {PAYMENT_STATUS_LABEL[order.paymentStatus]}
           </span>
         </p>
+        {money && (order.payment?.providerRef || order.payment?.paymentRef) && (
+          <p className="text-muted-foreground text-sm">
+            In PayMongo:{" "}
+            {order.payment.providerRef && (
+              <>
+                checkout{" "}
+                <span className="font-mono select-all">
+                  {order.payment.providerRef}
+                </span>
+              </>
+            )}
+            {order.payment.providerRef && order.payment.paymentRef && ", "}
+            {order.payment.paymentRef && (
+              <>
+                payment{" "}
+                <span className="font-mono select-all">
+                  {order.payment.paymentRef}
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -196,6 +231,12 @@ async function Order({ params }: { params: Props["params"] }) {
                 , with a Rider and the Customer&apos;s PIN.
               </p>
             )}
+            {order.status === "out_for_delivery" && (
+              <p className="text-muted-foreground">
+                To cancel it, call the Rider first: they bring it back to the
+                Hub, and what was packed goes back on the shelf.
+              </p>
+            )}
             {moves.length > 0 ? (
               <MoveForm
                 orderId={order.id}
@@ -226,6 +267,12 @@ async function Order({ params }: { params: Props["params"] }) {
                       {r.reason.replaceAll("_", " ")}
                       <span className="text-muted-foreground block text-sm">
                         {REFUND_STATUS[r.status]}
+                        {r.providerRef && (
+                          <span className="font-mono select-all">
+                            {" "}
+                            {r.providerRef}
+                          </span>
+                        )}
                       </span>
                     </span>
                     <span className="tabular-nums">
@@ -234,6 +281,51 @@ async function Order({ params }: { params: Props["params"] }) {
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+          {claims && (
+            <section aria-labelledby="h-claims" className={PANEL}>
+              <h2 id="h-claims" className="type-h3">
+                Freshness Claims
+              </h2>
+              {claims[1].length > 0 && (
+                <ul className="grid gap-2">
+                  {claims[1].map((c) => (
+                    <li key={c.id} className="flex justify-between gap-3">
+                      <Link
+                        href={`/admin/claims/${c.id}`}
+                        className="font-semibold hover:underline"
+                      >
+                        {c.orderLine.nameSnapshot}
+                      </Link>
+                      <span className="text-muted-foreground text-sm">
+                        {CLAIM_STATUS[c.status]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {claims[0]?.lines.some((l) => !l.claim && l.units > 0) ? (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    The Customer called or wrote in? File it for them, any time
+                    after delivery. You decide it next.
+                  </p>
+                  <FileClaimForm
+                    orderNo={order.orderNo}
+                    lines={claims[0].lines
+                      .filter((l) => !l.claim && l.units > 0)
+                      .map((l) => ({
+                        id: l.id,
+                        label: `${l.name} (up to ${l.units}, ${formatMoney(l.amountCents)})`,
+                      }))}
+                  />
+                </>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Every item already has a claim.
+                </p>
+              )}
             </section>
           )}
           {money && unpaidOnline && (

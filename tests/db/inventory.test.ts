@@ -164,10 +164,6 @@ describe("keeping stock (ADR 0012)", () => {
     ).toEqual({
       ok: true,
     });
-    expect(await countStock(hubId, eggs, 1, staff)).toEqual({
-      ok: false,
-      errors: { counted: "2 are reserved for Orders: count at least 2." },
-    });
     expect(await countStock(hubId, eggs, 30, staff, "Weekly count")).toEqual({
       ok: true,
     });
@@ -205,5 +201,23 @@ describe("keeping stock (ADR 0012)", () => {
     expect(low.every((r) => r.low)).toBe(true);
     const found = await listStockForAdmin(hubId, { q: "large eggs" });
     expect(found.map((r) => r.productId)).toContain(eggs);
+  });
+
+  it("takes a count below what is reserved, and stops selling (ADR 0022)", async () => {
+    const hubId = (await getDefaultHubId())!;
+    await db.stockLevel.update({
+      where: { productId_hubId: { productId: eggs, hubId } },
+      data: { onHand: 10, reserved: 6 },
+    });
+    expect(await countStock(hubId, eggs, 4, staff, "Two trays broke")).toEqual({
+      ok: true,
+    });
+    const [row] = await listStockForAdmin(hubId, { q: "large eggs" });
+    expect(row).toMatchObject({ onHand: 4, reserved: 6, free: 0, short: 2 });
+    expect((await getStockStates([eggs], hubId))[eggs]).toBe("out");
+    expect(await recordShrink(hubId, eggs, 1, staff, "Cracked")).toEqual({
+      ok: false,
+      errors: { quantity: "Only 0 are not reserved for Orders." },
+    });
   });
 });

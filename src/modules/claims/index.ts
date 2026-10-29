@@ -5,6 +5,7 @@ export {
   claimableLines,
   countClaims,
   fileClaim,
+  fileClaimForCustomer,
   listOrderClaims,
 } from "./internal/claims";
 export type {
@@ -18,6 +19,7 @@ export {
   getClaimForStaff,
   getClaimNotice,
   listClaimsForStaff,
+  reopenClaim,
 } from "./internal/decide";
 export type { ClaimDecision, DecideResult } from "./internal/decide";
 export { MAX_PHOTOS } from "./internal/photos";
