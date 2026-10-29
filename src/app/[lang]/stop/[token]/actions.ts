@@ -10,7 +10,7 @@ import { setMarketingOptIn } from "@/modules/customers";
  * signing in; a button press, so mail scanners following links change nothing.
  */
 export async function stopRemindersAction(token: string): Promise<void> {
-  const customerId = verifySigned(token);
+  const customerId = verifySigned(token, "stop");
   if (customerId) await setMarketingOptIn(customerId, false);
   redirect(customerId ? `/stop/${token}?done=1` : "/");
 }

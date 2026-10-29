@@ -121,7 +121,7 @@ export const jobHandlers: JobHandlers = {
       name: reminder.name,
       items: reminder.items,
       cartUrl: link("/cart"),
-      stopUrl: link(`/stop/${signValue(reminder.customerId)}`),
+      stopUrl: link(`/stop/${signValue("stop", reminder.customerId)}`),
     });
   },
 

@@ -32,9 +32,8 @@ Every one of the 24 `"use server"` files checks the signed-in role itself; Order
 
 ## Hardening for later
 
-Done 28 Oct: Order notices run ahead of reminders and alerts in the jobs queue; the cron deletes ended sign-in sessions and codes.
+Done 29 Oct: stop links carry their purpose and end after 90 days (`lib/signed.ts`). Done 28 Oct: Order notices run ahead of reminders and alerts in the jobs queue; the cron deletes ended sign-in sessions and codes.
 
-- Purpose-bound signed tokens with an expiry for the stop links (`lib/signed.ts`).
 - Claim photos private (signed URLs) when the R2 media store lands; today they are public files with random names.
 - `clientIp` trusts the first `x-forwarded-for` hop, which is right on Vercel; revisit if a proxy is put in front.
 - Dependencies: `npm audit --omit=dev` finds nothing. `npm audit fix` (27 Oct) moved the shadcn CLI to 4.23, which dropped the `fast-uri` and `body-parser` advisories; what is left is 3 low advisories in `deepmerge`, inside the shadcn CLI (a dev tool), with no non-breaking fix.

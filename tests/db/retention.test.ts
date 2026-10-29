@@ -330,11 +330,17 @@ describe("the queued messages", () => {
 });
 
 describe("the stop link", () => {
-  it("verifies only what it signed", () => {
-    const token = signValue("customer-1");
-    expect(verifySigned(token)).toBe("customer-1");
-    expect(verifySigned(`${token}x`)).toBeNull();
-    expect(verifySigned("customer-1.forged")).toBeNull();
+  it("verifies only what it signed, for its purpose, until it expires", () => {
+    const now = new Date("2026-10-01T00:00:00Z");
+    const token = signValue("stop", "customer-1", { now });
+    expect(verifySigned(token, "stop", now)).toBe("customer-1");
+    expect(verifySigned(token, "unsubscribe", now)).toBeNull();
+    expect(verifySigned(`${token}x`, "stop", now)).toBeNull();
+    expect(
+      verifySigned("stop:customer-1:9999999999.forged", "stop", now)
+    ).toBeNull();
+    const later = new Date(now.getTime() + 91 * 24 * 60 * 60 * 1000);
+    expect(verifySigned(token, "stop", later)).toBeNull();
   });
 });
 
