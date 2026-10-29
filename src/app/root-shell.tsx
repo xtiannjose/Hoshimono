@@ -7,6 +7,7 @@ import { Header } from "@/components/shell/header";
 import { ShopNotice } from "@/components/shell/shop-notice";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/i18n/client";
+
 import { HTML_LANG, type Lang } from "@/i18n/lang";
 import { MESSAGES } from "@/i18n/messages";
 

@@ -61,7 +61,6 @@ export const en = {
     body: "Something went wrong on our side. Please try again.",
     retry: "Try again",
   },
-  dates: { today: "Today", tomorrow: "Tomorrow", to: "to" },
   product: {
     add: "Add",
     addToCart: (name: string) => `Add ${name} to cart`,

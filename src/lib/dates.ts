@@ -1,11 +1,14 @@
-import { en } from "@/i18n/en";
-import { fil } from "@/i18n/fil";
 import type { Lang } from "@/i18n/lang";
 
 // Store UTC, show Asia/Manila (CLAUDE.md). Manila has no daylight saving.
 const ZONE = "Asia/Manila";
 
-const WORDS = { en: en.dates, fil: fil.dates };
+// Here, not in the dictionaries: Client Components format dates, and the
+// dictionaries must not all reach the browser.
+const WORDS = {
+  en: { today: "Today", tomorrow: "Tomorrow", to: "to" },
+  fil: { today: "Ngayon", tomorrow: "Bukas", to: "hanggang" },
+};
 const LOCALE = { en: "en-PH", fil: "fil-PH" };
 
 /** `date` moved by `minutes`; negative goes back. */

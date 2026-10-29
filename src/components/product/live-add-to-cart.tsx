@@ -11,7 +11,7 @@ import {
   useCart,
 } from "@/components/cart/cart-store";
 import { Motion } from "@/components/motion";
-import { useLang, useMessages } from "@/i18n/client";
+import { useMessages } from "@/i18n/client";
 
 import { ADD_BUTTON } from "@/components/ui/button-classes";
 import { QuantityStepper } from "./quantity-stepper";
@@ -36,7 +36,7 @@ export default function LiveAddToCart({
   woke: boolean;
 }) {
   const quantity = useCart((s) => quantityIn(s, productId));
-  const lang = useLang();
+  const cartWords = useMessages().cart;
   const t = useMessages().product;
   const notice = useCart((s) =>
     s.notice?.productId === productId ? s.notice.text : null
@@ -63,7 +63,7 @@ export default function LiveAddToCart({
 
   function change(next: number) {
     setSwapped(true);
-    void changeQuantity(productId, name, next, lang);
+    void changeQuantity(productId, name, next, cartWords);
   }
 
   return (

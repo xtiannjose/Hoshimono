@@ -4,11 +4,7 @@ import { MESSAGES } from "@/i18n/messages";
 import type { UnitPrice } from "@/modules/catalog";
 import { formatMoney } from "@/lib/money";
 
-type PackSize = { value: number; unit: "g" | "ml" | "pc" };
-
-function decimal(value: number): string {
-  return String(Number((value / 1000).toFixed(3)));
-}
+import { packSizeLabel, type PackSize } from "./pack-size";
 
 /** "1 kg", "450 g", "1.5 L", "12 pcs"; Weighed Products get "approx.". */
 export function formatPackSize(
@@ -16,18 +12,7 @@ export function formatPackSize(
   isWeighed: boolean,
   lang: Lang = "en"
 ): string {
-  const t = MESSAGES[lang].product;
-  const text =
-    size.unit === "g"
-      ? size.value >= 1000
-        ? `${decimal(size.value)} kg`
-        : `${size.value} g`
-      : size.unit === "ml"
-        ? size.value >= 1000
-          ? `${decimal(size.value)} L`
-          : `${size.value} ml`
-        : t.pieces(size.value);
-  return isWeighed ? t.approx(text) : text;
+  return packSizeLabel(size, isWeighed, MESSAGES[lang].product);
 }
 
 export function unitPriceLabel(

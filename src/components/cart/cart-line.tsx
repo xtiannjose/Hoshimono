@@ -7,10 +7,10 @@ import { useId, useState } from "react";
 
 import { saveNote } from "@/app/[lang]/cart/actions";
 import { CategoryIcon } from "@/components/product/category-icon";
-import { formatPackSize } from "@/components/product/format";
+import { packSizeLabel } from "@/components/product/pack-size";
 import { MAX_NOTE_LENGTH } from "@/lib/cart-limits";
 import { QuantityStepper } from "@/components/product/quantity-stepper";
-import { useLang, useMessages } from "@/i18n/client";
+import { useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
@@ -31,7 +31,7 @@ export function CartLine({
   onNavigate?: () => void;
 }) {
   const { product } = line;
-  const lang = useLang();
+  const { cart: cartWords, product: cartProduct } = useMessages();
   const t = useMessages();
   const pending = useCart((s) => s.pending[product.id]);
   const notice = useCart((s) =>
@@ -70,7 +70,7 @@ export function CartLine({
         </Link>
         <small className="text-muted-foreground text-fine block">
           {t.cart.each(
-            formatPackSize(product.packSize, product.isWeighed, lang),
+            packSizeLabel(product.packSize, product.isWeighed, cartProduct),
             formatMoney(product.priceCents)
           )}
         </small>
@@ -97,7 +97,7 @@ export function CartLine({
                   value={quantity}
                   min={1}
                   onChange={(next) =>
-                    changeQuantity(product.id, name, next, lang)
+                    changeQuantity(product.id, name, next, cartWords)
                   }
                   label={t.product.quantityOf(name)}
                 />
@@ -105,7 +105,7 @@ export function CartLine({
             )}
             <button
               type="button"
-              onClick={() => changeQuantity(product.id, name, 0, lang)}
+              onClick={() => changeQuantity(product.id, name, 0, cartWords)}
               aria-label={t.cart.remove(name)}
               className="rounded-pill hover:bg-muted text-muted-foreground hover:text-foreground grid size-11 place-items-center"
             >

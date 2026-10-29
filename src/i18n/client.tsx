@@ -1,15 +1,21 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { createContext, useContext, type ReactNode } from "react";
+import { createContext, use, useContext, type ReactNode } from "react";
 
+import { en } from "./en";
 import { localPath, stripLang, type Lang } from "./lang";
-import { MESSAGES, type Messages } from "./messages";
+import type { Messages } from "./messages";
 
-// The page's language for Client Components (ADR 0017). Both dictionaries
-// are small, so the browser gets them as code rather than per page.
+// The page's language and its words for Client Components (ADR 0017).
+// English is in the page's code; Filipino loads as its own chunk, only on
+// Filipino pages, so English pages do not carry both dictionaries.
+
+let filipino: Promise<Messages> | undefined;
+const loadFilipino = () => (filipino ??= import("./fil").then((m) => m.fil));
 
 const LangContext = createContext<Lang>("en");
+const MessagesContext = createContext<Messages>(en);
 
 export function I18nProvider({
   lang,
@@ -18,12 +24,17 @@ export function I18nProvider({
   lang: Lang;
   children: ReactNode;
 }) {
-  return <LangContext value={lang}>{children}</LangContext>;
+  const messages = lang === "fil" ? use(loadFilipino()) : en;
+  return (
+    <LangContext value={lang}>
+      <MessagesContext value={messages}>{children}</MessagesContext>
+    </LangContext>
+  );
 }
 
 export const useLang = () => useContext(LangContext);
 
-export const useMessages = (): Messages => MESSAGES[useLang()];
+export const useMessages = (): Messages => useContext(MessagesContext);
 
 /** A shop address in the page's language. */
 export function useLocalPath(): (path: string) => string {

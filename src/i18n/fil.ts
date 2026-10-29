@@ -62,7 +62,6 @@ export const fil: Messages = {
     body: "May nagkaproblema sa amin. Pakisubukan ulit.",
     retry: "Subukan ulit",
   },
-  dates: { today: "Ngayon", tomorrow: "Bukas", to: "hanggang" },
   product: {
     add: "Idagdag",
     addToCart: (name) => `Idagdag ang ${name} sa cart`,

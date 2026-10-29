@@ -11,7 +11,7 @@ import {
 } from "@/components/cart/cart-store";
 import { SubstitutionSelect } from "@/components/cart/substitution-select";
 import { buttonVariants } from "@/components/ui/button-classes";
-import { useLang, useMessages } from "@/i18n/client";
+import { useMessages } from "@/i18n/client";
 
 import { QuantityStepper } from "./quantity-stepper";
 
@@ -27,7 +27,7 @@ export function ProductBuy({
   productId: string;
   name: string;
 }) {
-  const lang = useLang();
+  const cartWords = useMessages().cart;
   const t = useMessages();
   const inCart = useCart((s) => quantityIn(s, productId));
   const line = useCart((s) =>
@@ -47,7 +47,7 @@ export function ProductBuy({
           min={inCart > 0 ? 0 : 1}
           onChange={(next) =>
             inCart > 0
-              ? changeQuantity(productId, name, next, lang)
+              ? changeQuantity(productId, name, next, cartWords)
               : setWanted(next)
           }
           label={t.product.quantityOf(name)}
@@ -63,7 +63,7 @@ export function ProductBuy({
         ) : (
           <button
             type="button"
-            onClick={() => changeQuantity(productId, name, wanted, lang)}
+            onClick={() => changeQuantity(productId, name, wanted, cartWords)}
             className={buttonVariants()}
           >
             <ShoppingCartIcon aria-hidden />

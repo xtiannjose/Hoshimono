@@ -5,8 +5,7 @@ import { useSyncExternalStore } from "react";
 import { setQuantity } from "@/app/[lang]/cart/actions";
 import { sendStep } from "@/components/count-step";
 import { announce } from "@/components/live-region";
-import type { Lang } from "@/i18n/lang";
-import { MESSAGES } from "@/i18n/messages";
+import type { Messages } from "@/i18n/messages";
 import type { CartView } from "@/modules/cart";
 
 // One Cart per tab, shared by the header button, the drawer, the Cart page
@@ -96,9 +95,8 @@ export async function changeQuantity(
   productId: string,
   name: string,
   next: number,
-  lang: Lang
+  t: Messages["cart"]
 ) {
-  const t = MESSAGES[lang].cart;
   if (next > 0 && quantityIn(state, productId) === 0) sendStep("added_to_cart");
   const mine = ++sequence;
   latest[productId] = mine;
