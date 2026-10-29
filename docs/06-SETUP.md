@@ -234,7 +234,7 @@ There is no git host for now, so the project moves between computers as one file
 1. Install Git, Node.js (LTS) and Docker Desktop.
 2. Download `hoshimono.bundle` from Drive, then `git clone hoshimono.bundle Hoshimono` and `cd Hoshimono`.
 3. `git switch <branch>` for the newest branch (roadmap section 0 lists them in order).
-4. Copy `.env.example` to `.env.local` and fill it in (section 5). Development secrets can be new ones (`openssl rand -base64 32`).
+4. Copy `.env.example` to `.env.local` and fill it in (section 5), and make `.env.test` for the tests (section 6). Neither is in the bundle. Development secrets can be new ones (`openssl rand -base64 32`).
 5. Start the database container (section 6), then `npm install`, `npm run db:deploy`, `npm run db:seed`.
 6. `git remote add drive "<path to hoshimono.bundle>"`, so later updates are one fetch.
 
