@@ -2,7 +2,7 @@
 
 This guide explains the whole Hoshimono app for its owner: how the business runs inside the software, what every part of the code owns, how a tap on a phone becomes a row in the database, and why each design choice was made. It is written for study, not for a quick look. Read it next to the code: every chapter names the files it describes, so you can open them side by side.
 
-**What it describes.** The code as of commit `c79a361` (22 October 2026) on the local branch `phase-4/dry-run`, which holds everything on `main` plus Batches 5.4 and 5.5, the general checkup and the design pass. Those four pieces are committed locally but not pushed, because the GitHub account is suspended ([chapter 14](14-not-built-yet.md)). If you read the code on `main` instead, Freshness Claims, Filipino pages, the installable app, the Funnel and the design pass will be missing.
+**What it describes.** The code as of 29 October 2026 on the branch `phase-5/filipino-messages`, which holds everything on `main` plus every branch after it (roadmap section 0). Those branches are not merged into `main` yet: there is no git host for now, and the code lives in Google Drive ([chapter 14](14-not-built-yet.md)). If you read the code on `main` instead, Freshness Claims, Filipino pages, the installable app, the Funnel, the design pass and all of Phase 6 will be missing.
 
 **Words.** Business words (Cart, Order, Hub, Slot, Substitution and so on) are used exactly as the [glossary](../../GLOSSARY.md) defines them. This guide links to the glossary instead of repeating it. Technical words are explained the first time they appear, and the table at the end of this page points to each explanation.
 

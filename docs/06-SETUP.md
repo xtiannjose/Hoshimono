@@ -29,8 +29,8 @@ Create these up front; several take days to approve, so start the payment ones i
 
 | Service                     | For                                                           | Phase   | Notes                                                                                                      |
 | --------------------------- | ------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| GitHub                      | Repo, CI, PRs                                                 | 0       | Private repository                                                                                         |
-| Vercel                      | Hosting, preview deployments                                  | 0       | Connect to the GitHub repo                                                                                 |
+| Git host (GitHub or other)  | Repo, CI, pull requests                                       | 0       | Private repository. None for now: the code lives in Google Drive (section 11)                              |
+| Vercel                      | Hosting, preview deployments                                  | 0       | Connect to the git repository                                                                              |
 | Neon                        | Managed Postgres ([ADR 0005](adr/0005-neon-postgres-host.md)) | 0       | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
 | Google Cloud Console        | OAuth sign-in, Maps/Places key                                | 0 and 2 | Restrict keys by HTTP referrer and API                                                                     |
 | Resend                      | Transactional email                                           | 2       | Verify your sending domain                                                                                 |
@@ -196,7 +196,7 @@ Commit only when you are ready (Conventional Commits, for example `chore: scaffo
 
 1. Run the `setup-pre-commit` skill in Claude Code to install Husky, lint-staged (Prettier), type checking and tests on commit.
 2. Agent sessions are guarded by `.claude/hooks/block-dangerous-git.mjs` (installed with the `git-guardrails-claude-code` skill, then narrowed on 2026-10-17 at the owner's request). Agents may push only as `git push [-u] origin <feature-branch>`. Pushes to `main`, force pushes, branch deletes, `reset --hard`, `clean -f`, `branch -D` and `gh pr merge` stay blocked, so the owner merges every pull request. `.claude/hooks/block-dangerous-git.test.mjs` pins these rules (`npm run test:hooks`).
-3. Create the GitHub repository, add the remote, push `main`, enable branch protection (PRs required, CI must pass).
+3. When a git host is chosen (none for now, see section 11): create a private repository, add it as `origin`, push `main`, enable branch protection (pull requests required, CI must pass).
 4. Add `.github/workflows/ci.yml`: install, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Add the Playwright job from Phase 2.
 5. Import the repository in Vercel; every pull request now gets a preview deployment.
 
@@ -225,7 +225,7 @@ Phase 0 is only done when all of these pass:
 
 ## 11. Two computers, through Google Drive
 
-While GitHub is unavailable, the project moves between computers as one file in Google Drive: `hoshimono.bundle`, every branch and commit. It never holds `node_modules`, builds or `.env*` files. Never put the project folder itself in Drive: its packages, caches and git internals sync badly, and `.env.local` holds secrets.
+There is no git host for now, so the project moves between computers as one file in Google Drive: `hoshimono.bundle`, every branch and commit. It never holds `node_modules`, builds or `.env*` files. Never put the project folder itself in Drive: its packages, caches and git internals sync badly, and `.env.local` holds secrets.
 
 **Make the file** (at the end of each work session): `npm run backup`. With Google Drive for desktop installed it lands straight in `G:\My Drive\Hoshimono`; without it, upload `backups/hoshimono.bundle` to that Drive folder by hand. Drive keeps the earlier versions.
 

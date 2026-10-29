@@ -2,7 +2,6 @@
 // Owns Freshness Claims (ADR 0016). Staff writes: callers check
 // requireStaff("claims") first.
 export {
-  CLAIM_WINDOW_HOURS,
   claimableLines,
   countClaims,
   fileClaim,

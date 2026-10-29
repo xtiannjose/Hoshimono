@@ -1,17 +1,17 @@
 # 14. What is not built yet, and what is blocked
 
-Phases 0 to 5 are built. This chapter lists what is left before launch, what is blocked and on whom, and which parts of the running app are still stand-ins. It follows sections 0, 9, 10 and 11 of the [roadmap](../07-ROADMAP.md) as of 28 October 2026. When the roadmap changes, the roadmap wins.
+Phases 0 to 5 are built. This chapter lists what is left before launch, what is blocked and on whom, and which parts of the running app are still stand-ins. It follows sections 0, 9, 10 and 11 of the [roadmap](../07-ROADMAP.md) as of 29 October 2026. When the roadmap changes, the roadmap wins.
 
-## 14.1 Blocked right now: GitHub
+## 14.1 Where the code lives: Google Drive, for now
 
-On 22 October GitHub answered "Your account is suspended" to both its website API and git. Until the account `xtiannjose` is restored (contact https://support.github.com):
+There is no git host for now. The finished work is on the developer's computer, one branch per piece, each built on the one before (roadmap section 0 lists them in order), and moves between computers as one file in Google Drive, `hoshimono.bundle` ([06-SETUP.md](../06-SETUP.md) section 11). Until a git host is chosen:
 
-- Finished work waits on the developer's computer, one branch per piece, each built on the one before. Roadmap section 0 lists them in order; when access returns, each is pushed and opened as a pull request against `main`, in that order.
-- CI cannot run (chapter 12). The CI run on the last merge to `main` (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
+- Nothing goes through pull requests, and those branches are not merged into `main` yet. The newest, `phase-5/filipino-messages`, holds all of them.
+- CI cannot run (chapter 12), so its checks are run by hand. The CI run on the last merge to `main` (`6477f88`) never reported; a local production build and the full test suites passed on the same code.
 
 ## 14.2 Next, in order
 
-From roadmap section 0, as of 28 October:
+From roadmap section 0, as of 29 October:
 
 1. **The Phase 4 dry run with people.** The screens have been through a full simulated day of 20 Orders (`npm run db:dry-run`, `e2e/dry-run.spec.ts`), which found and fixed a few things a Picker or Dispatcher would trip on. The exit criterion still needs people: one Picker and one Rider working 20 Orders with **no developer help**. [`docs/dry-run.md`](../dry-run.md) is their checklist.
 2. **A native speaker checks the Filipino** in `src/i18n/fil.ts` and the message words in `src/modules/notifications/internal/words.ts`. The whole shop and its messages are in Filipino now ([ADR 0017](../adr/0017-filipino-pwa-and-funnel.md), [ADR 0019](../adr/0019-filipino-for-the-rest-of-the-shop.md), [ADR 0021](../adr/0021-messages-in-the-customers-language.md)); only sign-in codes, the Substitution answer page and the stop page are still English.
@@ -54,8 +54,8 @@ From roadmap section 9:
 | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A missing Product or Category answers with status 200 (a "not found" page, marked not to index) instead of 404 | Next.js 16 cannot call `notFound()` in the page shell for pages made on demand; recheck on each Next upgrade                                                                |
 | Uploaded photos show only in development                                                                       | Photos are saved to the server's disk (`public/media`), which a production server does not serve after start and Vercel does not allow. Waits for the Cloudflare R2 account |
-| Lighthouse on the CI runner after Phase 5                                                                      | Waits for GitHub; laptop runs swing from 66 to 82 on the same build                                                                                                         |
-| JavaScript over budget on Home (182 KB) and Product (181 KB), against 170 KB                                   | Both language dictionaries ship to every page; the Product page's list and alert buttons bring a class-merging library                                                      |
+| Lighthouse on the CI runner after Phase 5                                                                      | Waits for CI, which needs a git host; laptop runs swing from 66 to 82 on the same build                                                                                     |
+| JavaScript over the 170 KB budget: Home 208, Category 205, Product 210 KB (every script tag counted)           | Most of it is React and the Next.js runtime; English pages no longer carry Filipino (29 Oct). Next: send Client Components only the dictionary sections they use            |
 | A rare development-only test flake ("Unexpected end of JSON input")                                            | Seen only on `next dev` with the whole suite; CI tests a production build                                                                                                   |
 | Two workarounds kept on purpose: `CartSync` and `formKey`                                                      | Judged simpler than the alternatives; revisit if they cause trouble                                                                                                         |
 | Phase 0: a Vercel project with preview deployments, and Sentry                                                 | Accounts not created yet                                                                                                                                                    |
@@ -64,7 +64,7 @@ From roadmap section 9:
 
 From roadmap section 0:
 
-- **GitHub**: contact support to restore the account.
+- **Google Drive**: at the end of each work session, commit and run `npm run backup`; upload `hoshimono.bundle` to the Hoshimono folder in Drive if Google Drive for desktop is not installed.
 - **PayMongo**: a test account, with `PAYMONGO_SECRET_KEY` and the webhook endpoint's `PAYMONGO_WEBHOOK_SECRET`. Start business verification now: it takes weeks and blocks live payments. ("Hold then Capture" is not needed: [ADR 0008](../adr/0008-weighed-items-online-and-refunds.md) charges the estimate.)
 - **Delete two stale branches**, `phase-1/close-out` and `phase-2/pricing-core` (the AI assistant may not delete branches).
 - **The accountant's answers** in [ADR 0007](../adr/0007-pricing-rules-ahead-and-tax-to-confirm.md): VAT registration, the Tax Class per Category, the Senior Citizen and PWD discount; and the owner's real Zone fees.
@@ -131,7 +131,7 @@ Each ADR lists what it chose not to build "now". In one place:
 
 ## 14.9 Keeping this guide true
 
-This guide describes commit `c79a361`. When a batch lands, the chapters it touches should be updated in the same pull request, the same way the roadmap and the glossary are. The quickest check is to open each chapter's "Where to look in the code" table and confirm the files and function names still exist.
+This guide describes the code as of 29 October 2026 (see the [README](README.md)). When a batch lands, the chapters it touches should be updated on the same branch, the same way the roadmap and the glossary are. The quickest check is to open each chapter's "Where to look in the code" table and confirm the files and function names still exist.
 
 ## Check yourself
 

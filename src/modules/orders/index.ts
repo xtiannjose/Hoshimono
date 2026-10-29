@@ -40,7 +40,6 @@ export {
   proposeSubstitution,
   recordPick,
   SUBSTITUTION_ASKED_JOB,
-  SUBSTITUTION_WINDOW_MINUTES,
 } from "./internal/picking";
 export type {
   PickLine,

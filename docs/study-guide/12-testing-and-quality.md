@@ -106,7 +106,7 @@ At the general checkup on 22 October, all 71 e2e tests passed on a production bu
 
 **Why Lighthouse runs in CI, not on a laptop:** local scores swing by about 10 points on the same code, depending on what else the laptop is doing. The clean CI computer is the measurement to trust (roadmap section 0).
 
-**Right now CI is not running.** The GitHub account was suspended on 22 October, so the last four branches have not been pushed and the CI result of the last merge to `main` is unknown. A local production build and the full test suites passed on the same code (chapter 14).
+**Right now CI is not running.** There is no git host for now; the code moves between computers through Google Drive (chapter 14). Until there is one, run the same checks by hand before each backup: `npm run check`, `npm run build`, then `E2E_PROD=1 npx playwright test`.
 
 ## 12.6 Before every commit
 
@@ -134,7 +134,7 @@ From [05-DESIGN-SYSTEM.md](../05-DESIGN-SYSTEM.md) section 11 and PRD section 7:
 | A Product card's photo                          | Under 40 KB                                |
 | Web fonts                                       | Under 120 KB in total                      |
 
-After Phase 5 the checkup measured Home at 182 KB and Product at 181 KB of JavaScript, still over: both language dictionaries ship to every page, and the Product page's buttons bring a class-merging library. These are open items (chapter 14).
+After Phase 5 the checkup measured Home at 182 KB and Product at 181 KB of JavaScript, still over. On 29 October English pages stopped carrying the Filipino dictionary, 7 KB less each. Counted with every script tag, Home is now 208, Category 205 and Product 210 KB, most of it React and the Next.js runtime. This is an open item (chapter 14).
 
 ## 12.8 "Done" means seen working
 

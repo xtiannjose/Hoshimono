@@ -2,7 +2,7 @@
 
 Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order, in which batch, with which tools. Tick items as they are finished. A phase is **done only when every exit criterion is observably met** (run the app and exercise the flow; passing tests alone are not enough).
 
-Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
+Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one branch**.
 
 ## 0. Where we are (updated 2026-10-29)
 
@@ -44,7 +44,7 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so these wait locally, each built on the one before: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
+**Where the code lives:** no git host for now, so no remote and no pull requests. The code moves between computers as one file in Google Drive, `hoshimono.bundle` with every branch (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11). `main` is at `6477f88` (Phases 0 to 4 and Batches 5.1 to 5.3). These branches wait to be merged into `main`, each built on the one before, in this order: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`. The newest, `phase-5/filipino-messages`, holds all of them. The CI run on `6477f88` never reported; a local production build and the full test suites passed on the same code.
 
 **Current phase:** 6, Launch hardening: everything that needs no outside account is done. Phase 5 is done. Phase 4 waits on the dry run with people (the simulated one passed). Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
@@ -59,8 +59,7 @@ Resume here: read this section, then the batch named first under Next.
 
 **Waiting on the owner**
 
-- GitHub account `xtiannjose` suspended (22 Oct): contact https://support.github.com. Nothing can be pushed or merged until it is restored.
-
+- At the end of each work session: commit, `npm run backup`, and upload `hoshimono.bundle` to the Hoshimono folder in Google Drive if Google Drive for desktop is not installed ([06-SETUP.md](06-SETUP.md) section 11).
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
@@ -135,7 +134,7 @@ Checked against `package.json` and the code on 2026-10-28. "Now" is what the cod
 3. **Build** the slice end to end; UI work starts with `design-taste-frontend` and the v2 mockup; animation with `motion` and `apple-design`.
 4. **See it run:** `run` skill or `playwright-cli` screenshots at 1440 and 390 px, light and dark; axe check on new pages.
 5. **Review:** `code-review` and `simplify`; `security-review` for anything touching auth, payments or personal data.
-6. **Ship:** one branch, one pull request (`pr` skill), CI green, preview checked, merge; tick the items here.
+6. **Ship:** one branch; with no git host for now, run the CI checks by hand (`npm run check`, `npm run build`, `E2E_PROD=1 npx playwright test`); tick the items here; `npm run backup`. Pull requests (`pr` skill) and CI return with a git host.
 
 ## 4. Decisions due along the way
 
@@ -332,7 +331,7 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 
 - [x] Phase 5 exit criteria, on the running app through the e2e suite (71 of 71 on a production build): a Recipe goes into the Cart with one button after unticking; a Voucher's rules and last use hold (Vitest and e2e); a Claim is filed, approved and refunded end to end
 - [x] JavaScript per page was over the 170 KB budget after Phase 5. The not-found page had become a Client Component and shipped on every page (13 KB), and the servings stepper of Home's Recipe brought Motion (15 KB); now a Server Component and a CSS count bump. Measured on a production build, gzipped, without the polyfills modern browsers skip: Home 182, Category 166, Product 181, Search 166 KB. Still over on Home and Product: both dictionaries ship to every page (8 KB; only the page's language would need words without functions), and the Product page's list and alert buttons bring `tailwind-merge` through `Button` (the one-button-system item below). 29 Oct: the dictionaries had grown with the Filipino pass (10.7 KB each, gzipped) and the date helpers pulled both into the browser; English pages now carry English only and Filipino loads on Filipino pages (`src/i18n/client.tsx`), 7 KB less on every English page. Counted with every script tag (a stricter count than above): Home 215 to 208, Category 212 to 205, Product 217 to 210 KB, most of it React and the Next.js runtime. Still over the budget; the next lever is sending Client Components only the dictionary sections they use
-- [ ] Lighthouse on the CI runner once GitHub is back: laptop runs swing from 66 to 82 on the same build, so they settle nothing
+- [ ] Lighthouse on the CI runner once there is a git host again: laptop runs swing from 66 to 82 on the same build, so they settle nothing
 - [x] Stored phone numbers showed as `+639171234504` in Checkout, the Order and the account; now `0917 123 4504`
 - [x] On phones the floating "View cart" bar covered the footer's last row; the footer makes room while the bar shows
 - [x] `next dev` reloaded pages in a loop ("HMR hash mismatch") after a production build in the same folder. Delete `.next/dev` after building; a likely cause of the dev-only e2e flakes above

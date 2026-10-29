@@ -10,7 +10,7 @@ if [ -d "$DRIVE" ]; then OUT="$DRIVE"; else OUT="backups"; mkdir -p "$OUT"; fi
 FILE="$OUT/hoshimono.bundle"
 
 git bundle create "$FILE.tmp" --branches --tags 2>/dev/null
-git bundle verify -q "$FILE.tmp" >/dev/null
+git bundle verify -q "$FILE.tmp" >/dev/null 2>&1
 mv -f "$FILE.tmp" "$FILE"
 echo "Saved every branch ($(du -h "$FILE" | cut -f1)) to $FILE"
 if [ "$OUT" = "backups" ]; then
