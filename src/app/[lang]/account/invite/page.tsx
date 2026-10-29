@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Breadcrumb } from "@/components/breadcrumb";
 import { Tag } from "@/components/product/tag";
 import { Skeleton } from "@/components/ui/skeleton";
+import { localPath } from "@/i18n/lang";
 import { getLang, getMessages } from "@/i18n/server";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
@@ -57,7 +58,10 @@ async function Invite() {
     <div className="mt-4 grid max-w-2xl gap-10">
       <div className="grid gap-4">
         <p className="type-lead">{t.lead(reward)}</p>
-        <ShareLink url={new URL(`/r/${code}`, appUrl()).toString()} />
+        {/* A Filipino page shares a link that lands on the Filipino shop. */}
+        <ShareLink
+          url={new URL(localPath(lang, `/r/${code}`), appUrl()).toString()}
+        />
         <p className="text-muted-foreground text-sm">
           {t.codeIs} <b className="text-foreground font-mono">{code}</b>.
         </p>

@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useLang, useMessages } from "@/i18n/client";
 
 import {
   requestSignInCode,
@@ -28,6 +29,7 @@ export function SignInForm({
   google: boolean;
 }) {
   const [method, setMethod] = useState<Method>("email");
+  const t = useMessages().signIn;
   return (
     <div className="grid gap-6">
       {google && (
@@ -35,18 +37,18 @@ export function SignInForm({
           <form action={signInWithGoogle}>
             <input type="hidden" name="next" value={next} />
             <Button type="submit" variant="secondary" className="w-full">
-              Continue with Google
+              {t.google}
             </Button>
           </form>
-          <p className="text-muted-foreground text-center text-sm">or</p>
+          <p className="text-muted-foreground text-center text-sm">{t.or}</p>
         </>
       )}
       <fieldset className="rounded-pill bg-muted grid grid-cols-2 gap-1 p-1">
-        <legend className="sr-only">Sign in with</legend>
+        <legend className="sr-only">{t.with}</legend>
         {(
           [
-            ["email", "Email"],
-            ["phone", "Mobile number"],
+            ["email", t.email],
+            ["phone", t.mobile],
           ] as const
         ).map(([value, label]) => (
           <label
@@ -76,14 +78,15 @@ export function SignInForm({
 
 function EmailForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(requestSignInLink, initial);
+  const lang = useLang();
+  const t = useMessages().signIn;
 
   if (state.status === "sent") {
     return (
       <div role="status" className="rounded-card bg-accent-soft grid gap-2 p-6">
-        <h2 className="type-h3">Check your email</h2>
+        <h2 className="type-h3">{t.checkEmail}</h2>
         <p>
-          We sent a sign-in link to <b>{state.email}</b>. It works for 5
-          minutes.
+          {t.linkSentTo} <b>{state.email}</b>. {t.works}
         </p>
       </div>
     );
@@ -93,8 +96,9 @@ function EmailForm({ next }: { next: string }) {
   return (
     <form action={action} noValidate className="grid gap-4">
       <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="lang" value={lang} />
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t.email}</Label>
         <Input
           id="email"
           name="email"
@@ -114,7 +118,7 @@ function EmailForm({ next }: { next: string }) {
         )}
       </div>
       <Button type="submit" disabled={pending}>
-        {pending ? "Sending link..." : "Email me a link"}
+        {pending ? t.sendingLink : t.emailLink}
       </Button>
     </form>
   );
@@ -126,18 +130,20 @@ function PhoneForm({ next }: { next: string }) {
     verifySignInCodeAction,
     initialCode
   );
+  const lang = useLang();
+  const t = useMessages().signIn;
   if (sent.step === "code" && sent.phone) {
     const error = checked.message;
     return (
       <form action={check} noValidate className="grid gap-4">
         <input type="hidden" name="next" value={next} />
+        <input type="hidden" name="lang" value={lang} />
         <input type="hidden" name="phone" value={sent.phone} />
         <p role="status">
-          We texted a 6-digit code to <b>{sent.typed}</b>. It works for 5
-          minutes.
+          {t.codeSentTo} <b>{sent.typed}</b>. {t.works}
         </p>
         <div className="grid gap-2">
-          <Label htmlFor="code">Code</Label>
+          <Label htmlFor="code">{t.code}</Label>
           <Input
             id="code"
             name="code"
@@ -155,7 +161,7 @@ function PhoneForm({ next }: { next: string }) {
           )}
         </div>
         <Button type="submit" disabled={checking}>
-          {checking ? "Checking..." : "Sign in"}
+          {checking ? t.checking : t.signIn}
         </Button>
       </form>
     );
@@ -164,8 +170,9 @@ function PhoneForm({ next }: { next: string }) {
   const error = sent.message;
   return (
     <form action={send} noValidate className="grid gap-4">
+      <input type="hidden" name="lang" value={lang} />
       <div className="grid gap-2">
-        <Label htmlFor="phone">Mobile number</Label>
+        <Label htmlFor="phone">{t.mobile}</Label>
         <Input
           id="phone"
           name="phone"
@@ -185,7 +192,7 @@ function PhoneForm({ next }: { next: string }) {
         )}
       </div>
       <Button type="submit" disabled={sending}>
-        {sending ? "Sending code..." : "Text me a code"}
+        {sending ? t.sendingCode : t.textCode}
       </Button>
     </form>
   );

@@ -13,6 +13,7 @@ export async function customerProfileData(customerId: string) {
         email: true,
         phone: true,
         marketingOptIn: true,
+        lang: true,
         referralCode: true,
         createdAt: true,
       },

@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,6 +7,7 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 export type SubstitutionNotice = {
   orderId: string;
@@ -12,6 +15,8 @@ export type SubstitutionNotice = {
   substitutionId: string;
   email: string | null;
   phone: string;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   /** What was ordered and is missing. */
   ordered: string;
   substitute: string;
@@ -32,8 +37,15 @@ export async function sendSubstitutionAsked(
   notice: SubstitutionNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
-  const offer = `We're out of ${notice.ordered} for order ${notice.orderNo}. We can send ${notice.quantity} x ${notice.substitute} at ${notice.unitPrice} each instead.`;
-  const ask = `Not okay? Tell us by ${notice.until}: ${notice.link}. No reply means yes.`;
+  const t = WORDS[notice.lang].substitution;
+  const offer = t.offer(
+    notice.ordered,
+    notice.orderNo,
+    notice.quantity,
+    notice.substitute,
+    notice.unitPrice
+  );
+  const ask = t.ask(notice.until, notice.link);
   const template = `substitution_${notice.substitutionId}`;
   const { orderId } = notice;
 
@@ -44,7 +56,7 @@ export async function sendSubstitutionAsked(
       sendOnce({ template, channel: "email", orderId, recipient: email }, () =>
         (providers.email ?? emailProvider()).send({
           to: email,
-          subject: `A substitute for order ${notice.orderNo}`,
+          subject: t.subject(notice.orderNo),
           text: [offer, "", ask].join("\n"),
         })
       ),

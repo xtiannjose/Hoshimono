@@ -96,8 +96,12 @@ describe("sign-in code limits", () => {
         null
       );
     }
-    expect(await codeLimits(phone, "10.0.1.1", minutes(220))).toMatch(
-      /^Too many tries\. Please wait \d+ hours/
+    // A reason code the page words in its language (ADR 0019): the day's
+    // cap, so hours to wait.
+    const refused = await codeLimits(phone, "10.0.1.1", minutes(220));
+    expect(refused).toMatchObject({ reason: "too_many" });
+    expect(refused?.reason === "too_many" && refused.minutes).toBeGreaterThan(
+      60
     );
     expect(await codeLimits(phone, "10.0.1.1", minutes(24 * 60))).toBe(null);
   });
@@ -109,9 +113,9 @@ describe("sign-in code limits", () => {
         await codeLimits(`+63917000${n}`, `10.1.${i % 250}.${i}`, NOW)
       ).toBe(null);
     }
-    expect(await codeLimits("+639179999999", "10.2.0.1", NOW)).toBe(
-      "We can't text codes right now. Please use the email link instead."
-    );
+    expect(await codeLimits("+639179999999", "10.2.0.1", NOW)).toEqual({
+      reason: "texts_paused",
+    });
   }, 30_000); // 800 counter updates
 
   it("counts one inbox once, however the address is written", () => {

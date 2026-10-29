@@ -12,7 +12,11 @@ import { runDueJobs } from "@/modules/jobs";
 import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney, parseMoney } from "@/lib/money";
 import { setCustomerBlocked } from "@/modules/customers";
-import { sendStaffMessage, sendVoucherGiven } from "@/modules/notifications";
+import {
+  sendSlotMoved,
+  sendStaffMessage,
+  sendVoucherGiven,
+} from "@/modules/notifications";
 import {
   addOrderNote,
   changeOrderAddress,
@@ -285,10 +289,11 @@ export async function giveVoucherAction(
       ref: `voucher:${result.voucher.id}`,
       email: order.customer.email,
       phone: order.contactPhone || null,
+      lang: order.customer.lang,
       orderNo: order.orderNo,
       amount: formatMoney(cents),
       code: result.voucher.code,
-      until: formatDate(result.voucher.endsAt),
+      until: formatDate(result.voucher.endsAt, order.customer.lang),
     });
   } catch (error) {
     console.error("[orders] Voucher notice not sent:", error);
@@ -336,11 +341,14 @@ export async function moveSlotAction(
   ]);
   const order = await getOrderForNotice(orderId);
   if (order?.contactPhone) {
+    const { lang } = order.customer;
     try {
-      await sendStaffMessage({
+      await sendSlotMoved({
         ref: `slot-moved:${orderId}:${slotId}`,
         phone: order.contactPhone,
-        text: `Order ${order.orderNo} now arrives ${when}. Sorry for the change.`,
+        lang,
+        orderNo: order.orderNo,
+        slot: formatSlot(moved.startsAt, moved.endsAt, undefined, lang),
       });
     } catch (error) {
       console.error("[orders] Slot move text not sent:", error);

@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 
 import type { Prisma } from "@/generated/prisma/client";
+import type { Lang } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 
 // Referrals (ADR 0015): each Customer's code, who invited whom, and the
@@ -74,6 +75,7 @@ type Contact = {
   name: string;
   email: string | null;
   phone: string | null;
+  lang: Lang;
 };
 
 /**
@@ -90,7 +92,13 @@ export async function rewardReferral<V extends { id: string }>(
   referrer: Contact & { voucher: V };
   referee: Contact & { voucher: V };
 } | null> {
-  const contact = { id: true, name: true, email: true, phone: true } as const;
+  const contact = {
+    id: true,
+    name: true,
+    email: true,
+    phone: true,
+    lang: true,
+  } as const;
   return db.$transaction(async (tx) => {
     const referee = await tx.customer.findUnique({
       where: { id: refereeId },

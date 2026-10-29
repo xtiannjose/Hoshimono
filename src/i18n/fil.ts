@@ -813,4 +813,59 @@ export const fil: Messages = {
       no_reason: "Piliin kung ano ang problema.",
     },
   },
+  signIn: {
+    title: "Mag-sign in",
+    lead: "Ie-email namin sa 'yo ang link o ite-text ang code. Walang password na kailangang tandaan.",
+    google: "Ituloy gamit ang Google",
+    or: "o",
+    with: "Mag-sign in gamit ang",
+    email: "Email",
+    mobile: "Mobile number",
+    checkEmail: "I-check ang email mo",
+    linkSentTo: "Nagpadala kami ng sign-in link sa",
+    codeSentTo: "Nag-text kami ng 6-digit na code sa",
+    works: "Gumagana ito nang 5 minuto.",
+    sendingLink: "Ipinapadala ang link...",
+    emailLink: "I-email sa akin ang link",
+    code: "Code",
+    checking: "Tinitingnan...",
+    signIn: "Mag-sign in",
+    sendingCode: "Ipinapadala ang code...",
+    textCode: "I-text sa akin ang code",
+    problems: {
+      bad_email: "Maglagay ng email address na tulad ng juan@example.com.",
+      link_failed:
+        "Hindi namin maipadala ang link ngayon. Pakisubukan ulit pagkalipas ng isang minuto.",
+      bad_phone: "Ilagay ang mobile number na tulad ng 0917 123 4567.",
+      code_failed:
+        "Hindi kami makapag-text ng code ngayon. Pakisubukan ulit pagkalipas ng isang minuto.",
+      bad_code: "Ilagay ang 6-digit na code.",
+      check_failed:
+        "Hindi namin ma-check ang code mo ngayon. Pakisubukan ulit pagkalipas ng isang minuto.",
+      wrong_code:
+        "Hindi gumana ang code na 'yan. I-check ito, o humingi ng bago.",
+      too_many: (minutes) => {
+        const hours = Math.ceil(minutes / 60);
+        const wait =
+          minutes < 60
+            ? `${minutes} minuto`
+            : hours === 1
+              ? "isang oras"
+              : `${hours} oras`;
+        return `Masyadong maraming subok. Maghintay ng ${wait} at subukan ulit.`;
+      },
+      texts_paused:
+        "Hindi kami makapag-text ng code sa ngayon. Gamitin na lang ang email link.",
+    },
+  },
+  delivery: {
+    title: "Saan kami naghahatid",
+    description:
+      "Ang mga city at barangay sa Metro Manila na hinahatiran ng Hoshimono, kasama ang delivery fee at minimum order.",
+    lead: "Same-day delivery sa 2-hour slots. Ilagay ang address mo sa checkout at sasabihin namin agad kung naghahatid kami roon.",
+    none: "Hindi pa kami naghahatid sa ngayon. Pakibalikan kami maya-maya.",
+    allOf: (cities) => `Buong ${list(cities)}`,
+    fees: (fee, free, minimum) =>
+      `${fee} ang delivery${free ? `, libre kapag lampas ${free}` : ""}. Minimum order: ${minimum}.`,
+  },
 };

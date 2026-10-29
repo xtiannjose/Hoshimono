@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,13 +7,16 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 export type OrderConfirmedNotice = {
   orderId: string;
   orderNo: string;
   email: string | null;
   phone: string;
-  /** Such as "Today, 2:00 to 4:00 PM". */
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
+  /** Such as "Today, 2:00 to 4:00 PM", in that language. */
   slot: string;
   total: string;
   trackingUrl: string;
@@ -31,15 +36,16 @@ export async function sendOrderConfirmed(
   notice: OrderConfirmedNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
+  const t = WORDS[notice.lang].orderConfirmed;
   // Weighed Products are charged by the packed weight (CLAUDE.md), so the
   // amount here is an estimate and must say so.
   const pay = notice.estimated
     ? notice.cashOnDelivery
-      ? `Please have about ${notice.total} ready in cash. The final amount follows the weight we pack.`
-      : `Estimated total ${notice.total}. The final amount follows the weight we pack.`
+      ? t.aboutCash(notice.total)
+      : t.aboutPaid(notice.total)
     : notice.cashOnDelivery
-      ? `Please have ${notice.total} ready in cash for the Rider.`
-      : `Total ${notice.total}.`;
+      ? t.cash(notice.total)
+      : t.paid(notice.total);
   const { orderId } = notice;
 
   const to = notice.email;
@@ -51,16 +57,16 @@ export async function sendOrderConfirmed(
         () =>
           (providers.email ?? emailProvider()).send({
             to,
-            subject: `Order ${notice.orderNo} is confirmed`,
+            subject: t.subject(notice.orderNo),
             text: [
-              `Salamat! We got your order ${notice.orderNo}.`,
+              t.thanks(notice.orderNo),
               "",
-              `Delivery: ${notice.slot}`,
+              t.delivery(notice.slot),
               pay,
               "",
               ...notice.lines.map((l) => `${l.quantity} x ${l.name}`),
               "",
-              `Track your order: ${notice.trackingUrl}`,
+              t.track(notice.trackingUrl),
             ].join("\n"),
           })
       ),
@@ -75,7 +81,7 @@ export async function sendOrderConfirmed(
         () =>
           (providers.sms ?? smsProvider()).send({
             to: notice.phone,
-            text: `Hoshimono: order ${notice.orderNo} is confirmed for ${notice.slot}. ${pay} Track: ${notice.trackingUrl}`,
+            text: `Hoshimono: ${t.sms(notice.orderNo, notice.slot, pay, notice.trackingUrl)}`,
           })
       ),
   ]);

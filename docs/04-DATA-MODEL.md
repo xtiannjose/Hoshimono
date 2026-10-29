@@ -119,7 +119,7 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 ### customers and content
 
-**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `referral_code?` (unique, made when first shown), `referred_by_id?` (never itself).
+**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `lang` (`en` or `fil`, the language they last shopped in; their messages use it, ADR 0021), `referral_code?` (unique, made when first shown), `referred_by_id?` (never itself).
 
 **`addresses`**: `customer_id`, `label`, `line1`, `barangay`, `city`, `landmark`, `lat`, `lng`, `zone_id?`, `notes`, `is_default`.
 

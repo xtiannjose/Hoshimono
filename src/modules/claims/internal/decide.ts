@@ -124,7 +124,7 @@ export async function getClaimNotice(claimId: string) {
           },
         },
       },
-      customer: { select: { name: true, email: true } },
+      customer: { select: { name: true, email: true, lang: true } },
     },
   });
   if (!claim || claim.status === "open") return null;

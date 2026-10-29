@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,12 +7,14 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 type Providers = { email?: EmailProvider; sms?: SmsProvider };
 
 /**
  * A text staff wrote to the Customer about their Order, sent once under
- * `ref` (one per message). Texted, because it is usually urgent.
+ * `ref` (one per message). Texted, because it is usually urgent. It goes
+ * out as staff typed it; "Hoshimono:" reads the same in both languages.
  */
 export async function sendStaffMessage(
   n: { ref: string; phone: string; text: string },
@@ -31,11 +35,28 @@ export async function sendStaffMessage(
   );
 }
 
+/** Staff moved the Order to another Slot: the new time, in the Customer's language. */
+export async function sendSlotMoved(
+  n: { ref: string; phone: string; lang: Lang; orderNo: string; slot: string },
+  providers: Providers = {}
+): Promise<void> {
+  await sendStaffMessage(
+    {
+      ref: n.ref,
+      phone: n.phone,
+      text: WORDS[n.lang].slotMoved(n.orderNo, n.slot),
+    },
+    providers
+  );
+}
+
 export type VoucherGivenNotice = {
   /** One per Voucher, such as "voucher:<id>". */
   ref: string;
   email: string | null;
   phone: string | null;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   orderNo: string;
   amount: string;
   code: string;
@@ -47,7 +68,8 @@ export async function sendVoucherGiven(
   n: VoucherGivenNotice,
   providers: Providers = {}
 ): Promise<void> {
-  const line = `Sorry about order ${n.orderNo}. Here's ${n.amount} off your next order with code ${n.code}, until ${n.until}.`;
+  const t = WORDS[n.lang].voucherGiven;
+  const line = t.text(n.orderNo, n.amount, n.code, n.until);
   const { email, phone } = n;
   await sendAll([
     () =>
@@ -62,7 +84,7 @@ export async function sendVoucherGiven(
         () =>
           (providers.email ?? emailProvider()).send({
             to: email,
-            subject: `${n.amount} off your next order`,
+            subject: t.subject(n.amount),
             text: line,
           })
       ),

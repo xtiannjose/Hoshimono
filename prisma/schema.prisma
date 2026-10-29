@@ -909,6 +909,12 @@ model PaymentEvent {
 
 // ---------- customers and staff ----------
 
+// The shop's languages (ADR 0017).
+enum Lang {
+  en
+  fil
+}
+
 model Customer {
   id             String              @id @default(uuid(7)) @db.Uuid
   // Linked on first sign-in (identity module).
@@ -920,6 +926,8 @@ model Customer {
   marketingOptIn Boolean             @default(false) @map("marketing_opt_in")
   /// Set by staff for an account that abuses the shop: it can place no Orders.
   blockedAt      DateTime?           @map("blocked_at") @db.Timestamptz(3)
+  // The language they last shopped in; their messages use it (ADR 0021).
+  lang           Lang                @default(en)
   // Referrals (ADR 0015): their own code, made when first needed, and who
   // invited them.
   referralCode   String?             @unique @map("referral_code")

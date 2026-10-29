@@ -162,7 +162,8 @@ export async function getOrderForNotice(orderId: string) {
       contactPhone: true,
       totalCents: true,
       customerId: true,
-      customer: { select: { email: true } },
+      // The language their messages go out in (ADR 0021).
+      customer: { select: { email: true, lang: true } },
       slot: { select: { startsAt: true, endsAt: true } },
       lines: {
         orderBy: { createdAt: "asc" },

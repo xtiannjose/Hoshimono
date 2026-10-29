@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { setLineQuantity } from "@/modules/cart";
-import { getDefaultAddress } from "@/modules/customers";
+import { getDefaultAddress, setCustomerLang } from "@/modules/customers";
 import {
   sendDeliveryFailed,
   sendClaimDecided,
@@ -13,7 +13,8 @@ import {
   sendSubstitutionAsked,
   type Sent,
 } from "@/modules/notifications";
-import { placeOrder } from "@/modules/orders";
+import { ORDER_CONFIRMED_JOB, placeOrder } from "@/modules/orders";
+import { jobHandlers } from "@/server/job-handlers";
 
 import { seedDatabase, seedId } from "../../prisma/seed-data";
 import { createTestDb, resetDb } from "./helpers";
@@ -21,6 +22,7 @@ import { createTestDb, resetDb } from "./helpers";
 const db = createTestDb();
 const NOW = new Date("2026-10-01T20:00:00Z");
 let orderId: string;
+let customerId: string;
 
 beforeAll(async () => {
   await resetDb(db);
@@ -28,6 +30,7 @@ beforeAll(async () => {
   const customer = await db.customer.findUniqueOrThrow({
     where: { email: "ligaya@example.com" },
   });
+  customerId = customer.id;
   await db.zone.updateMany({ data: { minOrderCents: 0 } });
   await setLineQuantity(
     { customerId: customer.id },
@@ -68,6 +71,7 @@ const notice = () => ({
   orderNo: "SW-261002-TEST",
   email: "ligaya@example.com",
   phone: "+639171234567",
+  lang: "en" as const,
   slot: "Today, 8:00 to 10:00 AM",
   total: "₱164.00",
   trackingUrl: "http://localhost:3000/orders/SW-261002-TEST",
@@ -150,6 +154,7 @@ describe("sendRefundIssued", () => {
     orderNo: "SW-261002-TEST",
     email: "ligaya@example.com",
     phone: "+639171234567",
+    lang: "en" as const,
     amount: "₱134.50",
     method: "gcash" as const,
     reason,
@@ -185,6 +190,7 @@ describe("sendSubstitutionAsked", () => {
     substitutionId: "sub-1",
     email: "ligaya@example.com",
     phone: "+639171234567",
+    lang: "en" as const,
     ordered: "Magnolia Fresh Milk",
     substitute: "Nestle Low Fat Milk",
     quantity: 2,
@@ -218,11 +224,12 @@ describe("sendClaimDecided", () => {
         claimId: randomUUID(),
         email: null,
         phone: "+639171234567",
+        lang: "en",
         name: "Ligaya Dimaculangan",
         orderNo: "SW-261002-TEST",
         product: "Magnolia Fresh Milk",
         approved: true,
-        refund: { amount: "₱80.00", to: "GCash" },
+        refund: { amount: "₱80.00", method: "gcash" },
         voucher: { amount: "₱35.00", code: "CREDIT-AB12", until: "Jan 26" },
         note: "",
         orderUrl: "http://localhost:3000/orders/SW-261002-TEST",
@@ -240,6 +247,7 @@ describe("delivery messages", () => {
     orderNo: "SW-261002-TEST",
     email: "ligaya@example.com",
     phone: "+639171234567",
+    lang: "en" as const,
   };
 
   it("says who is coming, the PIN and the cash due, once per trip", async () => {
@@ -279,5 +287,26 @@ describe("delivery messages", () => {
     expect(sent[1].text).toContain("could not deliver order SW-261002-TEST");
     expect(sent[1].text).toContain("call you");
     expect(sent.every((s) => !s.text.includes("—"))).toBe(true);
+  });
+});
+
+describe("in the Customer's language (ADR 0021)", () => {
+  it("texts a Filipino Customer their order confirmation in Filipino", async () => {
+    await db.notification.deleteMany({ where: { orderId } });
+    await setCustomerLang(customerId, "fil");
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    await jobHandlers[ORDER_CONFIRMED_JOB]({ orderId });
+    const sms = info.mock.calls
+      .map(([line]) => String(line))
+      .find((line) => line.startsWith("[sms]"));
+    info.mockRestore();
+    await setCustomerLang(customerId, "en");
+
+    expect(sms).toContain("Kumpirmado na ang order");
+    expect(sms).toContain("Maghanda ng ₱164.00 na cash para sa Rider.");
+    // The Slot in Filipino words, and a link to the Filipino Order page.
+    expect(sms).toContain(" hanggang ");
+    expect(sms).toMatch(/\/fil\/orders\/SW-/);
+    expect(sms).not.toContain("—");
   });
 });

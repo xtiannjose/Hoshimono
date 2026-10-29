@@ -1,29 +1,29 @@
 import type { Metadata } from "next";
 
 import { deliveryCoverage } from "@/app/_data/storefront";
+import { localPath } from "@/i18n/lang";
+import { getLang, getMessages } from "@/i18n/server";
 import { formatMoney } from "@/lib/money";
 
-export const metadata: Metadata = {
-  title: "Where we deliver",
-  description:
-    "The Metro Manila cities and barangays Hoshimono delivers to, with delivery fees and minimum orders.",
-  alternates: { canonical: "/delivery" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = (await getMessages()).delivery;
+  return {
+    title: t.title,
+    description: t.description,
+    alternates: { canonical: localPath(await getLang(), "/delivery") },
+  };
+}
 
 // Delivery coverage for everyone, signed in or not (PRD CAT-1).
 export default async function DeliveryPage() {
-  const zones = await deliveryCoverage();
+  const [zones, m] = await Promise.all([deliveryCoverage(), getMessages()]);
+  const t = m.delivery;
   return (
     <section className="wrap max-w-3xl py-10 md:py-14">
-      <h1 className="type-h1">Where we deliver</h1>
-      <p className="text-muted-foreground mt-2">
-        Same-day delivery in 2-hour slots. Add your address at checkout and we
-        will tell you right away if we can deliver there.
-      </p>
+      <h1 className="type-h1">{t.title}</h1>
+      <p className="text-muted-foreground mt-2">{t.lead}</p>
       {zones.length === 0 ? (
-        <p className="mt-6">
-          We are not delivering yet. Please check back soon.
-        </p>
+        <p className="mt-6">{t.none}</p>
       ) : (
         <ul className="mt-6 grid gap-3">
           {zones.map((zone) => (
@@ -35,13 +35,16 @@ export default async function DeliveryPage() {
               <p>
                 {zone.barangays.length > 0
                   ? `${zone.cities.join(", ")}: ${zone.barangays.join(", ")}`
-                  : `All of ${zone.cities.join(" and ")}`}
+                  : t.allOf(zone.cities)}
               </p>
               <p className="text-muted-foreground text-sm">
-                Delivery {formatMoney(zone.deliveryFeeCents)}
-                {zone.freeDeliveryOverCents !== null &&
-                  `, free over ${formatMoney(zone.freeDeliveryOverCents)}`}
-                . Minimum order {formatMoney(zone.minOrderCents)}.
+                {t.fees(
+                  formatMoney(zone.deliveryFeeCents),
+                  zone.freeDeliveryOverCents === null
+                    ? null
+                    : formatMoney(zone.freeDeliveryOverCents),
+                  formatMoney(zone.minOrderCents)
+                )}
               </p>
             </li>
           ))}

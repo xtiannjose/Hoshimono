@@ -277,6 +277,7 @@ describe("Cart Reminders (ADR 0014)", () => {
     const notice = {
       cartId: randomUUID(),
       email: "ligaya@example.com",
+      lang: "en" as const,
       name: "Ligaya",
       items: ["Magnolia Fresh Milk", "Silver Swan Soy Sauce"],
       cartUrl: "http://localhost:3000/cart",

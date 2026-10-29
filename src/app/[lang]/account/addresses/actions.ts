@@ -8,6 +8,7 @@ import {
   deleteAddress,
   MAX_ADDRESSES,
   saveAddress,
+  setCustomerLang,
   setDefaultAddress,
   type AddressField,
   type AddressProblem,
@@ -47,6 +48,7 @@ export async function saveAddressAction(
 ): Promise<AddressFormState> {
   const next = safeNext(text(fd, "next") || "/account/addresses");
   const customer = await requireCustomer(next);
+  await setCustomerLang(customer.id, langOf(fd.get("lang")));
   const values = {
     label: text(fd, "label"),
     line1: text(fd, "line1"),

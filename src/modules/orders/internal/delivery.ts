@@ -359,7 +359,7 @@ export async function getDeliveryNotice(orderId: string) {
       deliveryPin: true,
       totalCents: true,
       finalTotalCents: true,
-      customer: { select: { email: true } },
+      customer: { select: { email: true, lang: true } },
       rider: { select: { name: true, phone: true } },
       payments: {
         take: 1,
@@ -374,6 +374,7 @@ export async function getDeliveryNotice(orderId: string) {
     orderNo: order.orderNo,
     status: order.status,
     email: order.customer.email,
+    lang: order.customer.lang,
     phone: order.contactPhone,
     pin: order.deliveryPin,
     riderName: order.rider?.name ?? null,

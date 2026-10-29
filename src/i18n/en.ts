@@ -818,6 +818,62 @@ export const en = {
       no_reason: "Choose what was wrong.",
     },
   },
+  signIn: {
+    title: "Sign in",
+    lead: "We'll email you a link or text you a code. No password to remember.",
+    google: "Continue with Google",
+    or: "or",
+    with: "Sign in with",
+    email: "Email",
+    mobile: "Mobile number",
+    checkEmail: "Check your email",
+    // Around the address or number, shown in bold.
+    linkSentTo: "We sent a sign-in link to",
+    codeSentTo: "We texted a 6-digit code to",
+    works: "It works for 5 minutes.",
+    sendingLink: "Sending link...",
+    emailLink: "Email me a link",
+    code: "Code",
+    checking: "Checking...",
+    signIn: "Sign in",
+    sendingCode: "Sending code...",
+    textCode: "Text me a code",
+    // What the sign-in actions answer.
+    problems: {
+      bad_email: "Enter an email address like juan@example.com.",
+      link_failed:
+        "We couldn't send the link just now. Please try again in a minute.",
+      bad_phone: "Enter a mobile number like 0917 123 4567.",
+      code_failed:
+        "We couldn't send a code just now. Please try again in a minute.",
+      bad_code: "Enter the 6-digit code.",
+      check_failed:
+        "We couldn't check your code just now. Please try again in a minute.",
+      wrong_code: "That code did not work. Check it, or ask for a new one.",
+      too_many: (minutes: number) => {
+        const hours = Math.ceil(minutes / 60);
+        const wait =
+          minutes < 60
+            ? `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
+            : hours === 1
+              ? "an hour"
+              : `${hours} hours`;
+        return `Too many tries. Please wait ${wait} and try again.`;
+      },
+      texts_paused:
+        "We can't text codes right now. Please use the email link instead.",
+    },
+  },
+  delivery: {
+    title: "Where we deliver",
+    description:
+      "The Metro Manila cities and barangays Hoshimono delivers to, with delivery fees and minimum orders.",
+    lead: "Same-day delivery in 2-hour slots. Add your address at checkout and we'll tell you right away if we can deliver there.",
+    none: "We're not delivering yet. Please check back soon.",
+    allOf: (cities: string[]) => `All of ${list(cities)}`,
+    fees: (fee: string, free: string | null, minimum: string) =>
+      `Delivery ${fee}${free ? `, free over ${free}` : ""}. Minimum order ${minimum}.`,
+  },
 };
 
 export type Messages = typeof en;

@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,17 +7,20 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 export type ClaimNotice = {
   claimId: string;
   email: string | null;
   phone: string;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   name: string;
   orderNo: string;
   product: string;
   approved: boolean;
-  /** Back to GCash or the card it was paid with; amounts formatted. */
-  refund: { amount: string; to: "GCash" | "your card" } | null;
+  /** Back to GCash or the card it was paid with; the amount formatted. */
+  refund: { amount: string; method: "gcash" | "card" } | null;
   /** The rest as a Voucher: all of it for a cash Order. */
   voucher: { amount: string; code: string; until: string } | null;
   /** Why, when rejected or cut down. */
@@ -28,24 +33,26 @@ export async function sendClaimDecided(
   notice: ClaimNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
-  const first = notice.name.split(" ")[0] || "there";
+  const words = WORDS[notice.lang];
+  const t = words.claim;
   const what = notice.approved
     ? [
-        `We approved your report on ${notice.product} (order ${notice.orderNo}).`,
+        t.approved(notice.product, notice.orderNo),
         ...(notice.refund
-          ? [`We are refunding ${notice.refund.amount} to ${notice.refund.to}.`]
+          ? [t.refunding(notice.refund.amount, t.to[notice.refund.method])]
           : []),
         ...(notice.voucher
           ? [
-              `Here is ${notice.voucher.amount} off your next order: use code ${notice.voucher.code} until ${notice.voucher.until}, no minimum spend.`,
+              t.voucher(
+                notice.voucher.amount,
+                notice.voucher.code,
+                notice.voucher.until
+              ),
             ]
           : []),
         ...(notice.note ? [notice.note] : []),
       ]
-    : [
-        `We could not approve your report on ${notice.product} (order ${notice.orderNo}).`,
-        notice.note,
-      ];
+    : [t.rejected(notice.product, notice.orderNo), notice.note];
   const ref = `claim:${notice.claimId}`;
   if (notice.email) {
     const email = notice.email;
@@ -54,8 +61,13 @@ export async function sendClaimDecided(
       () =>
         (providers.email ?? emailProvider()).send({
           to: email,
-          subject: `About your report on order ${notice.orderNo}`,
-          text: [`Hi ${first},`, ...what, "", notice.orderUrl].join("\n"),
+          subject: t.subject(notice.orderNo),
+          text: [
+            words.greet(notice.name.split(" ")[0]),
+            ...what,
+            "",
+            notice.orderUrl,
+          ].join("\n"),
         })
     );
   } else {

@@ -17,4 +17,5 @@ status: accepted
 - The dictionaries hold the words for every code under `problems` in each section. The English words are the ones the modules used, so English pages read as before; a few limits the action cannot see ("Choose 1 to 5", "Keep this under 40 characters") became plainer sentences without the number.
 - Database tests now expect codes, not sentences.
 - Still English: sign-in, the delivery areas page, the pages that answer a message link (a Substitution's yes or no, stopping reminders) and the messages themselves. Sending messages in Filipino needs the Customer's language stored, which is a data model decision for later.
+  - 28 Oct: [ADR 0021](0021-messages-in-the-customers-language.md) stores it. Sign-in, the delivery areas page and the messages are now in Filipino too; only the message link pages, and the sign-in code and link themselves, stay English.
 - The Filipino is still Claude's draft for a native speaker to check before launch.

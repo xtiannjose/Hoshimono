@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,12 +7,15 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 export type RefundNotice = {
   orderId: string;
   orderNo: string;
   email: string | null;
   phone: string;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   /** Formatted, such as "₱134.50". */
   amount: string;
   method: "gcash" | "card";
@@ -26,16 +31,13 @@ export async function sendRefundIssued(
   notice: RefundNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
-  const to = notice.method === "gcash" ? "your GCash" : "your card";
-  const what = {
-    cancelled: `We refunded ${notice.amount} to ${to} for your cancelled order ${notice.orderNo}.`,
-    picked: `Your order ${notice.orderNo} came to less than you paid, so we refunded the ${notice.amount} difference to ${to}.`,
-    late_payment: `Your payment for order ${notice.orderNo} arrived after the order was cancelled, so we refunded all ${notice.amount} to ${to}.`,
-  }[notice.reason];
-  const when =
-    notice.method === "gcash"
-      ? "It usually shows within a day."
-      : "It can take a few banking days to show on your card.";
+  const t = WORDS[notice.lang].refund;
+  const what = t[notice.reason](
+    notice.amount,
+    t.to[notice.method],
+    notice.orderNo
+  );
+  const when = t.when[notice.method];
   const template = `refund_${notice.reason}`;
   const { orderId } = notice;
 
@@ -46,10 +48,8 @@ export async function sendRefundIssued(
       sendOnce({ template, channel: "email", orderId, recipient: email }, () =>
         (providers.email ?? emailProvider()).send({
           to: email,
-          subject: `Refund for order ${notice.orderNo}`,
-          text: [what, when, "", `Your order: ${notice.trackingUrl}`].join(
-            "\n"
-          ),
+          subject: t.subject(notice.orderNo),
+          text: [what, when, "", t.order(notice.trackingUrl)].join("\n"),
         })
       ),
     () =>

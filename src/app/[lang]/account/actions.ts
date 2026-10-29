@@ -5,7 +5,11 @@ import { redirect } from "next/navigation";
 
 import { langOf, localPath } from "@/i18n/lang";
 import { MESSAGES } from "@/i18n/messages";
-import { setMarketingOptIn, updateName } from "@/modules/customers";
+import {
+  setCustomerLang,
+  setMarketingOptIn,
+  updateName,
+} from "@/modules/customers";
 import { requireCustomer, signOut } from "@/modules/identity";
 import { eraseCustomer } from "@/server/customer-data";
 
@@ -41,6 +45,7 @@ export async function saveNameAction(
   fd: FormData
 ): Promise<NameState> {
   const customer = await requireCustomer("/account");
+  await setCustomerLang(customer.id, langOf(fd.get("lang")));
   const name = String(fd.get("name") ?? "");
   const result = await updateName(customer.id, name);
   return result.ok

@@ -96,6 +96,11 @@ export async function transitionOrder(
           },
         });
         if (to === "cancelled") {
+          // The Customer cancelled it, or watched it expire; staff say so,
+          // queued before any refund so the messages arrive in that order.
+          if (actor.type === "staff") {
+            await enqueueJob(tx, ORDER_CANCELLED_JOB, { orderId });
+          }
           // Slot first, then stock: the order placeOrder locks them in, so a
           // cancel and a checkout cannot deadlock.
           await releaseSlot(tx, order.slot_id);
@@ -135,10 +140,6 @@ export async function transitionOrder(
               data: { paymentStatus: "refunded" },
             });
           }
-        }
-        // The Customer cancelled it, or watched it expire; staff say so.
-        if (to === "cancelled" && actor.type === "staff") {
-          await enqueueJob(tx, ORDER_CANCELLED_JOB, { orderId });
         }
         if (to === "picked") await settlePicked(tx, orderId);
         if (to === "delivered")

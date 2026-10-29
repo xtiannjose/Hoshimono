@@ -423,7 +423,7 @@ export async function getSubstitution(
               id: true,
               orderNo: true,
               contactPhone: true,
-              customer: { select: { email: true } },
+              customer: { select: { email: true, lang: true } },
             },
           },
         },
@@ -437,6 +437,7 @@ export async function getSubstitution(
     orderId: l.order.id,
     orderNo: l.order.orderNo,
     email: l.order.customer.email,
+    lang: l.order.customer.lang,
     phone: l.order.contactPhone,
     ordered: { name: l.nameSnapshot, quantity: l.orderedQty },
     substitute: {

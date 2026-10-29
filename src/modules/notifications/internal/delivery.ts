@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
@@ -5,6 +7,7 @@ import {
   type SmsProvider,
 } from "./providers";
 import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 type Providers = { email?: EmailProvider; sms?: SmsProvider };
 
@@ -13,6 +16,8 @@ type Recipient = {
   orderNo: string;
   email: string | null;
   phone: string;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   /** Which trip this is about: each time the Order leaves, a new message. */
   trip: string;
 };
@@ -63,19 +68,20 @@ export async function sendOutForDelivery(
   n: OutForDeliveryNotice,
   providers: Providers = {}
 ): Promise<void> {
+  const t = WORDS[n.lang].outForDelivery;
   const rider = n.riderPhone ? `${n.riderName} (${n.riderPhone})` : n.riderName;
   const text = [
-    `Order ${n.orderNo} is on its way with ${rider}.`,
-    `Give the Rider this PIN at the door: ${n.pin}.`,
-    n.cashDue ? `Please have ${n.cashDue} ready in cash.` : "",
-    `Track: ${n.trackingUrl}`,
+    t.onItsWay(n.orderNo, rider),
+    t.pin(n.pin),
+    n.cashDue ? t.cash(n.cashDue) : "",
+    t.track(n.trackingUrl),
   ]
     .filter(Boolean)
     .join(" ");
   await sendBoth(
     n,
     `out_for_delivery_${n.trip}`,
-    `Order ${n.orderNo} is on its way`,
+    t.subject(n.orderNo),
     text,
     providers
   );
@@ -89,11 +95,12 @@ export async function sendOrderCancelled(
   n: Omit<Recipient, "trip">,
   providers: Providers = {}
 ): Promise<void> {
+  const t = WORDS[n.lang].orderCancelled;
   await sendBoth(
     { ...n, trip: "" },
     "order_cancelled",
-    `Order ${n.orderNo} is cancelled`,
-    `We're sorry, we had to cancel order ${n.orderNo}. If you paid online, all of it comes back to you, and we'll tell you when it's sent.`,
+    t.subject(n.orderNo),
+    t.text(n.orderNo),
     providers
   );
 }
@@ -103,11 +110,12 @@ export async function sendDeliveryFailed(
   n: Recipient,
   providers: Providers = {}
 ): Promise<void> {
+  const t = WORDS[n.lang].deliveryFailed;
   await sendBoth(
     n,
     `delivery_failed_${n.trip}`,
-    `We missed you: order ${n.orderNo}`,
-    `Sorry, we could not deliver order ${n.orderNo}. We will call you to arrange another try.`,
+    t.subject(n.orderNo),
+    t.text(n.orderNo),
     providers
   );
 }

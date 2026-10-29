@@ -13,7 +13,11 @@ import { countStep } from "@/lib/funnel";
 import { formatMoney } from "@/lib/money";
 import { clientIp } from "@/lib/rate-limit";
 import { getCartId } from "@/modules/cart";
-import { applyReferral, getAddress } from "@/modules/customers";
+import {
+  applyReferral,
+  getAddress,
+  setCustomerLang,
+} from "@/modules/customers";
 import { holdSlot, resolveZone } from "@/modules/delivery";
 import { requireCustomer } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
@@ -123,6 +127,8 @@ export async function placeOrderAction(
     await applyReferral(customer.id, referral);
     jar.delete(REFERRAL_COOKIE);
   }
+  // Their messages about this Order follow the page's language (ADR 0021).
+  await setCustomerLang(customer.id, lang);
   const result = await placeOrder({
     customerId: customer.id,
     addressId: text("addressId"),

@@ -5,7 +5,7 @@ import { useTransition } from "react";
 
 import { stockAlertAction } from "@/app/[lang]/p/actions";
 import { Button } from "@/components/ui/button";
-import { useMessages } from "@/i18n/client";
+import { useLang, useMessages } from "@/i18n/client";
 
 /** "Tell me when it's back" on a sold-out Product, or undo it (ADR 0014). */
 export function StockAlertButton({
@@ -16,8 +16,10 @@ export function StockAlertButton({
   on: boolean;
 }) {
   const t = useMessages().productPage;
+  const lang = useLang();
   const [pending, startTransition] = useTransition();
-  const toggle = () => startTransition(() => stockAlertAction(productId, !on));
+  const toggle = () =>
+    startTransition(() => stockAlertAction(productId, !on, lang));
   return on ? (
     <p role="status" className="grid gap-1 text-sm">
       <b>{t.alertOn}</b>

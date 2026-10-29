@@ -20,6 +20,7 @@ export {
   getProfile,
   isCustomerBlocked,
   setCustomerBlocked,
+  setCustomerLang,
   setMarketingOptIn,
   updateName,
 } from "./internal/profile";

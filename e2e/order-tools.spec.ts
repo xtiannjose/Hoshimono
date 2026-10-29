@@ -103,5 +103,8 @@ test("an Admin records a missed payment, texts, gives a Voucher and cancels", as
   await admin.getByRole("button", { name: "Save", exact: true }).click();
   await expect
     .poll(texts, { timeout: 60_000 })
-    .toContain(`we had to cancel order ${orderNo}`);
+    // Paid with GCash: "we had to cancel", then the refund, the last text.
+    .toMatch(
+      new RegExp(`we had to cancel order ${orderNo}|cancelled order ${orderNo}`)
+    );
 });

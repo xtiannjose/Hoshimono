@@ -19,19 +19,22 @@ export const CODES_AN_HOUR = 200;
 
 type Rule = [key: string, limit: number, windowSeconds: number];
 
-async function firstRefusal(rules: Rule[], now: Date): Promise<string | null> {
+/**
+ * Why a sign-in step is refused, with the minutes to wait when it is too
+ * many tries; the action words it in the page's language (ADR 0019).
+ */
+export type LimitRefusal =
+  { reason: "too_many"; minutes: number } | { reason: "texts_paused" };
+
+async function firstRefusal(
+  rules: Rule[],
+  now: Date
+): Promise<LimitRefusal | null> {
   for (const [key, limit, windowSeconds] of rules) {
     const token = await takeToken(key, limit, windowSeconds, now);
     if (!token.ok) {
       const minutes = Math.max(1, Math.ceil(token.retryAfterSeconds / 60));
-      const hours = Math.ceil(minutes / 60);
-      const wait =
-        minutes < 60
-          ? `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
-          : hours === 1
-            ? "an hour"
-            : `${hours} hours`;
-      return `Too many tries. Please wait ${wait} and try again.`;
+      return { reason: "too_many", minutes };
     }
   }
   return null;
@@ -46,7 +49,7 @@ export function linkKey(email: string): string {
     : `${name}@${domain}`;
 }
 
-/** Null when a sign-in link may be emailed, else what to tell the person. */
+/** Null when a sign-in link may be emailed, else why not. */
 export function linkLimits(email: string, ip: string, now = new Date()) {
   return firstRefusal(
     [
@@ -57,12 +60,12 @@ export function linkLimits(email: string, ip: string, now = new Date()) {
   );
 }
 
-/** Null when a sign-in code may be texted, else what to tell the person. */
+/** Null when a sign-in code may be texted, else why not. */
 export async function codeLimits(
   phone: string,
   ip: string,
   now = new Date()
-): Promise<string | null> {
+): Promise<LimitRefusal | null> {
   const tooMany = await firstRefusal(
     [
       [`code:ip:${ip}`, PER_IP, QUARTER_HOUR],
@@ -74,12 +77,12 @@ export async function codeLimits(
   if (tooMany) return tooMany;
   if (!(await takeToken("code:all", CODES_AN_HOUR, HOUR, now)).ok) {
     console.error("[sign-in] the hour's text budget is spent: codes paused");
-    return "We can't text codes right now. Please use the email link instead.";
+    return { reason: "texts_paused" };
   }
   return null;
 }
 
-/** Null when a typed code may be checked, else what to tell the person. */
+/** Null when a typed code may be checked, else why not. */
 export function verifyLimits(phone: string, ip: string, now = new Date()) {
   return firstRefusal(
     [[`verify:phone-ip:${phone}:${ip}`, CODE_CHECKS, QUARTER_HOUR]],

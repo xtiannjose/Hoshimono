@@ -6,6 +6,7 @@ import type { ClaimReason } from "@/generated/prisma/enums";
 import { langOf, localPath } from "@/i18n/lang";
 import { MESSAGES } from "@/i18n/messages";
 import { fileClaim, MAX_PHOTOS, type ClaimProblem } from "@/modules/claims";
+import { setCustomerLang } from "@/modules/customers";
 import { requireCustomer } from "@/modules/identity";
 
 export type ClaimFormState = { errors: Record<string, string> };
@@ -28,6 +29,8 @@ export async function fileClaimAction(
 ): Promise<ClaimFormState> {
   const customer = await requireCustomer(`/orders/${orderNo}/claim`);
   const lang = langOf(fd.get("lang"));
+  // The decision message follows the language they reported in (ADR 0021).
+  await setCustomerLang(customer.id, lang);
   const t = MESSAGES[lang].claims.problems;
   const say = (problem: ClaimProblem) =>
     problem === "too_many_photos" ? t.too_many_photos(MAX_PHOTOS) : t[problem];

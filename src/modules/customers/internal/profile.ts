@@ -1,3 +1,4 @@
+import type { Lang } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 
 export type Profile = {
@@ -7,6 +8,8 @@ export type Profile = {
   phone: string | null;
   /** Said yes to reminders and offers (ADR 0014). */
   marketingOptIn: boolean;
+  /** The language they last shopped in, for their messages (ADR 0021). */
+  lang: Lang;
 };
 
 export async function getProfile(customerId: string): Promise<Profile | null> {
@@ -18,7 +21,22 @@ export async function getProfile(customerId: string): Promise<Profile | null> {
       email: true,
       phone: true,
       marketingOptIn: true,
+      lang: true,
     },
+  });
+}
+
+/**
+ * The language the Customer just shopped in: their emails and texts follow
+ * it (ADR 0021). Writes only when it changes.
+ */
+export async function setCustomerLang(
+  customerId: string,
+  lang: Lang
+): Promise<void> {
+  await db.customer.updateMany({
+    where: { id: customerId, lang: { not: lang } },
+    data: { lang },
   });
 }
 

@@ -54,7 +54,13 @@ export async function getCartReminder(cartId: string) {
     select: {
       checkedOutAt: true,
       customer: {
-        select: { id: true, name: true, email: true, marketingOptIn: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          marketingOptIn: true,
+          lang: true,
+        },
       },
       lines: {
         orderBy: { createdAt: "asc" },
@@ -75,6 +81,7 @@ export async function getCartReminder(cartId: string) {
     customerId: customer.id,
     name: customer.name,
     email: customer.email,
+    lang: customer.lang,
     items: cart.lines.map((l) => productName(l.product)),
   };
 }

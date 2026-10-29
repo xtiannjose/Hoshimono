@@ -28,5 +28,9 @@ export type {
 export { sendSignInCode, sendSignInLink } from "./internal/sign-in";
 export type { EmailProvider, Sent, SmsProvider } from "./internal/providers";
 export { eraseRecipients, messageData } from "./internal/privacy";
-export { sendStaffMessage, sendVoucherGiven } from "./internal/staff-messages";
+export {
+  sendSlotMoved,
+  sendStaffMessage,
+  sendVoucherGiven,
+} from "./internal/staff-messages";
 export type { VoucherGivenNotice } from "./internal/staff-messages";

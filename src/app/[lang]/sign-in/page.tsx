@@ -2,24 +2,25 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { getMessages } from "@/i18n/server";
 import { googleEnabled, safeNext } from "@/modules/identity";
 
 import { SignInForm } from "./sign-in-form";
 
-export const metadata: Metadata = { title: "Sign in" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getMessages()).signIn.title };
+}
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: PageProps<"/[lang]/sign-in">) {
+  const t = (await getMessages()).signIn;
   return (
     <section className="wrap py-14 md:py-20">
       <div className="mx-auto grid max-w-md gap-6">
         <div className="grid gap-2">
-          <h1 className="type-h1">Sign in</h1>
-          <p className="text-muted-foreground">
-            We will email you a link or text you a code. No password to
-            remember.
-          </p>
+          <h1 className="type-h1">{t.title}</h1>
+          <p className="text-muted-foreground">{t.lead}</p>
         </div>
         <Suspense fallback={<FormSkeleton />}>
           <Form searchParams={searchParams} />
