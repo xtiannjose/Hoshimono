@@ -227,7 +227,7 @@ Phase 0 is only done when all of these pass:
 
 There is no git host for now, so the project moves between computers as one file in Google Drive: `hoshimono.bundle`, every branch and commit. It never holds `node_modules`, builds or `.env*` files. Never put the project folder itself in Drive: its packages, caches and git internals sync badly, and `.env.local` holds secrets.
 
-**Make the file** (at the end of each work session): `npm run backup`. With Google Drive for desktop installed it lands straight in `G:\My Drive\Hoshimono`; without it, upload `backups/hoshimono.bundle` to that Drive folder by hand. Drive keeps the earlier versions.
+**Make the file** (at the end of each work session): `npm run backup`. With Google Drive for desktop installed it lands straight in `G:\My Drive\Coding Projects\Personal\Hoshimono`; without it, upload `backups/hoshimono.bundle` to that Drive folder by hand. Drive keeps the earlier versions.
 
 **First time on another computer:**
 
