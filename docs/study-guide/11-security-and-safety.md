@@ -200,3 +200,5 @@ No. The build's app address is the real domain, not localhost, so `consoleMessag
 ## 11.8 The security review (Batch 6.2)
 
 A review of the whole app on 27 Oct 2026 looked for attacks that actually work. It found no critical problem; the high and medium ones (Stock Alerts that could flood the jobs queue, unpaid online Orders that could hold all the stock, sign-in codes as an SMS bomb) are fixed, with the limits in the table above. The full list, what was fixed and what was accepted is in [`docs/security-review.md`](../security-review.md).
+
+Added 28 and 29 Oct: staff can block an account from ordering; the jobs queue runs Order notices before reminders and alerts (`jobs.priority`), so a flood of marketing cannot delay a Delivery PIN; the cron deletes ended sign-in sessions; and signed links such as "stop reminders" carry their purpose and expire after 90 days (`src/lib/signed.ts`).

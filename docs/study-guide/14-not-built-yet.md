@@ -14,7 +14,7 @@ On 22 October GitHub answered "Your account is suspended" to both its website AP
 From roadmap section 0, as of 28 October:
 
 1. **The Phase 4 dry run with people.** The screens have been through a full simulated day of 20 Orders (`npm run db:dry-run`, `e2e/dry-run.spec.ts`), which found and fixed a few things a Picker or Dispatcher would trip on. The exit criterion still needs people: one Picker and one Rider working 20 Orders with **no developer help**. [`docs/dry-run.md`](../dry-run.md) is their checklist.
-2. **A native speaker checks the Filipino** in `src/i18n/fil.ts`. Nearly the whole shop is in Filipino now ([ADR 0017](../adr/0017-filipino-pwa-and-funnel.md), [ADR 0019](../adr/0019-filipino-for-the-rest-of-the-shop.md)); messages, sign-in and the delivery-areas page are still English.
+2. **A native speaker checks the Filipino** in `src/i18n/fil.ts` and the message words in `src/modules/notifications/internal/words.ts`. The whole shop and its messages are in Filipino now ([ADR 0017](../adr/0017-filipino-pwa-and-funnel.md), [ADR 0019](../adr/0019-filipino-for-the-rest-of-the-shop.md), [ADR 0021](../adr/0021-messages-in-the-customers-language.md)); only sign-in codes, the Substitution answer page and the stop page are still English.
 3. **A lawyer reviews the policy pages** (`/privacy`, `/terms`, `/refunds`, `/business-info`), and the owner fills in the business facts in `src/config/legal.ts`.
 4. **The PayMongo test-mode run** (Batch 6.3), once the keys exist: GCash and card paid, failed and expired; full and partial refunds; the webhook endpoint registered for `checkout_session.payment.paid` and `payment.refunded`. Until then the PayMongo adapter has never talked to PayMongo; in particular the address it uses to expire a checkout is taken from PayMongo's documents and marked unconfirmed in the code (`src/modules/payments/internal/paymongo.ts`).
 5. **What is left of Phase 6** (section 14.3), most of it waiting for accounts.
@@ -37,7 +37,7 @@ From roadmap section 0, as of 28 October:
 - Sentry for errors, and an uptime monitor on `/api/health` and `/api/health?deep=1`.
 - A restore drill on Neon itself.
 - A manual accessibility pass with TalkBack (Android) and VoiceOver (iPhone).
-- The lawyer's review of the policies; a way to export or delete a Customer's data on request (PRD section 7).
+- The lawyer's review of the policies. (A Customer can now download their data or delete their account themselves, [ADR 0020](../adr/0020-customer-data-export-and-deletion.md).)
 - The PayMongo test-mode run.
 - The production domain, email DNS records (SPF, DKIM, DMARC, which let mail services trust our emails) and the SMS sender.
 

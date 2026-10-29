@@ -259,6 +259,19 @@ Every staff write is recorded in `audit_log`: who, what action, which record, an
 
 Most staff Server Actions use one helper, `adminWrite` in `src/app/admin/admin-write.ts`: it runs the write and its audit rows in the same transaction, so a change is never saved without its record, and a refused write records nothing. A few actions record the audit right after the change instead (marked `ponytail:` in the code, with the reason).
 
+## When plans change: the staff tools (28 Oct)
+
+The runbook ([docs/runbook.md](../runbook.md)) first listed what staff could not do in the app. Most of it now has a tool, and each tool goes through the same rules as the rest of the app:
+
+- **Order page.** Record a payment PayMongo shows but no webhook applied: it goes through the same code as a verified webhook (`recordPaidByStaff` in `src/modules/payments/internal/webhooks.ts`), so the Order is confirmed, or refunded if it had closed. Text the Customer; give a Voucher; move the Order to another Slot that still takes Orders, or to another saved address in the same Zone (`src/modules/orders/internal/changes.ts`); cancel even when packed, which puts what was picked back on the shelf; block an account from ordering.
+- **Dispatch.** Hand an Order on its way to another Rider (the PIN stays; the Customer is told who is coming).
+- **Picking.** Record a Customer's answer to a substitute given by phone, through the same function as the link.
+- **Cash.** Correct one Order's cash before the day is counted, or the count after.
+- **Zones and Slots, Hub status.** A Shop Notice every shopper sees until a chosen time, GCash and card paused (cash on delivery only), and whole days closed to new Orders.
+- **System.** When the cron last ran (each tick leaves a heartbeat), every job not done with its last error, and the newest payment events.
+
+A status change that loses a Postgres deadlock to a checkout or another pick on the same stock now runs again (`retryConflicts` in `src/lib/db.ts`) instead of showing an error page.
+
 ## Where to look in the code
 
 | Topic                            | File                                                                                                                                      |

@@ -4,12 +4,21 @@ Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order,
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
 
-## 0. Where we are (updated 2026-10-28)
+## 0. Where we are (updated 2026-10-29)
 
 Resume here: read this section, then the batch named first under Next.
 
 **Done**
 
+- 28 and 29 Oct, the development backlog besides feature ideas, on eight more branches after `phase-5/filipino-rest`, each built on the one before (not yet pushed):
+  - `phase-6/privacy`: a Customer downloads their data or deletes their account ([ADR 0020](adr/0020-customer-data-export-and-deletion.md)).
+  - `phase-6/hub-money-tools`: record a payment PayMongo shows but no webhook applied; a second "paid" event no longer refunds; cancel a packed Order; text a Customer; give a Voucher; staff cancels tell the Customer.
+  - `phase-6/hub-schedule-tools`: another Slot or address for an Order, hand an Order to another Rider, a Substitution answered by phone, cash corrections, Riders see Order Notes, Hub status (a Shop Notice, GCash and card paused, days closed) and a System page; status changes retry a lost deadlock.
+  - `phase-6/correctness`: claims paid back partly by refund and partly by Voucher say both; the card-hold leftovers removed.
+  - `phase-6/security-2`: block an account from ordering; Order notices before marketing in the jobs queue; ended sign-ins purged.
+  - `phase-6/page-weight`: English pages no longer carry the Filipino dictionary (7 KB less each).
+  - `phase-6/stop-links`: stop links carry their purpose and expire.
+  - `phase-5/filipino-messages`: emails and texts in the Customer's language; sign-in, delivery areas and the referral link in Filipino ([ADR 0021](adr/0021-messages-in-the-customers-language.md)).
 - 27 and 28 Oct, committed locally on five branches after `design/pass`, each built on the one before (not yet pushed):
   - `phase-4/dry-run`: a simulated Hub day (`npm run db:dry-run`, `e2e/dry-run.spec.ts`, the owner's checklist in [docs/dry-run.md](dry-run.md)). 20 Orders picked, sent out, delivered with each PIN and the cash counted, with three shorts, two Substitutions and a weighed line; every status in every history. It found and fixed: the pick list showed no Customer or item count, "1 pcs" and "1000 g", weighed lines that claimed a substitute was possible, a cash count field pre-filled with the expected amount (now blind), and "Delivered without the PIN" that could not save a different cash amount.
   - `phase-6/load-and-backup`: the load test ([docs/load-test.md](load-test.md)), a restore drill ([docs/backup-restore.md](backup-restore.md)) and an alerting health check (`/api/health?deep=1`).
@@ -35,7 +44,7 @@ Resume here: read this section, then the batch named first under Next.
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so these wait locally, each built on the one before: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
+**Open pull requests:** none. **Blocked:** on 22 Oct GitHub answered "Your account is suspended" to both the API and git, so these wait locally, each built on the one before: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`. When access returns: push each branch and open its PR against `main`, in order. The CI run on the final merge (`6477f88`) was still running when access stopped; its result is unknown. A local production build and the full test suites passed on the same code.
 
 **Current phase:** 6, Launch hardening: everything that needs no outside account is done. Phase 5 is done. Phase 4 waits on the dry run with people (the simulated one passed). Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
@@ -46,7 +55,7 @@ Resume here: read this section, then the batch named first under Next.
 3. A lawyer reviews the draft policy pages; the owner fills in `src/config/legal.ts`. The lawyer's questions are in the Batch 6.3 notes (section 10).
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
 5. The rest of Phase 6, as accounts arrive: Sentry and an uptime monitor on `/api/health?deep=1`, the load test on a Vercel preview, a Neon restore drill, the TalkBack and VoiceOver pass, the domain, email DNS and SMS sender.
-6. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled), and the gaps the runbook lists ([docs/runbook.md](runbook.md), "Things the app cannot do yet").
+6. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled), and the few gaps the runbook still lists ([docs/runbook.md](runbook.md), "Things the app cannot do yet").
 
 **Waiting on the owner**
 
@@ -429,7 +438,7 @@ Frontend:
 **Batch 5.5 PWA, Filipino and analytics** (W17). Stack: web manifest, service worker, `next-intl`, Vercel Analytics. Skills: `dataviz`.
 
 - [x] PWA: manifest, install prompt, offline-friendly cart and browse shell. 22 Oct ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)): a web manifest and the lime "h" icon; "Install the app" in the footer when Android offers it; our own service worker (`public/sw.js`) keeps shop pages and pictures already seen for a weak or no connection, with an offline page and a note that prices may have changed; Cart, Checkout, payments, Orders, account and staff screens always use the network
-- [x] Filipino translation pass. Our own two dictionaries (`src/i18n/en.ts`, `fil.ts`, same keys checked by TypeScript) rather than `next-intl`; Filipino pages at `/fil/...`, English addresses unchanged; the shell, Cart, Home, Categories, search, Product pages, Checkout and the Order pages are translated; a switch in the header and footer, and `hreflang` in a `Link` header. 27 Oct ([ADR 0019](adr/0019-filipino-for-the-rest-of-the-shop.md)): the account pages, addresses and the address form, invite friends, Shopping Lists, Recipes, the page around Articles and Freshness Claims too; shop forms get problems from their modules as codes and word them in the page's language. Sign-in, the delivery areas page, the message link pages (Substitution answer, stop reminders) and messages stay English for now. The Filipino is Claude's draft for a native speaker to check
+- [x] Filipino translation pass. Our own two dictionaries (`src/i18n/en.ts`, `fil.ts`, same keys checked by TypeScript) rather than `next-intl`; Filipino pages at `/fil/...`, English addresses unchanged; the shell, Cart, Home, Categories, search, Product pages, Checkout and the Order pages are translated; a switch in the header and footer, and `hreflang` in a `Link` header. 27 Oct ([ADR 0019](adr/0019-filipino-for-the-rest-of-the-shop.md)): the account pages, addresses and the address form, invite friends, Shopping Lists, Recipes, the page around Articles and Freshness Claims too; shop forms get problems from their modules as codes and word them in the page's language. 28 Oct ([ADR 0021](adr/0021-messages-in-the-customers-language.md)): sign-in, the delivery areas page and the referral link's landing in Filipino too; each Customer's language is stored (`customers.lang`, set at Checkout and on the forms that send the page's language), and every email and SMS to them follows it, with dates, Slots and links to the Filipino pages. Sign-in codes and links, and the message link pages (Substitution answer, stop reminders), stay English for now. The Filipino is Claude's draft for a native speaker to check
 - [x] Analytics events and funnel dashboard. Our own counts per Manila day (Product pages viewed, added to a Cart, Checkouts started, Orders placed) in `funnel_counts`, with no identifier, cookie or third party; the daily report shows each step and the share that went on
 
 **Exit criteria:** a Customer cooks from a Recipe in under a minute of cart-building; a Voucher cannot be applied twice or outside its rules; a Claim is filed, resolved and refunded end to end.

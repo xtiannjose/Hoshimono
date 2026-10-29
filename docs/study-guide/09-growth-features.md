@@ -177,6 +177,10 @@ Not built: claims after 24 hours (Staff can still issue a Voucher by hand), auto
 
 **What is translated**: the shop's shell (header, menus, footer, Cart drawer), Home, Categories, search, Product pages, the Cart, Checkout and the Order pages. **Still English**: the account pages, Recipes, Articles, Shopping Lists, claims, the Address form, all messages (email and SMS), and the staff screens. Product, Category and Recipe names are data and stay as Staff enter them. The Filipino is a draft in everyday Taglish and **must be checked by a native speaker before launch** (roadmap section 0).
 
+Since 28 Oct the rest of the shop is in Filipino too ([ADR 0019](../adr/0019-filipino-for-the-rest-of-the-shop.md)), and so are the emails and texts ([ADR 0021](../adr/0021-messages-in-the-customers-language.md)). The Customer's language is stored (`customers.lang`), set when they place an Order or fill a form on a Filipino page, and every message reads it. The message words live in `src/modules/notifications/internal/words.ts`, not in the page dictionaries, because those reach the browser and these never do. Sign-in codes stay English: before sign-in the language is not known.
+
+The page dictionaries themselves are about 11 KB each. An English page carries only the English one; the Filipino one loads only on Filipino pages (`src/i18n/client.tsx`).
+
 ## 9.9 The installable app ([ADR 0017](../adr/0017-filipino-pwa-and-funnel.md))
 
 A **PWA** (progressive web app) is a website a phone can install like an app: an icon on the home screen, opening full screen, working a little without a connection. Hoshimono's has three parts:
