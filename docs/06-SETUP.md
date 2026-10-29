@@ -222,3 +222,25 @@ Phase 0 is only done when all of these pass:
 | Prisma cannot connect                             | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app            |
 | CRLF warnings from Git                            | Section 1 `core.autocrlf input`; the repo already has `.gitattributes` with `* text=auto eol=lf` |
 | Long paths error on `npm install`                 | `git config --system core.longpaths true` and enable Windows long paths                          |
+
+## 11. Two computers, through Google Drive
+
+While GitHub is unavailable, the project moves between computers as one file in Google Drive: `hoshimono.bundle`, every branch and commit. It never holds `node_modules`, builds or `.env*` files. Never put the project folder itself in Drive: its packages, caches and git internals sync badly, and `.env.local` holds secrets.
+
+**Make the file** (at the end of each work session): `npm run backup`. With Google Drive for desktop installed it lands straight in `G:\My Drive\Hoshimono`; without it, upload `backups/hoshimono.bundle` to that Drive folder by hand. Drive keeps the earlier versions.
+
+**First time on another computer:**
+
+1. Install Git, Node.js (LTS) and Docker Desktop.
+2. Download `hoshimono.bundle` from Drive, then `git clone hoshimono.bundle Hoshimono` and `cd Hoshimono`.
+3. `git switch <branch>` for the newest branch (roadmap section 0 lists them in order).
+4. Copy `.env.example` to `.env.local` and fill it in (section 5). Development secrets can be new ones (`openssl rand -base64 32`).
+5. Start the database container (section 6), then `npm install`, `npm run db:deploy`, `npm run db:seed`.
+6. `git remote add drive "<path to hoshimono.bundle>"`, so later updates are one fetch.
+
+**Each time you switch computers:**
+
+1. On the computer you leave: commit, then `npm run backup` (and upload it if Drive for desktop is not installed).
+2. On the computer you arrive at: download the new `hoshimono.bundle` to the same place, then `git fetch drive` and `git pull drive <branch>`; a new branch is `git switch -c <branch> drive/<branch>` after the fetch. Run `npm install` and `npm run db:deploy` when packages or migrations changed.
+
+Work on one computer at a time: two computers changing the same branch between backups end up with diverging histories that need a merge.

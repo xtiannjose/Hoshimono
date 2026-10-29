@@ -23,7 +23,8 @@
     "db:dry-run": "tsx --env-file-if-exists=.env.local prisma/dry-run.ts",
     "load:checkout": "tsx scripts/load-checkout.ts",
     "load:pages": "tsx scripts/load-pages.mts",
-    "db:restore-drill": "bash scripts/restore-drill.sh"
+    "db:restore-drill": "bash scripts/restore-drill.sh",
+    "backup": "bash scripts/backup.sh"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
