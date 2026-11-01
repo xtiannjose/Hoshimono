@@ -39,16 +39,21 @@ export async function signIn(page: Page, email: string, next = "/account") {
 
 /** A new browser signed in as one of the test accounts (/dev/sign-in). */
 export async function signInAs(browser: Browser, label: string, phone = false) {
+  // Its own context: block the service worker here too (playwright.config.ts).
   const page = await (
-    await browser.newContext(phone ? { ...devices["Pixel 7"] } : {})
+    await browser.newContext({
+      ...(phone ? devices["Pixel 7"] : {}),
+      serviceWorkers: "block",
+    })
   ).newPage();
   await page.goto("/dev/sign-in", { waitUntil: "networkidle" });
   await page.getByRole("link", { name: `Sign in as ${label}` }).click();
-  // Past the magic-link check too: leaving it early drops the session. The
-  // cookie comes with that redirect, so the landing page need not finish.
+  // Past the magic-link check too: leaving it early drops the session. Shop
+  // and admin have their own root layouts, so landing is a full page load:
+  // let it settle, or the next goto is cut off by it.
   await page.waitForURL((url) => !/^\/(dev|api)\//.test(url.pathname), {
     timeout: 45_000,
-    waitUntil: "commit",
+    waitUntil: "networkidle",
   });
   return page;
 }

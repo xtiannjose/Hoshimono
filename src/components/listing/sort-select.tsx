@@ -1,12 +1,13 @@
 "use client";
 
+import { useMessages } from "@/i18n/client";
 import type { ProductSort } from "@/modules/catalog";
 
-const OPTIONS: { value: ProductSort; label: string }[] = [
-  { value: "featured", label: "Featured" },
-  { value: "price_asc", label: "Price, low to high" },
-  { value: "price_desc", label: "Price, high to low" },
-  { value: "unit_price_asc", label: "Unit price, low to high" },
+const OPTIONS: ProductSort[] = [
+  "featured",
+  "price_asc",
+  "price_desc",
+  "unit_price_asc",
 ];
 
 /**
@@ -23,13 +24,14 @@ export function SortSelect({
   /** Current filter parameters to carry over (not sort or page). */
   keep: [string, string][];
 }) {
+  const t = useMessages().listing;
   return (
     <form action={action} className="flex items-center gap-2">
       {keep.map(([name, v], i) => (
         <input key={`${name}-${i}`} type="hidden" name={name} value={v} />
       ))}
-      <label htmlFor="sort" className="text-sm font-semibold">
-        Sort
+      <label htmlFor="sort" className="text-sm font-semibold max-sm:sr-only">
+        {t.sort}
       </label>
       <select
         id="sort"
@@ -39,8 +41,8 @@ export function SortSelect({
         className="rounded-pill border-input bg-card h-11 border px-4 pr-8 text-base"
       >
         {OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
+          <option key={o} value={o}>
+            {t.sorts[o]}
           </option>
         ))}
       </select>
@@ -49,7 +51,7 @@ export function SortSelect({
           type="submit"
           className="rounded-pill border-input h-11 border px-4 font-semibold"
         >
-          Sort
+          {t.sort}
         </button>
       </noscript>
     </form>

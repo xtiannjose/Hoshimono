@@ -2,7 +2,7 @@
 
 Status: v0.2, 2026-10-17. `prisma/schema.prisma` is now the source of truth for tables and fields; this document keeps the reasoning and invariants. Terms follow [GLOSSARY.md](../GLOSSARY.md).
 
-**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`); Promotions, Vouchers and Referrals with Batch 5.3 (`promotions_vouchers`). Freshness Claims arrive later in Phase 5. Differences from the field lists below:
+**Schema v0 (Batch 0.3)** covers the MVP tables (Phases 0 to 4). Recipes and Articles came with Batch 5.1 (migration `recipes_articles`); Promotions, Vouchers and Referrals with Batch 5.3 (`promotions_vouchers`); Freshness Claims with Batch 5.4 (`freshness_claims`). Differences from the field lists below:
 
 - `carts.checked_out_at` marks a Cart that became an Order. "Active Cart" (invariant 9) means `checked_out_at IS NULL`.
 - Append-only tables (`stock_movements`, `order_status_events`, `payment_events`, `audit_log`) have `created_at` (or `at`, `received_at`) but no `updated_at`.
@@ -81,7 +81,7 @@ Unique: `slug`, `barcode` (where present). Index: `category_id`, `status`, GIN o
 
 ### inventory
 
-**`stock_levels`**: `(product_id, hub_id)` primary key, `on_hand`, `reserved`, `low_stock_threshold`. Check: `reserved >= 0 AND on_hand >= 0 AND reserved <= on_hand`.
+**`stock_levels`**: `(product_id, hub_id)` primary key, `on_hand`, `reserved`, `low_stock_threshold`. Check: `reserved >= 0 AND on_hand >= 0`. A count may find fewer than reserved, so `reserved` can exceed `on_hand`; free stock is `max(0, on_hand - reserved)` ([ADR 0022](adr/0022-staff-tools-for-the-last-runbook-gaps.md)).
 
 **`stock_movements`**: append-only. `product_id`, `hub_id`, `delta`, `reason` (receipt, reserve, release, pick, shrink, adjustment, return), `order_id?`, `staff_id?`, `note`.
 
@@ -119,7 +119,7 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 ### customers and content
 
-**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `referral_code?` (unique, made when first shown), `referred_by_id?` (never itself).
+**`customers`**: profile linked to the auth user: `phone` (verified), `email`, `name`, `marketing_opt_in`, `lang` (`en` or `fil`, the language they last shopped in; their messages use it, ADR 0021), `referral_code?` (unique, made when first shown), `referred_by_id?` (never itself).
 
 **`addresses`**: `customer_id`, `label`, `line1`, `barangay`, `city`, `landmark`, `lat`, `lng`, `zone_id?`, `notes`, `is_default`.
 
@@ -135,9 +135,13 @@ Dispatch fields on **`orders`** (ADR 0011): `rider_id?` (Staff, a Rider), `deliv
 
 **`referral_rewards`**: the ledger, one row per invited friend (`referee_id` and `order_id` unique), `referrer_id`, both Vouchers.
 
-**`freshness_claims`**: `order_line_id`, `reason`, `photo_urls[]`, `status`, `resolution` (`refund`, `credit`, `rejected`), `resolved_by`.
+**`freshness_claims`** (Batch 5.4, ADR 0016): `order_id`, `order_line_id` (unique: one claim per line), `customer_id`, `reason` (`not_fresh`, `damaged`, `missing`, `wrong_item`), `units`, `note`, `photo_urls[]` (up to 3), `claimed_cents` (worked out by the server), `status` (`open`, `approved`, `rejected`), `resolved_cents?` (up to `claimed_cents`), `payback?` (`refund`, `voucher`), `voucher_id?`, `decided_by_id?`, `decided_at?` (set exactly when not open), `decision_note`. **`refunds.claim_id?`** (unique; set exactly when the reason is `claim`).
 
 **`staff`**, **`audit_log`**: staff identity with role; append-only record of admin writes.
+
+### reporting
+
+**`funnel_counts`** (Batch 5.5, ADR 0017, `src/lib/funnel.ts`): `day` (Manila date), `step` (`product_viewed`, `added_to_cart`, `checkout_started`, `order_placed`), `count`; primary key (`day`, `step`). One atomic upsert per step. No Customer, session, IP or cookie is stored.
 
 ## 4. Invariants the schema must enforce
 

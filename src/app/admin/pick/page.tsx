@@ -45,6 +45,10 @@ async function ToPick() {
                   <span className="text-muted-foreground block text-sm tabular-nums">
                     {formatSlot(o.slot.startsAt, o.slot.endsAt)}
                   </span>
+                  <span className="text-muted-foreground block text-sm">
+                    {o.customerName},{" "}
+                    {o.lineCount === 1 ? "1 item" : `${o.lineCount} items`}
+                  </span>
                 </span>
                 <span
                   className={`rounded-pill px-3 py-1 text-sm font-semibold ${o.status === "picking" ? "bg-accent-soft" : "bg-muted"}`}

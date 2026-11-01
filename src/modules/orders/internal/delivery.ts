@@ -148,19 +148,22 @@ export async function completeDelivery(
   if (!order || order.riderId !== riderId) {
     return { ok: false, errors: { form: "This Order is not one of yours." } };
   }
-  if (order.pinAttempts >= MAX_PIN_TRIES) {
+  // One guarded UPDATE checks the PIN and counts a wrong one under the
+  // row's lock, so tries sent all at once still stop at the limit.
+  const pin = input.pin.trim();
+  const [tried] = await db.$queryRaw<{ attempts: number; right: boolean }[]>`
+    UPDATE orders SET pin_attempts = pin_attempts
+      + CASE WHEN delivery_pin = ${pin} THEN 0 ELSE 1 END
+    WHERE id = ${orderId}::uuid AND pin_attempts < ${MAX_PIN_TRIES}
+    RETURNING pin_attempts AS attempts, delivery_pin = ${pin} AS "right"`;
+  if (!tried) {
     return {
       ok: false,
       errors: { pin: "Too many tries. Call the Dispatcher." },
     };
   }
-  if (input.pin.trim() !== order.deliveryPin) {
-    const { pinAttempts } = await db.order.update({
-      where: { id: orderId },
-      data: { pinAttempts: { increment: 1 } },
-      select: { pinAttempts: true },
-    });
-    const left = MAX_PIN_TRIES - pinAttempts;
+  if (!tried.right) {
+    const left = MAX_PIN_TRIES - tried.attempts;
     return {
       ok: false,
       errors: {
@@ -249,6 +252,8 @@ export type DeliveryStop = {
   };
   /** Cash to collect; 0 when paid online. */
   dueCents: number;
+  /** What staff noted on the Order, oldest first: the Rider sees it too. */
+  notes: string[];
 };
 
 /** The Orders a Rider is carrying, by Slot time. */
@@ -273,6 +278,7 @@ export async function listDeliveriesForRider(
         orderBy: { createdAt: "desc" },
         select: { method: true },
       },
+      notes: { orderBy: { createdAt: "asc" }, select: { text: true } },
     },
   });
   return orders.map((o) => ({
@@ -285,6 +291,7 @@ export async function listDeliveriesForRider(
     address: o.addressSnapshot as DeliveryStop["address"],
     dueCents:
       o.payments[0]?.method === "cod" ? (o.finalTotalCents ?? o.totalCents) : 0,
+    notes: o.notes.map((n) => n.text),
   }));
 }
 
@@ -352,7 +359,7 @@ export async function getDeliveryNotice(orderId: string) {
       deliveryPin: true,
       totalCents: true,
       finalTotalCents: true,
-      customer: { select: { email: true } },
+      customer: { select: { email: true, lang: true } },
       rider: { select: { name: true, phone: true } },
       payments: {
         take: 1,
@@ -367,6 +374,7 @@ export async function getDeliveryNotice(orderId: string) {
     orderNo: order.orderNo,
     status: order.status,
     email: order.customer.email,
+    lang: order.customer.lang,
     phone: order.contactPhone,
     pin: order.deliveryPin,
     riderName: order.rider?.name ?? null,

@@ -1,6 +1,13 @@
 // Public interface of the delivery module (docs/03-ARCHITECTURE.md section 3).
 // Owns Hub, Zone, Slot and Slot holds, and resolves an Address to a Zone.
-export { getDefaultHubId } from "./internal/hubs";
+export {
+  getDefaultHubId,
+  getHubStatus,
+  getShopNotice,
+  onlinePaused,
+  setHubStatus,
+  type HubStatus,
+} from "./internal/hubs";
 export {
   listCoverage,
   listServiceAreas,
@@ -10,7 +17,9 @@ export {
 } from "./internal/zones";
 export {
   bookSlot,
+  closeSlots,
   getSlotHold,
+  hasOpenSlot,
   holdSlot,
   listSlots,
   purgeExpiredHolds,

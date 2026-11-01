@@ -22,7 +22,7 @@ export function DeleteButton({
           e.preventDefault();
       }}
     >
-      <Button type="submit" variant="ghost" className="text-err">
+      <Button type="submit" variant="danger">
         Delete {kind === "recipe" ? "Recipe" : "Article"}
       </Button>
     </form>

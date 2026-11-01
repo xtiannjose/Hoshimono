@@ -111,16 +111,18 @@ export function recordShrink(
       errors: { note: "Say what happened to them." },
     });
   }
-  return move(hubId, productId, staffId, "shrink", note.trim(), (r) =>
-    quantity > r.on_hand - r.reserved
-      ? {
-          quantity: `Only ${r.on_hand - r.reserved} are not reserved for Orders.`,
-        }
-      : r.on_hand - quantity
-  );
+  return move(hubId, productId, staffId, "shrink", note.trim(), (r) => {
+    const free = Math.max(0, r.on_hand - r.reserved);
+    return quantity > free
+      ? { quantity: `Only ${free} are not reserved for Orders.` }
+      : r.on_hand - quantity;
+  });
 }
 
-/** A physical count sets the shelf number; never below what is reserved. */
+/**
+ * A physical count sets the shelf number, even below what Orders have
+ * reserved: those Orders come up short at the pick (ADR 0022).
+ */
 export function countStock(
   hubId: string,
   productId: string,
@@ -140,12 +142,7 @@ export function countStock(
     staffId,
     "adjustment",
     note.trim() || null,
-    (r) =>
-      counted < r.reserved
-        ? {
-            counted: `${r.reserved} are reserved for Orders: count at least ${r.reserved}.`,
-          }
-        : counted
+    () => counted
   );
 }
 
@@ -173,6 +170,8 @@ export type StockRow = {
   onHand: number;
   reserved: number;
   free: number;
+  /** Reserved beyond the shelf: Orders that will come up short. */
+  short: number;
   lowStockThreshold: number;
   low: boolean;
 };
@@ -209,7 +208,7 @@ export async function listStockForAdmin(
   });
   return rows
     .map((r) => {
-      const free = r.onHand - r.reserved;
+      const free = Math.max(0, r.onHand - r.reserved);
       return {
         productId: r.productId,
         name: r.product.brand
@@ -218,6 +217,7 @@ export async function listStockForAdmin(
         onHand: r.onHand,
         reserved: r.reserved,
         free,
+        short: Math.max(0, r.reserved - r.onHand),
         lowStockThreshold: r.lowStockThreshold,
         low: free <= r.lowStockThreshold,
       };

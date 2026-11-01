@@ -26,3 +26,27 @@ export function inTransaction<T>(
 ): Promise<T> {
   return client === db ? db.$transaction(work, options) : work(client);
 }
+
+/**
+ * Postgres gave up on a transaction (a deadlock or a write conflict):
+ * nothing was saved, so trying again is safe.
+ */
+export function isRetryable(error: unknown): boolean {
+  const code = (error as { code?: string }).code;
+  return (
+    code === "P2034" ||
+    code === "40P01" ||
+    /deadlock detected|could not serialize/i.test(String(error))
+  );
+}
+
+/** Runs a whole transaction again when Postgres broke a deadlock, up to 3 times. */
+export async function retryConflicts<T>(run: () => Promise<T>): Promise<T> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (attempt >= 3 || !isRetryable(error)) throw error;
+    }
+  }
+}

@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { saveRecipeAction, type ContentFormState } from "../content/actions";
 import {
   FIELD,
+  INLINE_FIELD,
+  TEXTAREA,
   FieldError,
   Labeled,
   moved,
@@ -140,7 +142,7 @@ export function RecipeEditor({
             rows={3}
             value={fields.intro}
             onChange={(ev) => set({ intro: ev.target.value })}
-            className={`${FIELD} py-2`}
+            className={TEXTAREA}
           />
         </Labeled>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -217,7 +219,7 @@ export function RecipeEditor({
                       }
                       className={FIELD}
                     />
-                    <span className="text-muted-foreground flex items-center gap-1 text-[13px]">
+                    <span className="text-muted-foreground text-fine flex items-center gap-1">
                       {i.productId ? (
                         <>
                           <CheckCircleIcon aria-hidden weight="fill" />
@@ -274,7 +276,7 @@ export function RecipeEditor({
                             quantity: Number(ev.target.value),
                           })
                         }
-                        className={`${FIELD} w-24`}
+                        className={`${INLINE_FIELD} w-24`}
                       />
                     </Labeled>
                     <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
@@ -351,7 +353,7 @@ export function RecipeEditor({
                       )
                     )
                   }
-                  className={`${FIELD} py-2`}
+                  className={TEXTAREA}
                 />
               </Labeled>
               <div className="self-start md:pt-6">
@@ -397,7 +399,7 @@ export function RecipeEditor({
               onChange={(ev) =>
                 set({ status: ev.target.value as RecipeDraft["status"] })
               }
-              className={`${FIELD} w-56`}
+              className={`${INLINE_FIELD} w-56`}
             >
               <option value="draft">Draft: only staff see it</option>
               <option value="published">Published: on the shop</option>

@@ -31,6 +31,7 @@ import { getDefaultHubId, resolveZone } from "@/modules/delivery";
 import {
   cancelStockAlert,
   hasStockAlert,
+  MAX_STOCK_ALERTS,
   queueStockAlerts,
   requestStockAlert,
   STOCK_ALERT_JOB,
@@ -186,13 +187,13 @@ describe("Shopping Lists (ADR 0014)", () => {
   it("names lists, keeps Products with counts and adds a list to the Cart", async () => {
     expect(await createShoppingList(ligaya, " ")).toEqual({
       ok: false,
-      errors: { name: "Give the list a name." },
+      errors: { name: "no_name" },
     });
     const weekly = await createShoppingList(ligaya, "Weekly");
     if (!weekly.ok) throw new Error("not created");
     expect(await createShoppingList(ligaya, "weekly")).toEqual({
       ok: false,
-      errors: { name: 'You already have a list called "Weekly".' },
+      errors: { name: "name_taken" },
     });
 
     await saveToList(ligaya, weekly.id, [
@@ -276,6 +277,7 @@ describe("Cart Reminders (ADR 0014)", () => {
     const notice = {
       cartId: randomUUID(),
       email: "ligaya@example.com",
+      lang: "en" as const,
       name: "Ligaya",
       items: ["Magnolia Fresh Milk", "Silver Swan Soy Sauce"],
       cartUrl: "http://localhost:3000/cart",
@@ -329,11 +331,17 @@ describe("the queued messages", () => {
 });
 
 describe("the stop link", () => {
-  it("verifies only what it signed", () => {
-    const token = signValue("customer-1");
-    expect(verifySigned(token)).toBe("customer-1");
-    expect(verifySigned(`${token}x`)).toBeNull();
-    expect(verifySigned("customer-1.forged")).toBeNull();
+  it("verifies only what it signed, for its purpose, until it expires", () => {
+    const now = new Date("2026-10-01T00:00:00Z");
+    const token = signValue("stop", "customer-1", { now });
+    expect(verifySigned(token, "stop", now)).toBe("customer-1");
+    expect(verifySigned(token, "unsubscribe", now)).toBeNull();
+    expect(verifySigned(`${token}x`, "stop", now)).toBeNull();
+    expect(
+      verifySigned("stop:customer-1:9999999999.forged", "stop", now)
+    ).toBeNull();
+    const later = new Date(now.getTime() + 91 * 24 * 60 * 60 * 1000);
+    expect(verifySigned(token, "stop", later)).toBeNull();
   });
 });
 
@@ -352,6 +360,48 @@ describe("Stock Alerts (ADR 0014)", () => {
     expect(await hasStockAlert(ligaya, UBE)).toBe(false);
     const [job] = await db.job.findMany({ where: { kind: STOCK_ALERT_JOB } });
     expect(job.payload).toMatchObject({ customerId: ligaya, productId: UBE });
+  });
+
+  it("is only for a sold-out Product, and at most 20 open at once", async () => {
+    // In stock: the alert would go out at the next tick, again and again.
+    expect(await requestStockAlert(ligaya, MILK)).toBe(false);
+
+    const others = await db.product.findMany({
+      where: { status: "active", id: { notIn: [MILK, EGGS, SOY, UBE] } },
+      orderBy: { id: "asc" },
+      take: MAX_STOCK_ALERTS + 1,
+      select: { id: true },
+    });
+    const ids = others.map((p) => p.id);
+    const before = await db.stockLevel.findMany({
+      where: { productId: { in: ids } },
+    });
+    await db.stockLevel.updateMany({
+      where: { productId: { in: ids } },
+      data: { onHand: 0, reserved: 0 },
+    });
+    try {
+      for (const id of ids.slice(0, MAX_STOCK_ALERTS)) {
+        expect(await requestStockAlert(ligaya, id)).toBe(true);
+      }
+      expect(await requestStockAlert(ligaya, ids[MAX_STOCK_ALERTS])).toBe(
+        false
+      );
+      // Asking again for one already held is still fine.
+      expect(await requestStockAlert(ligaya, ids[0])).toBe(true);
+    } finally {
+      for (const level of before) {
+        await db.stockLevel.update({
+          where: {
+            productId_hubId: {
+              productId: level.productId,
+              hubId: level.hubId,
+            },
+          },
+          data: { onHand: level.onHand, reserved: level.reserved },
+        });
+      }
+    }
   });
 
   it("ends alerts older than 30 days unsent, and can be cancelled", async () => {

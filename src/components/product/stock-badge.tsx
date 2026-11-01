@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import type { StockState } from "@/modules/inventory";
 
 import { Tag } from "./tag";
@@ -5,12 +7,15 @@ import { Tag } from "./tag";
 /** "In stock", "Only a few left" or "Out of stock today"; never the count. */
 export function StockBadge({
   state,
+  lang,
   showInStock = false,
 }: {
   state: StockState;
+  lang: Lang;
   showInStock?: boolean;
 }) {
-  if (state === "out") return <Tag tone="quiet">Out of stock today</Tag>;
-  if (state === "low") return <Tag tone="warn">Only a few left</Tag>;
-  return showInStock ? <Tag tone="soft">In stock</Tag> : null;
+  const t = MESSAGES[lang].product;
+  if (state === "out") return <Tag tone="quiet">{t.out}</Tag>;
+  if (state === "low") return <Tag tone="warn">{t.low}</Tag>;
+  return showInStock ? <Tag tone="soft">{t.inStock}</Tag> : null;
 }

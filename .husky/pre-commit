@@ -1,4 +1,4 @@
-npx lint-staged
+npx lint-staged --max-arg-length 3000
 npm run lint
 npm run typecheck
 npm run test

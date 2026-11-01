@@ -75,7 +75,7 @@ export type PricedCart = {
   vatExemptSalesCents: number;
   zeroRatedSalesCents: number;
   totalCents: number;
-  /** Estimate of the Weighed Products, for the card hold and the weight note. */
+  /** Estimate of the Weighed Products, for the weight note. */
   weighedSubtotalCents: number;
   /** 0 once the Zone minimum is met; also 0 while the Zone is unknown. */
   belowMinimumByCents: number;

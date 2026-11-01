@@ -1,9 +1,11 @@
+import { localPath, type Lang } from "@/i18n/lang";
 import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
 import { signValue } from "@/lib/signed";
 import { CART_REMINDER_JOB, getCartReminder } from "@/modules/cart";
+import { CLAIM_DECIDED_JOB, getClaimNotice } from "@/modules/claims";
 import { getProductSummaries } from "@/modules/catalog";
 import { getProfile, rewardReferral } from "@/modules/customers";
 import { STOCK_ALERT_JOB } from "@/modules/inventory";
@@ -11,8 +13,10 @@ import type { JobHandlers } from "@/modules/jobs";
 import {
   sendBackInStock,
   sendCartReminder,
+  sendClaimDecided,
   sendReferralReward,
   sendDeliveryFailed,
+  sendOrderCancelled,
   sendOrderConfirmed,
   sendOutForDelivery,
   sendRefundIssued,
@@ -23,6 +27,7 @@ import {
   getDeliveryNotice,
   getOrderForNotice,
   getSubstitution,
+  ORDER_CANCELLED_JOB,
   ORDER_CONFIRMED_JOB,
   ORDER_DELIVERED_JOB,
   OUT_FOR_DELIVERY_JOB,
@@ -32,12 +37,50 @@ import { getRefundNotice, REFUND_JOB, sendRefund } from "@/modules/payments";
 import { createRewardVoucher, REFERRAL_REWARD_CENTS } from "@/modules/pricing";
 
 const appUrl = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-const trackingUrl = (orderNo: string) =>
-  new URL(`/orders/${orderNo}`, appUrl()).toString();
-const link = (path: string) => new URL(path, appUrl()).toString();
+const url = (path: string) => new URL(path, appUrl()).toString();
+// A shop page in the Customer's language, as their message is (ADR 0021).
+const link = (lang: Lang, path: string) => url(localPath(lang, path));
+const trackingUrl = (lang: Lang, orderNo: string) =>
+  link(lang, `/orders/${orderNo}`);
 
 // Wires job kinds to modules; modules stay unaware of each other here.
 export const jobHandlers: JobHandlers = {
+  // A Freshness Claim was decided: tell the Customer how (ADR 0016).
+  async [CLAIM_DECIDED_JOB](payload) {
+    const claim = await getClaimNotice(String(payload.claimId));
+    if (!claim) return;
+    const { lang } = claim.customer;
+    const method = claim.order.payments[0]?.method;
+    const refunded = claim.refund?.amountCents ?? 0;
+    await sendClaimDecided({
+      claimId: claim.id,
+      email: claim.customer.email,
+      phone: claim.order.contactPhone,
+      lang,
+      name: claim.customer.name,
+      orderNo: claim.order.orderNo,
+      product: claim.orderLine.nameSnapshot,
+      approved: claim.status === "approved",
+      // Partly refunded when less was left of the payment; the rest is a
+      // Voucher.
+      refund: refunded
+        ? {
+            amount: formatMoney(refunded),
+            method: method === "gcash" ? "gcash" : "card",
+          }
+        : null,
+      voucher: claim.voucher
+        ? {
+            amount: formatMoney((claim.resolvedCents ?? 0) - refunded),
+            code: claim.voucher.code,
+            until: formatDate(claim.voucher.endsAt, lang),
+          }
+        : null,
+      note: claim.decisionNote,
+      orderUrl: trackingUrl(lang, claim.order.orderNo),
+    });
+  },
+
   // An invited friend's first Order arrived: a Voucher each (ADR 0015).
   async [ORDER_DELIVERED_JOB](payload) {
     const order = await getOrderForNotice(String(payload.orderId));
@@ -46,7 +89,12 @@ export const jobHandlers: JobHandlers = {
       createRewardVoucher(tx, id)
     );
     if (!reward) return;
-    const friend = reward.referee.name.split(" ")[0] || "A friend";
+    // The friend typed their own name: only letters reach our message, so
+    // it cannot carry a link. None left: the message says "a friend".
+    const friend = reward.referee.name
+      .split(" ")[0]
+      .replace(/[^\p{L}'-]/gu, "")
+      .slice(0, 20);
     for (const role of ["referrer", "referee"] as const) {
       const who = reward[role];
       await sendReferralReward({
@@ -54,13 +102,14 @@ export const jobHandlers: JobHandlers = {
         role,
         email: who.email,
         phone: who.phone,
+        lang: who.lang,
         name: who.name,
         friend,
         code: who.voucher.code,
         amount: formatMoney(REFERRAL_REWARD_CENTS),
         minSpend: formatMoney(who.voucher.minSpendCents),
-        until: formatDate(who.voucher.endsAt),
-        shopUrl: link("/"),
+        until: formatDate(who.voucher.endsAt, who.lang),
+        shopUrl: link(who.lang, "/"),
       });
     }
   },
@@ -74,10 +123,12 @@ export const jobHandlers: JobHandlers = {
     await sendCartReminder({
       cartId,
       email: reminder.email,
+      lang: reminder.lang,
       name: reminder.name,
       items: reminder.items,
-      cartUrl: link("/cart"),
-      stopUrl: link(`/stop/${signValue(reminder.customerId)}`),
+      cartUrl: link(reminder.lang, "/cart"),
+      // The stop page is English still (ADR 0019).
+      stopUrl: url(`/stop/${signValue("stop", reminder.customerId)}`),
     });
   },
 
@@ -92,8 +143,9 @@ export const jobHandlers: JobHandlers = {
       alertId: String(payload.alertId),
       email: profile.email,
       phone: profile.phone,
+      lang: profile.lang,
       product: productName(product),
-      productUrl: link(productHref(product)),
+      productUrl: link(profile.lang, productHref(product)),
     });
   },
 
@@ -101,14 +153,16 @@ export const jobHandlers: JobHandlers = {
     const order = await getOrderForNotice(String(payload.orderId));
     // Cancelled before the job ran: a "confirmed" message would mislead.
     if (!order || order.status === "cancelled") return;
+    const { lang } = order.customer;
     await sendOrderConfirmed({
       orderId: order.id,
       orderNo: order.orderNo,
       email: order.customer.email,
       phone: order.contactPhone,
-      slot: formatSlot(order.slot.startsAt, order.slot.endsAt),
+      lang,
+      slot: formatSlot(order.slot.startsAt, order.slot.endsAt, undefined, lang),
       total: formatMoney(order.totalCents),
-      trackingUrl: trackingUrl(order.orderNo),
+      trackingUrl: trackingUrl(lang, order.orderNo),
       lines: order.lines.map((l) => ({
         name: l.nameSnapshot,
         quantity: l.orderedQty,
@@ -129,12 +183,14 @@ export const jobHandlers: JobHandlers = {
       substitutionId: sub.id,
       email: sub.email,
       phone: sub.phone,
+      lang: sub.lang,
       ordered: sub.ordered.name,
       substitute: sub.substitute.name,
       quantity: sub.substitute.quantity,
       unitPrice: formatMoney(sub.substitute.unitPriceCents),
       until: formatTime(sub.windowEndsAt),
-      link: new URL(`/s/${sub.token}`, appUrl()).toString(),
+      // The answer page is English still (ADR 0019).
+      link: url(`/s/${sub.token}`),
     });
   },
 
@@ -148,12 +204,13 @@ export const jobHandlers: JobHandlers = {
       orderNo: d.orderNo,
       email: d.email,
       phone: d.phone,
+      lang: d.lang,
       trip: String(payload.dispatchedAt),
       riderName: d.riderName,
       riderPhone: d.riderPhone,
       pin: d.pin,
       cashDue: d.cashDueCents === null ? null : formatMoney(d.cashDueCents),
-      trackingUrl: trackingUrl(d.orderNo),
+      trackingUrl: trackingUrl(d.lang, d.orderNo),
     });
   },
 
@@ -165,7 +222,20 @@ export const jobHandlers: JobHandlers = {
       orderNo: d.orderNo,
       email: d.email,
       phone: d.phone,
+      lang: d.lang,
       trip: String(payload.at),
+    });
+  },
+
+  async [ORDER_CANCELLED_JOB](payload) {
+    const order = await getOrderForNotice(String(payload.orderId));
+    if (!order || order.status !== "cancelled") return;
+    await sendOrderCancelled({
+      orderId: order.id,
+      orderNo: order.orderNo,
+      email: order.customer.email,
+      phone: order.contactPhone,
+      lang: order.customer.lang,
     });
   },
 
@@ -176,6 +246,8 @@ export const jobHandlers: JobHandlers = {
     await sendRefund(refundId);
     const refund = await getRefundNotice(refundId);
     if (!refund || refund.status !== "sent" || refund.method === "cod") return;
+    // A claim's refund is told in the claim's own message (ADR 0016).
+    if (refund.reason === "claim") return;
     const order = await getOrderForNotice(refund.orderId);
     if (!order) return;
     await sendRefundIssued({
@@ -183,10 +255,11 @@ export const jobHandlers: JobHandlers = {
       orderNo: order.orderNo,
       email: order.customer.email,
       phone: order.contactPhone,
+      lang: order.customer.lang,
       amount: formatMoney(refund.amountCents),
       method: refund.method,
       reason: refund.reason,
-      trackingUrl: trackingUrl(order.orderNo),
+      trackingUrl: trackingUrl(order.customer.lang, order.orderNo),
     });
   },
 };

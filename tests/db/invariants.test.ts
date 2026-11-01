@@ -76,16 +76,21 @@ async function orderData(overrides: Record<string, unknown> = {}) {
 }
 
 describe("database invariants", () => {
-  it("1. stock: reserved never exceeds on hand and neither goes negative", async () => {
+  it("1. stock: neither on hand nor reserved goes negative", async () => {
     const h = await hub();
     const p = await product();
     const key = { productId: p.id, hubId: h.id };
     await db.stockLevel.create({ data: { ...key, onHand: 5, reserved: 5 } });
 
+    // A count may find fewer than reserved (ADR 0022).
+    await db.stockLevel.update({
+      where: { productId_hubId: key },
+      data: { reserved: 6 },
+    });
     await expect(
       db.stockLevel.update({
         where: { productId_hubId: key },
-        data: { reserved: 6 },
+        data: { reserved: -1 },
       })
     ).rejects.toThrow(/stock_levels_quantities_check/);
     await expect(

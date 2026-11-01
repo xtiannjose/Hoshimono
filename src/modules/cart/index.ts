@@ -26,6 +26,7 @@ export type {
   CartOwner,
   CartView,
   SetQuantityResult,
+  VoucherProblem,
 } from "./internal/cart";
 export { addLines } from "./internal/add";
 export type { AddLinesResult } from "./internal/add";
@@ -41,9 +42,14 @@ export {
   saveToList,
   shoppingListLines,
 } from "./internal/lists";
-export type { ShoppingListSummary, ShoppingListView } from "./internal/lists";
+export type {
+  ListNameProblem,
+  ShoppingListSummary,
+  ShoppingListView,
+} from "./internal/lists";
 export {
   CART_REMINDER_JOB,
   getCartReminder,
   queueCartReminders,
 } from "./internal/reminders";
+export { eraseCustomerCarts, shoppingListData } from "./internal/privacy";

@@ -9,15 +9,17 @@ import { WEEKDAYS } from "@/lib/dates";
 import { FormMessage } from "../form-message";
 import {
   addWindowAction,
+  closeSlotsAction,
+  hubStatusAction,
   slotCapacityAction,
   windowAction,
   zoneFeesAction,
   type SetupFormState,
 } from "./actions";
+import { INLINE_FIELD } from "@/components/ui/field-classes";
 
 const initial: SetupFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal tabular-nums";
+const FIELD = `${INLINE_FIELD} tabular-nums`;
 const pesos = (cents: number | null) =>
   cents === null ? "" : (cents / 100).toFixed(2);
 
@@ -217,6 +219,88 @@ export function SlotCapacityForm({
         Save
       </Button>
       <FormMessage state={state} />
+    </form>
+  );
+}
+
+/** The notice across the shop, and GCash and card on or off. */
+export function HubStatusForm({
+  notice,
+  until,
+  onlinePaused,
+}: {
+  notice: string;
+  /** datetime-local value in Manila, or "". */
+  until: string;
+  onlinePaused: boolean;
+}) {
+  const [state, action, pending] = useActionState(hubStatusAction, initial);
+  return (
+    <form key={formKey(state)} action={action} className="grid max-w-xl gap-3">
+      <label className="grid gap-1 text-sm font-semibold">
+        Notice across the shop (blank for none)
+        <input
+          name="notice"
+          maxLength={200}
+          defaultValue={notice}
+          placeholder="Closed Thursday for the typhoon. Orders resume Friday."
+          className={INLINE_FIELD}
+        />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold">
+        Show it until (blank: until you remove it)
+        <input
+          name="until"
+          type="datetime-local"
+          defaultValue={until}
+          className={`${INLINE_FIELD} w-64`}
+        />
+      </label>
+      <label className="flex min-h-11 items-center gap-3 text-sm font-semibold">
+        <input
+          type="checkbox"
+          name="onlinePaused"
+          defaultChecked={onlinePaused}
+          className="accent-ink size-5"
+        />
+        Pause GCash and card: cash on delivery only
+      </label>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={pending}
+        className="justify-self-start"
+      >
+        Save
+      </Button>
+      <FormMessage state={state} />
+    </form>
+  );
+}
+
+/** Close the Hub for whole days: no new Orders, booked ones stay. */
+export function CloseSlotsForm() {
+  const [state, action, pending] = useActionState(closeSlotsAction, initial);
+  return (
+    <form
+      key={formKey(state)}
+      action={action}
+      className="flex flex-wrap items-end gap-3"
+    >
+      <label className="grid gap-1 text-sm font-semibold">
+        From
+        <input name="from" type="date" className={`${INLINE_FIELD} w-44`} />
+      </label>
+      <label className="grid gap-1 text-sm font-semibold">
+        To
+        <input name="to" type="date" className={`${INLINE_FIELD} w-44`} />
+      </label>
+      <Button type="submit" variant="secondary" disabled={pending}>
+        Close these days
+      </Button>
+      <div className="basis-full">
+        <FormMessage state={state} />
+      </div>
     </form>
   );
 }

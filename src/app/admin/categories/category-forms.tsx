@@ -12,9 +12,9 @@ import {
   removeCategory,
   type FormState,
 } from "../actions";
+import { INLINE_FIELD as FIELD } from "@/components/ui/field-classes";
 
 const initial: FormState = { errors: {} };
-const FIELD = "h-10 rounded-field border border-input bg-card px-3 text-base";
 
 type Option = { value: string; label: string };
 

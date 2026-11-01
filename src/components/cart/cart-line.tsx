@@ -2,13 +2,15 @@
 
 import { TrashIcon } from "@phosphor-icons/react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useId, useState } from "react";
 
-import { saveNote } from "@/app/cart/actions";
+import { saveNote } from "@/app/[lang]/cart/actions";
 import { CategoryIcon } from "@/components/product/category-icon";
-import { formatPackSize } from "@/components/product/format";
+import { packSizeLabel } from "@/components/product/pack-size";
+import { MAX_NOTE_LENGTH } from "@/lib/cart-limits";
 import { QuantityStepper } from "@/components/product/quantity-stepper";
+import { useMessages } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
@@ -29,6 +31,8 @@ export function CartLine({
   onNavigate?: () => void;
 }) {
   const { product } = line;
+  const { cart: cartWords, product: cartProduct } = useMessages();
+  const t = useMessages();
   const pending = useCart((s) => s.pending[product.id]);
   const notice = useCart((s) =>
     s.notice?.productId === product.id ? s.notice.text : null
@@ -50,7 +54,7 @@ export function CartLine({
           />
         ) : (
           <CategoryIcon
-            slug={product.category.slug}
+            slug={product.category.topSlug}
             size={24}
             className="opacity-70"
           />
@@ -60,17 +64,19 @@ export function CartLine({
         <Link
           href={productHref(product)}
           onClick={onNavigate}
-          className="block text-[15px] leading-5 font-semibold hover:underline"
+          className="text-label block font-semibold hover:underline"
         >
           {name}
         </Link>
-        <small className="text-muted-foreground block text-[13px] leading-[18px]">
-          {formatPackSize(product.packSize, product.isWeighed)},{" "}
-          {formatMoney(product.priceCents)} each
+        <small className="text-muted-foreground text-fine block">
+          {t.cart.each(
+            packSizeLabel(product.packSize, product.isWeighed, cartProduct),
+            formatMoney(product.priceCents)
+          )}
         </small>
         {product.isWeighed && (
-          <small className="text-muted-foreground block text-[13px] leading-[18px]">
-            Final price follows the actual weight.
+          <small className="text-muted-foreground text-fine block">
+            {t.cart.finalByWeight}
           </small>
         )}
         <Flags line={line} />
@@ -90,15 +96,17 @@ export function CartLine({
                   variant="ghost"
                   value={quantity}
                   min={1}
-                  onChange={(next) => changeQuantity(product.id, name, next)}
-                  label={`Quantity of ${name}`}
+                  onChange={(next) =>
+                    changeQuantity(product.id, name, next, cartWords)
+                  }
+                  label={t.product.quantityOf(name)}
                 />
               </div>
             )}
             <button
               type="button"
-              onClick={() => changeQuantity(product.id, name, 0)}
-              aria-label={`Remove ${name}`}
+              onClick={() => changeQuantity(product.id, name, 0, cartWords)}
+              aria-label={t.cart.remove(name)}
               className="rounded-pill hover:bg-muted text-muted-foreground hover:text-foreground grid size-11 place-items-center"
             >
               <TrashIcon size={20} aria-hidden />
@@ -110,7 +118,7 @@ export function CartLine({
           >
             {lineTotalCents === null ? (
               <span className="text-muted-foreground text-sm font-medium">
-                Not in total
+                {t.cart.notInTotal}
               </span>
             ) : (
               formatMoney(lineTotalCents)
@@ -118,9 +126,7 @@ export function CartLine({
           </span>
         </div>
         {notice && (
-          <p className="text-warn mt-1.5 text-[13px] leading-[18px] font-semibold">
-            {notice}
-          </p>
+          <p className="text-warn text-fine mt-1.5 font-semibold">{notice}</p>
         )}
       </div>
     </li>
@@ -128,21 +134,24 @@ export function CartLine({
 }
 
 function Flags({ line }: { line: CartLineView }) {
+  const t = useMessages().cart;
   const was = line.priceWasCents;
   const flags: string[] = [];
   if (line.stock === "out") {
-    flags.push("Out of stock today, so it is not in your total.");
+    flags.push(t.outToday);
   } else if (line.short) {
-    flags.push(`Running low. We may not have all ${line.quantity}.`);
+    flags.push(t.runningLow(line.quantity));
   }
   if (was !== null) {
     flags.push(
-      `${line.product.priceCents > was ? "Price went up" : "Price dropped"} from ${formatMoney(was)}.`
+      line.product.priceCents > was
+        ? t.priceUp(formatMoney(was))
+        : t.priceDown(formatMoney(was))
     );
   }
   if (flags.length === 0) return null;
   return (
-    <div className="rounded-field bg-warn-soft text-warn mt-1.5 grid gap-0.5 px-2.5 py-1.5 text-[13px] leading-[18px] font-semibold">
+    <div className="rounded-field bg-warn-soft text-warn text-fine mt-1.5 grid gap-0.5 px-2.5 py-1.5 font-semibold">
       {flags.map((flag) => (
         <p key={flag}>{flag}</p>
       ))}
@@ -159,6 +168,7 @@ function PickerNote({
   note: string | null;
 }) {
   const id = useId();
+  const t = useMessages().cart;
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -167,10 +177,10 @@ function PickerNote({
     try {
       const result = await saveNote(productId, String(formData.get("note")));
       setCartView(result.cart);
-      if (result.message) showNotice(productId, result.message);
+      if (result.notice) showNotice(productId, t.notices[result.notice]);
       else setOpen(false);
     } catch {
-      showNotice(productId, "We could not save your note. Please try again.");
+      showNotice(productId, t.failed.note);
     } finally {
       setSaving(false);
     }
@@ -181,23 +191,23 @@ function PickerNote({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground mt-1 block min-h-11 text-left text-[13px] font-semibold underline underline-offset-[3px]"
+        className="text-muted-foreground text-fine mt-1 block min-h-11 text-left font-semibold underline underline-offset-[3px]"
       >
-        {note ? `Note: ${note}` : "Add a note for your picker"}
+        {note ? t.noteShown(note) : t.notePrompt}
       </button>
     );
   }
   return (
     <form action={submit} className="mt-2 grid gap-1.5">
       <label htmlFor={`${id}-note`} className="text-sm font-semibold">
-        Note for your picker
+        {t.noteLabel}
       </label>
       <div className="flex gap-2">
         <input
           id={`${id}-note`}
           name="note"
           defaultValue={note ?? ""}
-          maxLength={200}
+          maxLength={MAX_NOTE_LENGTH}
           autoFocus
           className="rounded-field border-input bg-card h-11 min-w-0 flex-1 border px-3 text-base"
         />
@@ -206,7 +216,7 @@ function PickerNote({
           disabled={saving}
           className="rounded-pill bg-btn text-btn-fg hover:bg-btn-hover h-11 px-4 text-sm font-semibold disabled:opacity-50"
         >
-          Save
+          {t.save}
         </button>
       </div>
     </form>

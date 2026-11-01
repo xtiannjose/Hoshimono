@@ -2,11 +2,11 @@
 
 import { ShoppingCartIcon } from "@phosphor-icons/react";
 import dynamic from "next/dynamic";
-import { usePathname } from "next/navigation";
 import { lazy, Suspense, useEffect } from "react";
 import { createPortal } from "react-dom";
 
 import { z } from "@/config/z";
+import { useMessages, useShopPath } from "@/i18n/client";
 import { formatMoney } from "@/lib/money";
 import type { CartView } from "@/modules/cart";
 
@@ -17,7 +17,7 @@ const CartDrawer = dynamic(() => import("./cart-drawer"), { ssr: false });
 // The count's bump brings Motion, so it loads once the Cart has items.
 const CountBadge = lazy(() => import("./count-badge"));
 const BADGE =
-  "rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-[13px] leading-6 font-bold tabular-nums";
+  "rounded-pill bg-btn-fg text-btn inline-block min-w-6 px-[7px] text-center text-fine leading-6 font-bold tabular-nums";
 
 /** Hands the server's Cart to the store once it streams in. */
 export function CartSync({ view }: { view: CartView }) {
@@ -37,6 +37,7 @@ export function CartButton() {
     s.view ? s.view.priced.subtotalCents - s.view.priced.discountCents : 0
   );
   const drawerLoaded = useCart((s) => s.drawerLoaded);
+  const t = useMessages();
 
   return (
     <>
@@ -50,24 +51,25 @@ export function CartButton() {
         {/* The name reads "Cart: ₱230.00 2 items", containing the visible text. */}
         {count > 0 ? (
           <>
-            <span className="sr-only">Cart:</span>
+            <span className="sr-only">{t.shell.cart}:</span>
             <span className="tabular-nums">{formatMoney(total)}</span>
             <Suspense
               fallback={
                 <span className={BADGE}>
                   {count}
-                  <span className="sr-only">
-                    {" "}
-                    {count === 1 ? "item" : "items"}
-                  </span>
+                  <span className="sr-only"> {t.items(count)}</span>
                 </span>
               }
             >
-              <CountBadge count={count} className={BADGE} />
+              <CountBadge
+                count={count}
+                label={t.items(count)}
+                className={BADGE}
+              />
             </Suspense>
           </>
         ) : (
-          <span>Cart</span>
+          <span>{t.shell.cart}</span>
         )}
       </button>
       <CartBar count={count} total={total} />
@@ -87,12 +89,14 @@ function CartBar({ count, total }: { count: number; total: number }) {
 
 function FloatingCartBar({ count, total }: { count: number; total: number }) {
   // The Cart and Checkout pages show the Cart already.
-  const path = usePathname();
+  const path = useShopPath();
+  const t = useMessages().shell;
   if (path === "/cart" || path.startsWith("/checkout")) return null;
   // Portalled: the header's backdrop blur would pin a fixed child to it.
   return createPortal(
     <div
       style={{ zIndex: z.sticky }}
+      data-cart-bar
       className="fixed inset-x-4 bottom-[calc(16px+env(safe-area-inset-bottom))] md:hidden"
     >
       <button
@@ -103,7 +107,7 @@ function FloatingCartBar({ count, total }: { count: number; total: number }) {
         <span className="rounded-pill bg-btn-fg text-btn min-w-7 px-2 text-center text-sm leading-7 font-bold tabular-nums">
           {count}
         </span>
-        <span>View cart</span>
+        <span>{t.viewCart}</span>
         <span className="ml-auto tabular-nums">{formatMoney(total)}</span>
       </button>
     </div>,

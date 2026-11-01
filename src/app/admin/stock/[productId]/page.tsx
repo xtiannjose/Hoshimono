@@ -60,6 +60,12 @@ async function ProductStock({ params }: { params: Props["params"] }) {
           Orders, <b>{row.free}</b> free
           {row.low && <span className="text-warn font-semibold">: low</span>}
         </p>
+        {row.short > 0 && (
+          <p className="text-err font-semibold">
+            {row.short} more reserved than on the shelf: some Orders will come
+            up short. Pickers mark them Short.
+          </p>
+        )}
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <StockForm productId={productId} move="receive" />

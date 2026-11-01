@@ -16,7 +16,14 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  use: { baseURL: BASE_URL, trace: "on-first-retry" },
+  use: {
+    baseURL: BASE_URL,
+    trace: "on-first-retry",
+    // A production build registers the service worker (ADR 0017); pages it
+    // passes through never reach "networkidle" in Playwright. Only
+    // e2e/app.spec.ts turns it on.
+    serviceWorkers: "block",
+  },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     // Migrate, reset and seed hoshimono_e2e, then start: every run is fresh.
@@ -27,7 +34,9 @@ export default defineConfig({
       : `npx prisma migrate deploy && npx tsx e2e/reset-db.mts && npx next dev -p ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: false,
-    timeout: process.env.E2E_PROD ? 600_000 : 240_000,
+    // A production build takes about 5 minutes on a laptop, and twice that
+    // when the machine is busy.
+    timeout: process.env.E2E_PROD ? 1_200_000 : 240_000,
     env: {
       DATABASE_URL: E2E_DATABASE_URL,
       DIRECT_URL: E2E_DATABASE_URL,

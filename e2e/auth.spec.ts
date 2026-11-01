@@ -76,9 +76,10 @@ test("signs in with a code texted to a mobile number", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByText("Signed in with")).toContainText("+639178881234");
+  await expect(page.getByText("Signed in with")).toContainText("0917 888 1234");
+  // No made-up name: the Customer adds their own.
   await expect(page.getByRole("textbox", { name: "Your name" })).toHaveValue(
-    "Hoshimono shopper"
+    ""
   );
 });
 

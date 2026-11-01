@@ -2,15 +2,32 @@
 
 Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order, in which batch, with which tools. Tick items as they are finished. A phase is **done only when every exit criterion is observably met** (run the app and exercise the flow; passing tests alone are not enough).
 
-Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one pull request**.
+Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one branch**.
 
-## 0. Where we are (updated 2026-10-21, evening)
+## 0. Where we are (updated 2026-10-29)
 
 Resume here: read this section, then the batch named first under Next.
 
 **Done**
 
-- Phases 0 to 2 are on `main`. Phase 2 reached `main` through PR #6: the stacked PRs #4 and #5 had merged into their base branches, not `main`.
+- 29 Oct, after `phase-5/filipino-messages`, the runbook's last gaps that need no account ([ADR 0022](adr/0022-staff-tools-for-the-last-runbook-gaps.md)):
+  - `phase-6/staff-gaps`: cancel an Order On the way (the Rider brings it back); staff file a Freshness Claim for a Customer who called, and reopen a rejected one; a shelf count below what is reserved (the Product stops selling, the Stock screens show how many are short); an address in another Zone of the same Hub at the placed fee; PayMongo checkout, payment and refund ids on the Order page. The runbook's stale "not possible yet" notes now point to the tools.
+- 28 and 29 Oct, the development backlog besides feature ideas, on eight more branches after `phase-5/filipino-rest`, each built on the one before (not yet pushed):
+  - `phase-6/privacy`: a Customer downloads their data or deletes their account ([ADR 0020](adr/0020-customer-data-export-and-deletion.md)).
+  - `phase-6/hub-money-tools`: record a payment PayMongo shows but no webhook applied; a second "paid" event no longer refunds; cancel a packed Order; text a Customer; give a Voucher; staff cancels tell the Customer.
+  - `phase-6/hub-schedule-tools`: another Slot or address for an Order, hand an Order to another Rider, a Substitution answered by phone, cash corrections, Riders see Order Notes, Hub status (a Shop Notice, GCash and card paused, days closed) and a System page; status changes retry a lost deadlock.
+  - `phase-6/correctness`: claims paid back partly by refund and partly by Voucher say both; the card-hold leftovers removed.
+  - `phase-6/security-2`: block an account from ordering; Order notices before marketing in the jobs queue; ended sign-ins purged.
+  - `phase-6/page-weight`: English pages no longer carry the Filipino dictionary (7 KB less each).
+  - `phase-6/stop-links`: stop links carry their purpose and expire.
+  - `phase-5/filipino-messages`: emails and texts in the Customer's language; sign-in, delivery areas and the referral link in Filipino ([ADR 0021](adr/0021-messages-in-the-customers-language.md)).
+- 27 and 28 Oct, committed locally on five branches after `design/pass`, each built on the one before (not yet pushed):
+  - `phase-4/dry-run`: a simulated Hub day (`npm run db:dry-run`, `e2e/dry-run.spec.ts`, the owner's checklist in [docs/dry-run.md](dry-run.md)). 20 Orders picked, sent out, delivered with each PIN and the cash counted, with three shorts, two Substitutions and a weighed line; every status in every history. It found and fixed: the pick list showed no Customer or item count, "1 pcs" and "1000 g", weighed lines that claimed a substitute was possible, a cash count field pre-filled with the expected amount (now blind), and "Delivered without the PIN" that could not save a different cash amount.
+  - `phase-6/load-and-backup`: the load test ([docs/load-test.md](load-test.md)), a restore drill ([docs/backup-restore.md](backup-restore.md)) and an alerting health check (`/api/health?deep=1`).
+  - `phase-6/security-a11y`: the security review and its fixes, with abuse tests ([docs/security-review.md](security-review.md)); every channel of a notice is tried even when the email fails; an axe sweep of every page (`e2e/a11y-sweep.spec.ts`).
+  - `phase-6/policies-and-docs`: draft policy pages for a lawyer (privacy, terms, refunds, business information; facts to fill in `src/config/legal.ts`), the [runbook](runbook.md), the [owner study guide](study-guide/README.md), and docs corrected where they disagreed with the code.
+  - `phase-5/filipino-rest`: the rest of the shop in Filipino ([ADR 0019](adr/0019-filipino-for-the-rest-of-the-shop.md)).
+- Phases 0 to 4 and Batches 5.1 to 5.3 are on `main`: the owner merged PRs #14 to #21 in order on 21 Oct (23:48 UTC). Phase 2 had reached `main` through PR #6: the stacked PRs #4 and #5 had merged into their base branches, not `main`.
 - Phase 1 close-out and Phase 2 follow-ups (PR #7): one-typo search, Lighthouse CI job, pricing rules ahead of their phase ([ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)).
 - Carry-over code health (PR #8): 11 of 12 items; the result convention for module errors waits on an owner decision.
 - Storefront performance (PR #9): Motion out of the first load, one header SearchBox and CategoryNav, a held stepper saves once, Category page under one Suspense boundary, structured Slot and money parts, Lighthouse fails CI below 90. CI scores: Home 87/98/98, Category 93/95/98, Product 98/98/98; JavaScript 157 to 164 KB per page.
@@ -21,24 +38,30 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
+- General checkup and design pass (branches `checkup/general` and `design/pass`, committed locally, not yet pushed): roadmap section 9 and [ADR 0018](adr/0018-design-pass.md).
+- Batch 5.5 (branch `phase-5/pwa-language-analytics`, committed locally, not yet pushed): Filipino pages at `/fil`, the installable app with offline basics, and a privacy-first shopping funnel in the daily report ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). Every Phase 5 batch is built.
+- Batch 5.4 (branch `phase-5/claims`, committed locally, not yet pushed): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
 - Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
 - Batch 5.2 (PR #20): Reorder, Shopping Lists, "Buy again", Cart Reminders with consent and Stock Alerts ([ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Open pull requests:** #14 (carry-over), #15 (test accounts, Phase 3 closed, Batch 4.1), #16 (Batch 4.2), #17 (Batch 4.3), #18 (Batch 4.4), #19 (Batch 5.1), #20 (Batch 5.2), #21 (Batch 5.3). Each is built on the one before: merge them in that order.
+**Where the code lives:** no git host for now, so no remote and no pull requests. The code moves between computers as one file in Google Drive, `hoshimono.bundle` with every branch (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11). `main` is at `6477f88` (Phases 0 to 4 and Batches 5.1 to 5.3). These branches wait to be merged into `main`, each built on the one before, in this order: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`, `phase-6/staff-gaps`. The newest, `phase-6/staff-gaps`, holds all of them. The CI run on `6477f88` never reported; a local production build and the full test suites passed on the same code.
 
-**Current phase:** 4, Operations. Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
+**Current phase:** 6, Launch hardening: everything that needs no outside account is done. Phase 5 is done. Phase 4 waits on the dry run with people (the simulated one passed). Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
 **Next, in order**
 
-1. Phase 5 (section 10), in order: Batch 5.4 Freshness Claims, 5.5 PWA, Filipino and analytics. The owner chose on 21 Oct to start Phase 5 before the checkup.
-2. A general checkup of the app (asked for on 21 Oct), and the Phase 4 dry run (exit criteria in section 10): 20 Orders, one Picker, one Rider, no developer help.
-3. The rest of the carry-over list (section 9): the design pass (Home, Product page, Checkout without an address, phone Category page, admin shell, small tells, one button and field system, copy). Owner chose 21 Oct to go on with the phases first.
+1. The Phase 4 dry run with people ([docs/dry-run.md](dry-run.md)): 20 Orders, one Picker, one Rider, no developer help.
+2. A native speaker checks the Filipino in `src/i18n/fil.ts` (ADR 0017, ADR 0019).
+3. A lawyer reviews the draft policy pages; the owner fills in `src/config/legal.ts`. The lawyer's questions are in the Batch 6.3 notes (section 10).
 4. The PayMongo test-mode run (Batch 6.3) when the keys exist.
+5. The rest of Phase 6, as accounts arrive: Sentry and an uptime monitor on `/api/health?deep=1`, the load test on a Vercel preview, a Neon restore drill, the TalkBack and VoiceOver pass, the domain, email DNS and SMS sender.
+6. When the owner picks them: feature ideas from other grocery shops (section 10, "Feature ideas", unscheduled). The runbook's "Things the app cannot do yet" now lists only what needs an account or a rule change ([docs/runbook.md](runbook.md)).
 
 **Waiting on the owner**
 
+- At the end of each work session: commit, `npm run backup`, and upload `hoshimono.bundle` to the Hoshimono folder in Google Drive if Google Drive for desktop is not installed ([06-SETUP.md](06-SETUP.md) section 11).
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
@@ -47,7 +70,7 @@ Resume here: read this section, then the batch named first under Next.
 
 **Local setup when resuming**
 
-- Docker container `hoshimono-db` holds `hoshimono`, `hoshimono_test` and `hoshimono_e2e`. After pulling: `npm install`, `npm run db:deploy`, `npm run db:seed`.
+- Docker container `hoshimono-db` holds `hoshimono`, `hoshimono_test`, `hoshimono_e2e` and `hoshimono_load` (load test). After pulling: `npm install`, `npm run db:deploy`, `npm run db:seed`.
 - `.env.local` needs `CRON_SECRET`, and the PayMongo keys once they exist.
 - Stop the dev server before `npx playwright test`: both use `.next`.
 - Local Lighthouse swings by about 10 points on the same code; the CI `lighthouse` job is the measurement to trust.
@@ -73,36 +96,38 @@ The MVP (PRD scope) is Phases 0 to 4. Phase 5 is V1. Business tracks run alongsi
 
 Versions are not pinned here; Phase 0 installs the latest stable releases and the lockfile becomes the record.
 
-| Layer           | Choice                                                                                      | What it does for us                                                                                                                            | First used                                      |
-| --------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Language        | TypeScript                                                                                  | One language across UI, server logic and tests                                                                                                 | Phase 0                                         |
-| Framework       | Next.js (App Router), React                                                                 | Storefront, account, checkout, admin and API in one deployable ([ADR 0001](adr/0001-modular-monolith-nextjs.md)); Server Components by default | Phase 0                                         |
-| Styling         | Tailwind CSS v4 with the v2 tokens                                                          | Colours, type, radii from [05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) as semantic utilities                                                     | Phase 0                                         |
-| Components      | shadcn/ui (customised, never default)                                                       | Accessible primitives: dialog, sheet, drawer, select, tabs, toasts                                                                             | Phase 0 install, Phase 1 onward                 |
-| Animation       | Motion (`motion/react`)                                                                     | Add-to-stepper morph, count bump, cart sheet springs; leaf client components only                                                              | Phase 1 and 2                                   |
-| Icons and fonts | Phosphor; Epilogue, Plus Jakarta Sans, Geist Mono via `next/font`                           | One icon family; fonts include the peso sign                                                                                                   | Phase 0                                         |
-| Forms           | React Hook Form + Zod                                                                       | Same Zod schema validates in the browser and in Server Actions                                                                                 | Phase 1 admin, Phase 2 checkout                 |
-| Server logic    | Server Actions + route handlers                                                             | Mutations call module interfaces; route handlers for webhooks, cron and health                                                                 | Phase 0 onward                                  |
-| Database        | PostgreSQL on Neon ([ADR 0005](adr/0005-neon-postgres-host.md)), one branch per environment | Catalogue, carts, stock, Orders, payments                                                                                                      | Phase 0                                         |
-| ORM             | Prisma                                                                                      | Schema, migrations, typed queries; raw SQL for guarded atomic updates ([ADR 0004](adr/0004-postgres-prisma.md))                                | Phase 0                                         |
-| Search          | Postgres full-text + `pg_trgm` + `unaccent` behind `SearchIndex`                            | Typo-tolerant search for "gatas", "milk" and misspellings                                                                                      | Phase 1                                         |
-| Money           | Integer centavos, `lib/money.ts`                                                            | No floating-point money anywhere ([ADR 0002](adr/0002-money-as-integer-centavos.md))                                                           | Phase 0                                         |
-| Auth            | Better Auth                                                                                 | Customer OTP, email magic link, Google; staff roles                                                                                            | Phase 0 shell, Phase 2 Customers, Phase 4 staff |
-| Payments        | Xendit or PayMongo behind `PaymentProvider`                                                 | GCash, cards, refunds via hosted checkout ([ADR 0003](adr/0003-payment-provider-interface.md))                                                 | Phase 3                                         |
-| Email           | Resend + React Email                                                                        | Order confirmations and updates as component templates                                                                                         | Phase 2                                         |
-| SMS             | Semaphore or Twilio behind `notifications`                                                  | OTP, order and Substitution messages                                                                                                           | Phase 2                                         |
-| Media           | Object storage + CDN, `next/image`                                                          | Product photos converted to WebP/AVIF at the right sizes                                                                                       | Phase 1                                         |
-| Maps            | Geocoding and map pin provider                                                              | Address pin and Zone check                                                                                                                     | Phase 2                                         |
-| Jobs            | `jobs` table + Vercel Cron calling `/api/cron/[job]`                                        | Expire holds and unpaid Orders, retry notices, reminders                                                                                       | Phase 2                                         |
-| Rate limits     | Postgres table (ADR 0006)                                                                   | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
-| Admin tables    | TanStack Table                                                                              | Dense, sortable admin lists                                                                                                                    | Phase 1                                         |
-| i18n            | `next-intl`                                                                                 | Filipino language pass                                                                                                                         | Phase 5                                         |
-| PWA             | Web manifest + service worker                                                               | Installable app, offline-friendly cart and browse shell                                                                                        | Phase 5                                         |
-| Tests           | Vitest, Testing Library, Playwright, axe-core, Lighthouse CI                                | Unit, integration on a real test DB, E2E journeys, accessibility, performance budgets                                                          | Phase 0 onward                                  |
-| Code quality    | ESLint, Prettier, Husky, lint-staged, `tsc`                                                 | Formatting, linting and type checks before every commit and in CI                                                                              | Phase 0                                         |
-| Hosting         | Vercel (Singapore region) with preview deployments                                          | Every pull request gets its own preview and DB branch                                                                                          | Phase 0                                         |
-| Monitoring      | Sentry, uptime monitor, Vercel Analytics                                                    | Errors, uptime, funnel                                                                                                                         | Phase 0 (Sentry), Phase 5 and 6                 |
-| Mobile          | PWA now; native Flutter app is a frozen concept                                             | See [concepts/flutter-mobile](concepts/flutter-mobile/README.md)                                                                               | After launch, only if triggered                 |
+Checked against `package.json` and the code on 2026-10-28. "Now" is what the code uses today; "Planned" waits for an account or a later batch.
+
+| Layer           | Choice                                                                                                                                                                             | What it does for us                                                                                                                            | First used                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Language        | TypeScript                                                                                                                                                                         | One language across UI, server logic and tests                                                                                                 | Phase 0                                         |
+| Framework       | Next.js (App Router), React                                                                                                                                                        | Storefront, account, checkout, admin and API in one deployable ([ADR 0001](adr/0001-modular-monolith-nextjs.md)); Server Components by default | Phase 0                                         |
+| Styling         | Tailwind CSS v4 with the v2 tokens                                                                                                                                                 | Colours, type, radii from [05-DESIGN-SYSTEM.md](05-DESIGN-SYSTEM.md) as semantic utilities                                                     | Phase 0                                         |
+| Components      | Own small components in `components/ui` (Button, Input, Label, Skeleton); `vaul` for the Cart drawer. No Radix, cva or class-merging library ([ADR 0018](adr/0018-design-pass.md)) | One button and one field style; the Cart drawer                                                                                                | Phase 0 install, Phase 1 onward                 |
+| Animation       | Motion (`motion/react`)                                                                                                                                                            | Add-to-stepper morph, count bump, cart sheet springs; leaf client components only                                                              | Phase 1 and 2                                   |
+| Icons and fonts | Phosphor; Epilogue, Plus Jakarta Sans, Geist Mono via `next/font`                                                                                                                  | One icon family; fonts include the peso sign                                                                                                   | Phase 0                                         |
+| Forms           | Plain forms with Server Actions and `useActionState`; Zod in Server Actions and modules. React Hook Form is not used                                                               | The server checks every form and returns field errors ([ADR 0009](adr/0009-module-results-and-errors.md))                                      | Phase 1 admin, Phase 2 checkout                 |
+| Server logic    | Server Actions + route handlers                                                                                                                                                    | Mutations call module interfaces; route handlers for webhooks, cron and health                                                                 | Phase 0 onward                                  |
+| Database        | PostgreSQL. Now: local Postgres in Docker. Planned: Neon ([ADR 0005](adr/0005-neon-postgres-host.md)), one branch per environment, when the account exists                         | Catalogue, carts, stock, Orders, payments                                                                                                      | Phase 0                                         |
+| ORM             | Prisma                                                                                                                                                                             | Schema, migrations, typed queries; raw SQL for guarded atomic updates ([ADR 0004](adr/0004-postgres-prisma.md))                                | Phase 0                                         |
+| Search          | Postgres full-text + `pg_trgm` + `unaccent` behind `SearchIndex`                                                                                                                   | Typo-tolerant search for "gatas", "milk" and misspellings                                                                                      | Phase 1                                         |
+| Money           | Integer centavos, `lib/money.ts`                                                                                                                                                   | No floating-point money anywhere ([ADR 0002](adr/0002-money-as-integer-centavos.md))                                                           | Phase 0                                         |
+| Auth            | Better Auth                                                                                                                                                                        | Customer OTP, email magic link, Google; staff roles                                                                                            | Phase 0 shell, Phase 2 Customers, Phase 4 staff |
+| Payments        | PayMongo behind `PaymentProvider`; a `fake` provider for development and e2e                                                                                                       | GCash, cards, refunds via hosted checkout ([ADR 0003](adr/0003-payment-provider-interface.md))                                                 | Phase 3                                         |
+| Email           | Now: a console provider behind `notifications`. Planned: Resend, when the account exists. React Email is not used                                                                  | Order confirmations and updates as plain-text templates                                                                                        | Phase 2                                         |
+| SMS             | Now: a console provider behind `notifications`. Planned: Semaphore or Twilio                                                                                                       | OTP, order and Substitution messages                                                                                                           | Phase 2                                         |
+| Media           | `MediaStore` and `next/image`. Now: local disk (development only). Planned: Cloudflare R2 and a CDN                                                                                | Product photos converted to WebP/AVIF at the right sizes                                                                                       | Phase 1                                         |
+| Maps            | Planned: a geocoding and map pin provider (not chosen yet)                                                                                                                         | Address pin. For now Zones match by city and barangay name                                                                                     | Phase 2                                         |
+| Jobs            | `jobs` table + Vercel Cron calling `/api/cron/[job]`                                                                                                                               | Expire holds and unpaid Orders, retry notices, reminders                                                                                       | Phase 2                                         |
+| Rate limits     | Postgres table (ADR 0006)                                                                                                                                                          | OTP, login and checkout limits                                                                                                                 | Phase 2                                         |
+| Admin tables    | Plain HTML tables. TanStack Table is not used                                                                                                                                      | Admin lists                                                                                                                                    | Phase 1                                         |
+| i18n            | Our own dictionaries, `src/i18n/en.ts` and `fil.ts` ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). `next-intl` is not used                                                     | Filipino language pass                                                                                                                         | Phase 5                                         |
+| PWA             | Web manifest + service worker                                                                                                                                                      | Installable app, offline-friendly cart and browse shell                                                                                        | Phase 5                                         |
+| Tests           | Vitest, Testing Library, Playwright, axe-core, Lighthouse CI                                                                                                                       | Unit, integration on a real test DB, E2E journeys, accessibility, performance budgets                                                          | Phase 0 onward                                  |
+| Code quality    | ESLint, Prettier, Husky, lint-staged, `tsc`                                                                                                                                        | Formatting, linting and type checks before every commit and in CI                                                                              | Phase 0                                         |
+| Hosting         | Planned: Vercel (Singapore, `sin1`) with preview deployments. `vercel.json` already sets the region and the per-minute cron                                                        | Every pull request gets its own preview and DB branch                                                                                          | Phase 0                                         |
+| Monitoring      | Now: our own Funnel counts (`funnel_counts`, ADR 0017). Planned: Sentry (not installed yet), an uptime monitor, Vercel Analytics once hosting exists                               | Errors, uptime, funnel                                                                                                                         | Phase 0 (Sentry), Phase 5 and 6                 |
+| Mobile          | PWA now; native Flutter app is a frozen concept                                                                                                                                    | See [concepts/flutter-mobile](concepts/flutter-mobile/README.md)                                                                               | After launch, only if triggered                 |
 
 ## 3. How every batch is worked
 
@@ -111,25 +136,25 @@ Versions are not pinned here; Phase 0 installs the latest stable releases and th
 3. **Build** the slice end to end; UI work starts with `design-taste-frontend` and the v2 mockup; animation with `motion` and `apple-design`.
 4. **See it run:** `run` skill or `playwright-cli` screenshots at 1440 and 390 px, light and dark; axe check on new pages.
 5. **Review:** `code-review` and `simplify`; `security-review` for anything touching auth, payments or personal data.
-6. **Ship:** one branch, one pull request (`pr` skill), CI green, preview checked, merge; tick the items here.
+6. **Ship:** one branch; with no git host for now, run the CI checks by hand (`npm run check`, `npm run build`, `E2E_PROD=1 npx playwright test`); tick the items here; `npm run backup`. Pull requests (`pr` skill) and CI return with a git host.
 
 ## 4. Decisions due along the way
 
-| Decision                                                        | Options                                                                                       | Decide in   |
-| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------- |
-| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                             | Done        |
-| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront | Batch 1.4   |
-| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                | Batch 2.3   |
-| SMS provider                                                    | Semaphore or Twilio                                                                           | Batch 2.5   |
-| Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                  | Batch 2.6   |
-| Payment provider                                                | **Decided: PayMongo**, see [ADR 0003](adr/0003-payment-provider-interface.md)                 | Done        |
-| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                             | Batch 3.3   |
-| Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)         | Done        |
-| VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                        | Batch 4.4   |
-| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts, ADR 0007 item 3                                              | Soft launch |
-| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0007 item 4                              | Phase 6     |
-| PWA tooling and push                                            | Service worker library; whether to send web push                                              | Batch 5.5   |
-| Load-test tool                                                  | k6, Artillery or similar                                                                      | Batch 6.1   |
+| Decision                                                        | Options                                                                                                                              | Decide in   |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| Postgres host                                                   | **Decided: Neon**, see [ADR 0005](adr/0005-neon-postgres-host.md)                                                                    | Done        |
+| Object storage and CDN                                          | Default Cloudflare R2 ([06-SETUP.md](06-SETUP.md)); alternatives Vercel Blob, S3 + CloudFront                                        | Batch 1.4   |
+| Maps and geocoding                                              | Google Maps, Mapbox or similar                                                                                                       | Batch 2.3   |
+| SMS provider                                                    | Semaphore or Twilio                                                                                                                  | Batch 2.5   |
+| Rate-limit store                                                | Postgres-based, decided in [ADR 0006](adr/0006-postgres-rate-limit-store.md)                                                         | Batch 2.6   |
+| Payment provider                                                | **Decided: PayMongo**, see [ADR 0003](adr/0003-payment-provider-interface.md)                                                        | Done        |
+| Weighed-item charging                                           | Card hold plus capture; wallet charge plus refund                                                                                    | Batch 3.3   |
+| Discounts, free-delivery Vouchers, thresholds after Picking     | **Decided ahead**, see [ADR 0007](adr/0007-pricing-rules-ahead-and-tax-to-confirm.md)                                                | Done        |
+| VAT registration and Tax Class per Category                     | Accountant answers ADR 0007 "To confirm" items 1 and 2                                                                               | Batch 4.4   |
+| Real Delivery Fees, Free-Delivery Thresholds and Order Minimums | Owner replaces the seed amounts, ADR 0007 item 3                                                                                     | Soft launch |
+| Senior Citizen and PWD discount                                 | Accountant: required for online sales at launch? ADR 0007 item 4                                                                     | Phase 6     |
+| PWA tooling and push                                            | **Decided**: our own small service worker, no web push yet ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md))                         | Done        |
+| Load-test tool                                                  | **Decided**: our own Node scripts for now (`scripts/load-*`, [docs/load-test.md](load-test.md)); k6 once a preview deployment exists | Done        |
 
 Record each hard-to-reverse choice as an ADR with `domain-modeling`.
 
@@ -301,20 +326,31 @@ No new features over Christmas and New Year. Use the time for bugs from Phases 0
 - [x] Cart drawer spring and detents with Motion, as docs/05 specifies (vaul's own transition for now). Decided 20 Oct: vaul stays. The Cart has one height, so detents have nothing to snap to, and vaul already follows the finger, closes on a fling and handles focus; docs/05 records it
 - [x] Cart drawer delivery row shows the held Slot, not a generic line. The held Slot and when the hold ends, else the next open Slot for the address, with Change; fetched when the drawer opens
 - [x] Unit test for the Order attempt rate-limit keys (10 an hour per account, 20 per IP)
-- [ ] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round)
+- [x] Frontend and design review of the Phase 1 and 2 screens (that reviewer did not run in the review round) Covered by the design pass of 22 Oct.
 - [ ] Real providers: Resend email, SMS sender for codes and Order texts, Google sign-in keys, a maps pin for addresses, Vercel preview, Neon and Sentry (Batch 0.4). Blocked: accounts (section 11)
+
+**General checkup** (22 Oct, branch `checkup/general`). The main flows were walked on a production build (phone and desktop, light and dark, English and Filipino, Customer and Admin), the full test suites run, and the code and dependencies swept.
+
+- [x] Phase 5 exit criteria, on the running app through the e2e suite (71 of 71 on a production build): a Recipe goes into the Cart with one button after unticking; a Voucher's rules and last use hold (Vitest and e2e); a Claim is filed, approved and refunded end to end
+- [x] JavaScript per page was over the 170 KB budget after Phase 5. The not-found page had become a Client Component and shipped on every page (13 KB), and the servings stepper of Home's Recipe brought Motion (15 KB); now a Server Component and a CSS count bump. Measured on a production build, gzipped, without the polyfills modern browsers skip: Home 182, Category 166, Product 181, Search 166 KB. Still over on Home and Product: both dictionaries ship to every page (8 KB; only the page's language would need words without functions), and the Product page's list and alert buttons bring `tailwind-merge` through `Button` (the one-button-system item below). 29 Oct: the dictionaries had grown with the Filipino pass (10.7 KB each, gzipped) and the date helpers pulled both into the browser; English pages now carry English only and Filipino loads on Filipino pages (`src/i18n/client.tsx`), 7 KB less on every English page. Counted with every script tag (a stricter count than above): Home 215 to 208, Category 212 to 205, Product 217 to 210 KB, most of it React and the Next.js runtime. Still over the budget; the next lever is sending Client Components only the dictionary sections they use
+- [ ] Lighthouse on the CI runner once there is a git host again: laptop runs swing from 66 to 82 on the same build, so they settle nothing
+- [x] Stored phone numbers showed as `+639171234504` in Checkout, the Order and the account; now `0917 123 4504`
+- [x] On phones the floating "View cart" bar covered the footer's last row; the footer makes room while the bar shows
+- [x] `next dev` reloaded pages in a loop ("HMR hash mismatch") after a production build in the same folder. Delete `.next/dev` after building; a likely cause of the dev-only e2e flakes above
+- [x] Dependencies: runtime audit clean. Nine "high" advisories are one `braces` issue inside lint and the shadcn CLI (dev only, our own patterns); no fixed version exists, npm's suggestion is a downgrade
+- [ ] Still open from before: a missing Product or Category answers 200 (Next 16); uploaded photos under `next start` (R2) (the admin shell was done in the design pass)
 
 **Review: what reads as AI-made** (18 Oct). Senior engineer, senior frontend and UI/UX reviewers looked at the running app (desktop, phone, dark mode, admin) and the code for signs a human expert would not leave. The core is senior-grade: stock and Slot races, idempotent `placeOrder`, money in centavos, enforced module boundaries, forms that work without JavaScript. The tells are on the surface: build-process comments, near-duplicate copies, fixes layered on fixes, and a placeholder-heavy template look.
 
 UI and UX:
 
-- [ ] Placeholders: every Product, the hero and the category tiles show one striped box with a mismatched line icon (cheese and yogurt get a basket; avocado, calamansi and mango share one icon). Until real photos arrive (business track), drop the empty hero box and make cards text-first with quieter placeholders
-- [ ] Home follows the stock AI landing formula: highlighted last word, one pill button, image on the right, three equal feature tiles, mostly empty category tiles. Rework with `design-taste-frontend`
-- [ ] Product page: quantity stepper and a large "Add to cart" as in `mockup-v2/product.html`, the next Slot and delivery fee, the substitution choice; "Ingredients and allergens" shows only allergens
-- [ ] Checkout without an address shows no order summary or total: show it from the start; do not pre-tick "Use this address by default" on the first address; put the coverage note next to City
-- [ ] Phone Category page: header, chips, heading, sort and filters push the first Product below the fold
-- [ ] Admin: its own shell without the shopper header (cart, "Deliver to"); status badges in words, not raw values like `active`
-- [ ] Small tells: straight quotes in `Results for "gatas"`; "Showing 1 to 6 of 6" on a single page; the name pre-filled from the email; a footer with no help, terms or contact; the lime banner at full brightness in dark mode; a generic letter-in-a-circle logo
+- [x] Placeholders: every Product, the hero and the category tiles show one striped box with a mismatched line icon (cheese and yogurt get a basket; avocado, calamansi and mango share one icon). Until real photos arrive (business track), drop the empty hero box and make cards text-first with quieter placeholders Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): a plain tint with one icon per top-level Category; the hero box is gone.
+- [x] Home follows the stock AI landing formula: highlighted last word, one pill button, image on the right, three equal feature tiles, mostly empty category tiles. Rework with `design-taste-frontend` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): Home opens on a delivery strip, one row of Categories, then Products (the owner chose shop-first).
+- [x] Product page: quantity stepper and a large "Add to cart" as in `mockup-v2/product.html`, the next Slot and delivery fee, the substitution choice; "Ingredients and allergens" shows only allergens Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): a stepper beside a big "Add to cart", "View cart" and the Substitution choice once in the Cart, the delivery line under it; "Allergens" for what exists today.
+- [x] Checkout without an address shows no order summary or total: show it from the start; do not pre-tick "Use this address by default" on the first address; put the coverage note next to City Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): the summary shows beside the first address; the default box is hidden for a first address (it always becomes the default); the coverage note sits under City.
+- [x] Phone Category page: header, chips, heading, sort and filters push the first Product below the fold Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): count and sort share a row, a smaller heading on phones, a tighter breadcrumb and Filters bar.
+- [x] Admin: its own shell without the shopper header (cart, "Deliver to"); status badges in words, not raw values like `active` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): its own root layout with a sidebar grouped by job (a menu button on phones); roles, Product status, tax and storage in words.
+- [x] Small tells: straight quotes in `Results for "gatas"`; "Showing 1 to 6 of 6" on a single page; the name pre-filled from the email; a footer with no help, terms or contact; the lime banner at full brightness in dark mode; a generic letter-in-a-circle logo Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): typographic quotes; no count line on a single page; no name made from the email; a Help page in the footer (terms wait for Batch 6.3); the lime band is gone; the owner kept the logo for now.
 
 Engineering:
 
@@ -332,8 +368,8 @@ Engineering:
 
 Frontend:
 
-- [ ] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/`
-- [ ] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack
+- [x] Mockup pixels pasted as arbitrary classes (`text-[13px]` 30 times, `gap-[22px]`, `top-[136px]`) while the type tokens go unused: use the tokens, a `--header-h` variable for sticky offsets, and lint arbitrary values outside `ui/` Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): `text-fine` (13/18), `text-label` (15/20) and `top-sticky` replace the pasted values; no lint rule (no Tailwind lint plugin installed).
+- [x] One button system (`PRIMARY_BUTTON` copies Button; `secondary` equals `outline`) and one field (a 44 px `FIELD` string pasted about 14 times beside the 48 px `Input`); a RadioCard instead of the `border-2` with `px-[15px]` hack Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): `button-classes.ts` and `field-classes.ts` are the one source; `RADIO_CARD` draws the chosen edge inside; cva, cn and radix-ui are uninstalled.
 - [x] Delete the 13 shadcn files in `components/ui/` that nothing imports (still in default style); remove the dark tokens pasted twice in `globals.css`
 - [x] Long-press stepper sends a server action and a screen-reader announcement every 100 ms: count locally while held, send once on release
 - [x] One SearchBox, one CategoryNav and one Filters form laid out with CSS, not rendered twice for phone and desktop. Done 19 Oct for SearchBox (it hydrated twice) and CategoryNav (one nav, sticky from md up). The Filters form stays twice on purpose: it is server-only, so the copy costs bytes, not hydration, and one form would need `::details-content`, which iOS before 18.4 lacks
@@ -341,7 +377,7 @@ Frontend:
 - [ ] Replace workarounds: the `CartSync` effect, the hidden `data-no-cart-bar` div (use a route-group layout), the WeakMap `formKey`. 19 Oct: the hidden `data-no-cart-bar` div is gone (the bar reads the path). `CartSync` and `formKey` stay: the header's Cart must reach Product cards outside its tree, which an effect into the shared store does plainly, and `formKey` is a 10-line helper where the alternative threads a counter through four actions
 - [x] Accessibility by design: screen readers read "Photo to come"; three skeleton patterns; the stepper's `<output>` and `announce()` both speak; filter rows and chips under 44 px; no `aria-current` on the active category. 19 Oct: the stepper `<output>` no longer speaks over the Cart announcement. 20 Oct: the rest is done. Placeholders are hidden from screen readers; one `Skeleton` (aria-hidden, 1.2 s pulse, still under reduced motion) replaces the hand-made pulse divs; filter rows and Category chips are 44 px; the header marks the current aisle with `aria-current`
 - [x] Category page: one Suspense boundary instead of three with filler fallbacks; no skeleton on the redirect and not-found branches (both added in the Lighthouse fix)
-- [ ] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff
+- [x] Copy: the sold-by-weight note is worded six ways; the voice avoids contractions and reads stiff Design pass, 22 Oct ([ADR 0018](adr/0018-design-pass.md)): one wording ("charged for the weight we pack") in both languages; contractions throughout the dictionaries.
 
 ## 10. Phases 4 to 6 and launch
 
@@ -375,6 +411,8 @@ Frontend:
 
 **Exit criteria:** a Hub dry run with 20 real-looking Orders, one Picker and one Rider completes with no developer help, including three shorts, two Substitutions and one weighed adjustment; every status change appears in the order history.
 
+**Simulated, 27 and 28 Oct:** the full day passes as a test (`DRY_RUN=1 E2E_PROD=1 npx playwright test e2e/dry-run.spec.ts`, about 15 minutes with the build), and the screens were fixed where a Picker or Dispatcher would trip. The criterion itself needs people: [docs/dry-run.md](dry-run.md) is their checklist.
+
 ### Phase 5: Growth, V1 (W15 to W17, 25 Jan to 12 Feb)
 
 **Goal:** the features that make Customers come back: recipes, reorder, savings, Claims, an installable app and Filipino.
@@ -396,13 +434,13 @@ Frontend:
 
 **Batch 5.4 Freshness Claims** (W16 to W17). Stack: object storage for photos, `payments.refund`. Skills: `tdd`.
 
-- [ ] Freshness Claims with photo upload and resolution workflow
+- [x] Freshness Claims with photo upload and resolution workflow. 22 Oct ([ADR 0016](adr/0016-freshness-claims.md)): Customers report a delivered item within 24 hours (reason, how many, up to 3 photos, required for spoiled or damaged); Admins and Dispatchers approve in full or less, or reject with a reason, at `/admin/claims`; online payments are refunded, cash Orders get a Voucher; the Customer is told by email or SMS; the daily report counts claims per 100 delivered Orders
 
 **Batch 5.5 PWA, Filipino and analytics** (W17). Stack: web manifest, service worker, `next-intl`, Vercel Analytics. Skills: `dataviz`.
 
-- [ ] PWA: manifest, install prompt, offline-friendly cart and browse shell
-- [ ] Filipino translation pass (`next-intl` or equivalent)
-- [ ] Analytics events and funnel dashboard
+- [x] PWA: manifest, install prompt, offline-friendly cart and browse shell. 22 Oct ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)): a web manifest and the lime "h" icon; "Install the app" in the footer when Android offers it; our own service worker (`public/sw.js`) keeps shop pages and pictures already seen for a weak or no connection, with an offline page and a note that prices may have changed; Cart, Checkout, payments, Orders, account and staff screens always use the network
+- [x] Filipino translation pass. Our own two dictionaries (`src/i18n/en.ts`, `fil.ts`, same keys checked by TypeScript) rather than `next-intl`; Filipino pages at `/fil/...`, English addresses unchanged; the shell, Cart, Home, Categories, search, Product pages, Checkout and the Order pages are translated; a switch in the header and footer, and `hreflang` in a `Link` header. 27 Oct ([ADR 0019](adr/0019-filipino-for-the-rest-of-the-shop.md)): the account pages, addresses and the address form, invite friends, Shopping Lists, Recipes, the page around Articles and Freshness Claims too; shop forms get problems from their modules as codes and word them in the page's language. 28 Oct ([ADR 0021](adr/0021-messages-in-the-customers-language.md)): sign-in, the delivery areas page and the referral link's landing in Filipino too; each Customer's language is stored (`customers.lang`, set at Checkout and on the forms that send the page's language), and every email and SMS to them follows it, with dates, Slots and links to the Filipino pages. Sign-in codes and links, and the message link pages (Substitution answer, stop reminders), stay English for now. The Filipino is Claude's draft for a native speaker to check
+- [x] Analytics events and funnel dashboard. Our own counts per Manila day (Product pages viewed, added to a Cart, Checkouts started, Orders placed) in `funnel_counts`, with no identifier, cookie or third party; the daily report shows each step and the share that went on
 
 **Exit criteria:** a Customer cooks from a Recipe in under a minute of cart-building; a Voucher cannot be applied twice or outside its rules; a Claim is filed, resolved and refunded end to end.
 
@@ -412,21 +450,21 @@ Frontend:
 
 **Batch 6.1 Performance and resilience** (W18). Stack: load-test tool, Sentry alerts, database backups.
 
-- [ ] Load test checkout and Slot booking at 5x expected peak
-- [ ] Monitoring and alerts: checkout error rate, webhook failures, job lag, Slot capacity
-- [ ] Backups and a tested restore
+- [x] Load test checkout and Slot booking at 5x expected peak. 27 Oct ([docs/load-test.md](load-test.md)): 5x an assumed peak (40 checkouts in five minutes) is 0.7 a second; one server process placed 11 a second, 200 of 200, and the races for a Slot's last 5 places and a Product's last 3 units ended exactly right. Our own Node scripts, no load tool (the decision in section 4). Still to do on the Vercel preview with Neon, from outside
+- [ ] Monitoring and alerts: checkout error rate, webhook failures, job lag, Slot capacity. 28 Oct: `/api/health?deep=1` answers 503 naming what needs a person (jobs behind or given up, unmatched payment events, refunds to check, no open Slot in the next day), for an uptime monitor. Waits for Sentry (checkout errors) and the monitor account
+- [x] Backups and a tested restore. 27 Oct ([docs/backup-restore.md](backup-restore.md)): `npm run db:restore-drill` dumps, restores into a scratch database and compares every table; first drill, 46 tables matching. Neon's point-in-time restore and a daily copy off Neon to set up with the accounts
 
 **Batch 6.2 Security and accessibility** (W18 to W19). Skills: `security-review`, `playwright-cli` with axe-core.
 
-- [ ] Security review (`security-review` skill), dependency audit, rate-limit tests, OTP abuse tests
-- [ ] Accessibility audit (axe plus manual TalkBack and VoiceOver pass)
+- [x] Security review (`security-review` skill), dependency audit, rate-limit tests, OTP abuse tests. 27 and 28 Oct ([docs/security-review.md](security-review.md)): no critical findings; the high and medium ones (Stock Alerts flooding the jobs queue, unpaid online Orders holding stock, sign-in codes as an SMS bomb) and seven low ones fixed, with tests; `npm audit --omit=dev` clean
+- [ ] Accessibility audit (axe plus manual TalkBack and VoiceOver pass). 28 Oct: `e2e/a11y-sweep.spec.ts` runs axe (WCAG 2.2 AA) on every page a guest, a Customer and an Admin can open, light and dark; it found one problem (two search landmarks on the not-found page), fixed. The manual pass with TalkBack and VoiceOver needs a person with the phones
 
 **Batch 6.3 Legal and go-live setup** (W19). Skills: `anthropic-skills:docx` or the docs skill for policies.
 
-- [ ] Privacy policy, terms, refund policy, Tax and Business Compliance page, cookie consent
+- [ ] Privacy policy, terms, refund policy, Tax and Business Compliance page, cookie consent. 27 Oct: drafts at `/privacy`, `/terms`, `/refunds` and `/business-info`, linked from the footer; business facts in one place, `src/config/legal.ts`, marked "[to confirm]" until the owner fills them. No cookie banner: every cookie is needed for the shop to work or keeps a preference (listed in the Privacy Policy). For the lawyer: the Senior Citizen and PWD 5% discount on online grocery (DTI-DA-DOE JAO 24-02, probably required at launch, ADR 0007 item 4); receipt wording under RA 11976 and RR 7-2024 (invoices replace official receipts); VAT status; refunds as Vouchers for cash Orders against RA 7394; where business details must show under RA 11967; NPC registration; how long tax records are kept. 28 Oct: a Customer downloads their data or deletes their account from the account page ([ADR 0020](adr/0020-customer-data-export-and-deletion.md))
 - [ ] PayMongo test-mode run (moved from Batch 3.3 on 21 Oct): GCash and card paid, failed and expired; full and partial refunds; the webhook endpoint registered for `checkout_session.payment.paid` and `payment.refunded`. Needs `PAYMONGO_SECRET_KEY` and `PAYMONGO_WEBHOOK_SECRET`
-- [ ] Runbook: how to handle a stuck payment, a wrong refund, a Hub shutdown, a provider outage
-- [ ] Owner study guide (asked 20 Oct): the whole app explained in depth for the owner to study. How the business runs (Hubs, Slots, Pickers, Riders, payments, refunds), every module and what it owns, how a request travels from the page to the database, each flow end to end (browse, Cart, Checkout, COD and online payment, picking, delivery, refunds, cron and jobs), how the pieces connect, and why each design choice was made (the ADRs). Written when most of the app is built, kept up to date until launch
+- [x] Runbook: how to handle a stuck payment, a wrong refund, a Hub shutdown, a provider outage. 27 Oct: [docs/runbook.md](runbook.md), ten situations, each with signs, checks, steps on named screens, words for the Customer and when to call the technical person; its last section lists what the app cannot do yet
+- [x] Owner study guide (asked 20 Oct). 27 Oct: [docs/study-guide/](study-guide/README.md), 14 chapters with diagrams; keep it true until launch: the whole app explained in depth for the owner to study. How the business runs (Hubs, Slots, Pickers, Riders, payments, refunds), every module and what it owns, how a request travels from the page to the database, each flow end to end (browse, Cart, Checkout, COD and online payment, picking, delivery, refunds, cron and jobs), how the pieces connect, and why each design choice was made (the ADRs). Written when most of the app is built, kept up to date until launch
 - [ ] Production domain, email DNS (SPF, DKIM, DMARC), SMS sender
 
 ### Soft launch and public launch (W20 to W22, from 1 Mar)
@@ -439,6 +477,39 @@ Frontend:
 ### After launch (not scheduled)
 
 - Native Flutter app for Customers, only if the triggers in [concepts/flutter-mobile](concepts/flutter-mobile/README.md) are met. The plan is frozen until then.
+
+### Feature ideas from other grocery shops (22 Oct, not scheduled)
+
+Collected on 22 Oct from what other online grocers offer (MetroMart, GrabMart, pandamart, SM Markets, Instacart, Tesco) and 2026 Philippine payment surveys, so the owner can see what could come next. Nothing here is decided or scheduled: the owner picks, and a picked idea becomes a batch with its own ADR. Competitor details came from the web and some are dated; check them before relying on them. Size is a rough guide: small is a few days, medium about a batch, large two batches or more.
+
+**First picks: a big gain on what is already built**
+
+- [ ] **More ways to pay: QR Ph, InstaPay and Maya.** We take cash, GCash and card. A 2026 Xendit study found 41% of Filipino shoppers who dropped a purchase lacked their preferred payment method; QR Ph and InstaPay are growing fastest. PayMongo supports them, so it extends ADR 0003. Medium. Needs the PayMongo account.
+- [ ] **Change an Order after placing it**, until picking starts (add items, change counts). Today a Customer can only cancel. Tesco lets shoppers amend until a cutoff. Touches the price, stock and Payment of a placed Order (ADR 0008 for online payments). Large.
+- [ ] **Pickup at the Hub** (click and collect): a Slot kind with no delivery fee and a counter handover with the Delivery PIN. SM Markets offers pickup. Medium. Needs a pickup counter at the Hub.
+- [ ] **Delivery membership**: a monthly fee for free delivery over a minimum (MetroMart's pass, Tesco's Delivery Saver). Steady income and loyalty; builds on Vouchers and pricing (ADR 0015). Large: recurring billing needs the payment provider.
+- [ ] **Searches that found nothing**, a report for staff: what shoppers look for that we do not sell, to guide stocking. Uses the search data we have. Small.
+
+**Strong for the Philippine market**
+
+- [ ] **Multi-buy and bundles**: "Buy 1 Take 1", "2 for ₱99", and ready kits (sinigang set, Noche Buena pack). Promotions today are percent or pesos off one Product (ADR 0015). Medium.
+- [ ] **Loyalty points**: points per peso, spent as a Voucher (like SM's SMAC). Builds on the Voucher and Referral ledger. Medium.
+- [ ] **Payday and seasonal campaigns**: sales on the 15th and 30th, Christmas. Mostly scheduled Promotions plus bundles. Small once bundles exist.
+- [ ] **Repeat orders**: "every Saturday: rice, eggs, water", from a Shopping List on a schedule, with a reminder to confirm. Builds on Reorder and Shopping Lists (ADR 0014). Medium.
+- [ ] **Senior Citizen and PWD discount** (20% and VAT exemption on qualifying items). May be required by law: waits on the accountant (ADR 0007 item 4). Medium.
+
+**Better delivery and trust**
+
+- [ ] **Live Order progress**: "picked 12 of 15", Substitutions approved on the Order page as well as by SMS (ADR 0010), and a chat with the Picker (as Instacart does). Medium.
+- [ ] **Rider on the way**: the Rider's time to arrive or location, and a photo at the door as proof of delivery, beside the Delivery PIN (ADR 0011). Medium.
+- [ ] **Viber or Messenger** for Order messages and support. Widely used in the Philippines; not confirmed by survey yet. Medium. Needs a business account.
+- [ ] **Fuller Product pages**: real photos (business track), ingredients, nutrition, origin ("from Benguet") and a shelf-life promise ("at least 5 days"). Data entry plus a few fields. Small to medium.
+
+**Later**
+
+- [ ] **Buy now, pay later** (GGives, BillEase, Atome): about 5% of Philippine online shopping in 2026 (IDC estimate); less useful for groceries. Medium.
+- [ ] **Paste a shopping list** to add every line at once, and search by scanning a barcode. Medium.
+- [ ] **For staff**: barcode scanning while picking (fewer wrong items) and grouping deliveries into Rider routes. Medium each.
 
 ## 11. Business tracks (run alongside)
 

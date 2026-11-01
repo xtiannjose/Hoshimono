@@ -8,7 +8,7 @@ import { listRiders } from "@/modules/identity";
 import { listDispatchBoard, type BoardRow } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../staff-gate";
-import { SendOutForm, WithoutPinForm } from "./forms";
+import { HandOverForm, SendOutForm, WithoutPinForm } from "./forms";
 
 export const metadata: Metadata = { title: "Dispatch" };
 
@@ -41,7 +41,12 @@ async function Board() {
         {(r) => <SendOutForm orderId={r.id} riders={riders} again={false} />}
       </Group>
       <Group title="Out now" rows={out} empty="No Orders on the road.">
-        {(r) => <WithoutPinForm orderId={r.id} dueCents={r.dueCents} />}
+        {(r) => (
+          <div className="grid gap-1">
+            <WithoutPinForm orderId={r.id} dueCents={r.dueCents} />
+            <HandOverForm orderId={r.id} riders={riders} />
+          </div>
+        )}
       </Group>
       <Group
         title="Missed: send again or cancel"

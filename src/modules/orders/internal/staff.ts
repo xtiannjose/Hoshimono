@@ -26,6 +26,7 @@ export type QueueRow = {
   slot: { startsAt: Date; endsAt: Date };
   totalCents: number;
   finalTotalCents: number | null;
+  lineCount: number;
 };
 
 const MAX_ROWS = 100;
@@ -76,6 +77,7 @@ export async function listOrdersForStaff({
       finalTotalCents: true,
       customer: { select: { name: true } },
       slot: { select: { startsAt: true, endsAt: true } },
+      _count: { select: { lines: true } },
       payments: {
         orderBy: { createdAt: "desc" },
         take: 1,
@@ -83,15 +85,21 @@ export async function listOrdersForStaff({
       },
     },
   });
-  return orders.map(({ customer, payments, ...o }) => ({
+  return orders.map(({ customer, payments, _count, ...o }) => ({
     ...o,
+    lineCount: _count.lines,
     customerName: customer.name ?? "",
     paymentMethod: payments[0]?.method ?? null,
   }));
 }
 
 export type StaffOrderDetail = OrderDetail & {
-  customer: { name: string; email: string | null; phone: string | null };
+  customer: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    blocked: boolean;
+  };
   /** Oldest first, with who moved the Order and why. */
   history: {
     from: OrderStatus | null;
@@ -101,7 +109,24 @@ export type StaffOrderDetail = OrderDetail & {
     reason: string | null;
   }[];
   notes: { text: string; at: Date; staffName: string }[];
-  refunds: { amountCents: number; reason: string; status: RefundStatus }[];
+  refunds: {
+    amountCents: number;
+    reason: string;
+    status: RefundStatus;
+    /** The provider's refund id, once sent. */
+    providerRef: string | null;
+  }[];
+  customerId: string;
+  hubId: string;
+  /** The newest Payment, for the staff tools that act on it. */
+  payment: {
+    method: PaymentMethod;
+    status: PaymentStatus;
+    amountCents: number;
+    /** The provider's checkout and payment ids, to find it in its dashboard. */
+    providerRef: string | null;
+    paymentRef: string | null;
+  } | null;
 };
 
 const ACTOR: Record<Exclude<ActorType, "staff">, string> = {
@@ -118,7 +143,11 @@ export async function getOrderForStaff(
   const order = await db.order.findUniqueOrThrow({
     where: { id: detail.id },
     select: {
-      customer: { select: { name: true, email: true, phone: true } },
+      customerId: true,
+      hubId: true,
+      customer: {
+        select: { name: true, email: true, phone: true, blockedAt: true },
+      },
       statusEvents: {
         orderBy: { at: "asc" },
         select: {
@@ -139,10 +168,21 @@ export async function getOrderForStaff(
         },
       },
       payments: {
+        orderBy: { createdAt: "desc" },
         select: {
+          method: true,
+          status: true,
+          amountCents: true,
+          providerRef: true,
+          paymentRef: true,
           refunds: {
             orderBy: { createdAt: "asc" },
-            select: { amountCents: true, reason: true, status: true },
+            select: {
+              amountCents: true,
+              reason: true,
+              status: true,
+              providerRef: true,
+            },
           },
         },
       },
@@ -165,6 +205,7 @@ export async function getOrderForStaff(
       name: order.customer.name ?? "",
       email: order.customer.email,
       phone: order.customer.phone,
+      blocked: !!order.customer.blockedAt,
     },
     history: order.statusEvents.map((e) => ({
       from: e.from,
@@ -182,6 +223,17 @@ export async function getOrderForStaff(
       staffName: n.staff.name,
     })),
     refunds: order.payments.flatMap((p) => p.refunds),
+    customerId: order.customerId,
+    hubId: order.hubId,
+    payment: order.payments[0]
+      ? {
+          method: order.payments[0].method,
+          status: order.payments[0].status,
+          amountCents: order.payments[0].amountCents,
+          providerRef: order.payments[0].providerRef,
+          paymentRef: order.payments[0].paymentRef,
+        }
+      : null,
   };
 }
 

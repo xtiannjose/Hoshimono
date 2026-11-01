@@ -30,9 +30,15 @@ test("a guest fills a Cart, signs in at Checkout, pays cash and tracks the Order
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
 
-  // A new Customer gives the address right here (PRD CHK-1).
+  // A new Customer gives the address right here (PRD CHK-1), beside what
+  // they are buying (ADR 0018).
   await expect(
     page.getByRole("heading", { name: "Where should we deliver?" })
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("complementary", { name: "Order summary" })
+      .getByText("Magnolia Fresh Milk")
   ).toBeVisible();
   await page
     .getByLabel("House or unit number and street")

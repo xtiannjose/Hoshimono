@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { withParams } from "@/app/c/list-params";
+import { withParams } from "@/app/[lang]/c/list-params";
 import { Pagination } from "@/components/listing/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { listProductsForAdmin } from "@/modules/catalog";
@@ -38,6 +38,11 @@ const STATUS_STYLE = {
   active: "bg-accent-soft text-foreground",
   draft: "bg-warn-soft text-warn",
   archived: "bg-muted text-muted-foreground",
+};
+const STATUS_NAME = {
+  active: "In the shop",
+  draft: "Draft",
+  archived: "Archived",
 };
 
 async function ProductsTable({
@@ -166,7 +171,7 @@ async function ProductsTable({
                   <span
                     className={`rounded-pill px-2.5 py-1 text-xs font-bold ${STATUS_STYLE[r.status]}`}
                   >
-                    {r.status}
+                    {STATUS_NAME[r.status]}
                   </span>
                 </td>
                 <td className="text-muted-foreground px-4 py-2.5 tabular-nums">

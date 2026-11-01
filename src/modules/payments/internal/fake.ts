@@ -37,8 +37,6 @@ export function createFakeProvider(appUrl: string): PaymentProvider {
       return "expired";
     },
 
-    async capture() {},
-
     async refund() {
       return { ok: true, refundRef: `fake_ref_${randomUUID()}` };
     },

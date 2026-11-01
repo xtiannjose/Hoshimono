@@ -5,9 +5,12 @@ import { useActionState, useState, type ReactNode } from "react";
 import {
   saveAddressAction,
   type AddressFormState,
-} from "@/app/account/addresses/actions";
+} from "@/app/[lang]/account/addresses/actions";
 import { formKey } from "@/components/form-key";
 import { PRIMARY_BUTTON } from "@/components/ui/button-classes";
+import { FIELD } from "@/components/ui/field-classes";
+import { TEXTAREA } from "@/components/ui/field-classes";
+import { useLang, useMessages } from "@/i18n/client";
 
 export type AddressFormValues = {
   id?: string;
@@ -22,8 +25,6 @@ export type AddressFormValues = {
 
 export type ServiceArea = { city: string; barangays: string[] | null };
 
-const FIELD =
-  "h-11 w-full rounded-field border border-input bg-card px-3 text-base aria-invalid:border-err";
 const initial: AddressFormState = { errors: {} };
 
 function Field({
@@ -46,7 +47,7 @@ function Field({
       </label>
       {children}
       {hint && !error && (
-        <p id={`${id}-hint`} className="text-muted-foreground text-[13px]">
+        <p id={`${id}-hint`} className="text-muted-foreground text-fine">
           {hint}
         </p>
       )}
@@ -68,14 +69,20 @@ export function AddressForm({
   values,
   areas,
   next,
-  submitLabel = "Save address",
+  submitLabel,
+  first = false,
 }: {
   values: AddressFormValues;
   areas: ServiceArea[];
+  /** Where to go once saved, already in the page's language. */
   next: string;
   submitLabel?: string;
+  /** The Customer's first address: it becomes the default, so do not ask. */
+  first?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveAddressAction, initial);
+  const lang = useLang();
+  const t = useMessages().addresses;
   // React resets the form after an action; refill it with what was sent.
   const v = { ...values, ...state.values } as AddressFormValues;
   const [picked, setPicked] = useState<string | null>(null);
@@ -95,6 +102,7 @@ export function AddressForm({
       className="grid max-w-xl gap-4"
     >
       <input type="hidden" name="next" value={next} />
+      <input type="hidden" name="lang" value={lang} />
       {v.id && <input type="hidden" name="id" value={v.id} />}
       {e.area && (
         <p
@@ -104,12 +112,7 @@ export function AddressForm({
           {e.area}
         </p>
       )}
-      <Field
-        id="a-label"
-        label="Name this address"
-        error={e.label}
-        hint="Such as Home, Office or Lola's house."
-      >
+      <Field id="a-label" label={t.label} error={e.label} hint={t.labelHint}>
         <input
           id="a-label"
           name="label"
@@ -120,16 +123,12 @@ export function AddressForm({
           {...described("label")}
         />
         <datalist id="a-labels">
-          <option value="Home" />
-          <option value="Office" />
-          <option value="Condo" />
+          {t.labelIdeas.map((idea) => (
+            <option key={idea} value={idea} />
+          ))}
         </datalist>
       </Field>
-      <Field
-        id="a-line1"
-        label="House or unit number and street"
-        error={e.line1}
-      >
+      <Field id="a-line1" label={t.line1} error={e.line1}>
         <input
           id="a-line1"
           name="line1"
@@ -141,16 +140,23 @@ export function AddressForm({
         />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="a-city" label="City" error={e.city}>
+        <Field
+          id="a-city"
+          label={t.city}
+          error={e.city}
+          hint={t.cityHint(areas.map((a) => a.city).join(", "))}
+        >
           <select
             id="a-city"
             name="city"
             defaultValue={v.city}
             onChange={(event) => setPicked(event.target.value)}
             className={FIELD}
-            {...described("city")}
+            {...(e.city
+              ? described("city")
+              : { "aria-describedby": "a-city-hint" })}
           >
-            <option value="">Choose a city</option>
+            <option value="">{t.chooseCity}</option>
             {areas.map((area) => (
               <option key={area.city} value={area.city}>
                 {area.city}
@@ -160,12 +166,10 @@ export function AddressForm({
         </Field>
         <Field
           id="a-barangay"
-          label="Barangay"
+          label={t.barangay}
           error={e.barangay}
           hint={
-            barangays
-              ? `In ${city} we deliver to ${barangays.join(", ")}.`
-              : undefined
+            barangays ? t.barangayHint(city, barangays.join(", ")) : undefined
           }
         >
           <input
@@ -192,9 +196,9 @@ export function AddressForm({
       </div>
       <Field
         id="a-landmark"
-        label="Landmark"
+        label={t.landmark}
         error={e.landmark}
-        hint="Such as a store, a gate colour or a church nearby."
+        hint={t.landmarkHint}
       >
         <input
           id="a-landmark"
@@ -207,36 +211,31 @@ export function AddressForm({
             : { "aria-describedby": "a-landmark-hint" })}
         />
       </Field>
-      <Field
-        id="a-notes"
-        label="Notes for the Rider (optional)"
-        error={e.notes}
-      >
+      <Field id="a-notes" label={t.notesLabel} error={e.notes}>
         <textarea
           id="a-notes"
           name="notes"
           defaultValue={v.notes}
           maxLength={200}
           rows={3}
-          className="rounded-field border-input bg-card w-full border px-3 py-2 text-base"
+          className={TEXTAREA}
           {...described("notes")}
         />
       </Field>
-      <label className="flex items-center gap-3 text-[15px]">
-        <input
-          type="checkbox"
-          name="isDefault"
-          defaultChecked={v.isDefault}
-          className="accent-ink size-5"
-        />
-        Use this address by default
-      </label>
-      <p className="text-muted-foreground text-[13px]">
-        We deliver to {areas.map((a) => a.city).join(", ")} for now.
-      </p>
+      {!first && (
+        <label className="text-label flex items-center gap-3">
+          <input
+            type="checkbox"
+            name="isDefault"
+            defaultChecked={v.isDefault}
+            className="accent-ink size-5"
+          />
+          {t.isDefault}
+        </label>
+      )}
       <div>
         <button type="submit" disabled={pending} className={PRIMARY_BUTTON}>
-          {pending ? "Saving..." : submitLabel}
+          {pending ? t.saving : (submitLabel ?? t.save)}
         </button>
       </div>
     </form>

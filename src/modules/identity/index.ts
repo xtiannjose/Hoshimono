@@ -35,3 +35,5 @@ export {
   textSignInCode,
   verifySignInCode,
 } from "./internal/sign-in";
+export { deleteCustomerSignIn } from "./internal/privacy";
+export { purgeEndedSignIns } from "./internal/purge";

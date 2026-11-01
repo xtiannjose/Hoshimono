@@ -6,8 +6,9 @@ import { signInAs as as } from "./sign-in";
 // Batch 4.3 (ADR 0011): pick, dispatch with a Rider, deliver with the
 // Customer's PIN and the cash, then count the Rider's cash. The pick
 // sheet and the delivery receipt print along the way (ADR 0012); then the
-// Customer reorders and sees Buy again (ADR 0014).
-test.describe.configure({ timeout: 240_000 });
+// Customer reorders and sees Buy again (ADR 0014), then reports a missing
+// item, which the Dispatcher approves as a Voucher (ADR 0016).
+test.describe.configure({ timeout: 300_000 });
 
 test("an Order is picked, sent out with a Rider, delivered with the PIN, and the cash counted", async ({
   browser,
@@ -108,6 +109,7 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
     .getByRole("listitem")
     .filter({ hasText: "Jun Dela Rosa" });
   await expect(jun).toContainText("₱624.00");
+  await jun.getByLabel("Cash counted (₱)").fill("624.00");
   await jun.getByRole("button", { name: "Record count" }).click();
   await expect(jun).toContainText(
     "Counted ₱624.00 by Marites Aquino: matches.",
@@ -152,5 +154,40 @@ test("an Order is picked, sent out with a Rider, delivered with the PIN, and the
       .getByRole("region", { name: "Buy again" })
       .getByRole("link", { name: /Fresh Milk/ })
       .first()
+  ).toBeVisible({ timeout: 30_000 });
+
+  // One carton never came: the Client reports it within 24 hours.
+  await shopper.goto(`/orders/${orderNo}/claim`, { waitUntil: "networkidle" });
+  await shopper.getByRole("radio", { name: "Missing" }).check();
+  await shopper.getByLabel("How many of the 5?").fill("1");
+  expect(
+    (await new AxeBuilder({ page: shopper }).analyze()).violations
+  ).toEqual([]);
+  await shopper.getByRole("button", { name: "Send report" }).click();
+  await expect(
+    shopper
+      .getByRole("region", { name: "Problem with an item?" })
+      .getByText("Waiting for review")
+  ).toBeVisible({ timeout: 30_000 });
+
+  // The Dispatcher approves it; paid in cash, so it comes back as a Voucher.
+  await dispatcher.goto("/admin/claims", { waitUntil: "networkidle" });
+  await dispatcher
+    .getByRole("link", { name: new RegExp(orderNo) })
+    .first()
+    .click();
+  await expect(dispatcher.getByText("₱115.00").first()).toBeVisible({
+    timeout: 30_000,
+  });
+  await dispatcher
+    .getByRole("button", { name: "Approve and pay back" })
+    .click();
+  await expect(dispatcher.getByText(/Approved by Marites Aquino/)).toBeVisible({
+    timeout: 30_000,
+  });
+
+  await shopper.reload({ waitUntil: "networkidle" });
+  await expect(
+    shopper.getByText(/₱115\.00 off your next order with code CREDIT-/)
   ).toBeVisible({ timeout: 30_000 });
 });

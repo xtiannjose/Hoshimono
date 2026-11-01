@@ -1,5 +1,7 @@
 import { relatedProducts, stockStates } from "@/app/_data/storefront";
 import { formatPackSize } from "@/components/product/format";
+import type { Lang } from "@/i18n/lang";
+import { getLang } from "@/i18n/server";
 import { productName } from "@/lib/product-name";
 import { productHref } from "@/lib/routes";
 import type { ProductSummary } from "@/modules/catalog";
@@ -31,10 +33,10 @@ export type RecipeRow = {
 
 export type RecipeExtra = { name: string; note: string };
 
-const rowProduct = (p: ProductSummary): RowProduct => ({
+const rowProduct = (p: ProductSummary, lang: Lang): RowProduct => ({
   id: p.id,
   name: productName(p),
-  pack: formatPackSize(p.packSize, p.isWeighed),
+  pack: formatPackSize(p.packSize, p.isWeighed, lang),
   priceCents: p.priceCents,
   href: productHref(p),
 });
@@ -46,6 +48,7 @@ const rowProduct = (p: ProductSummary): RowProduct => ({
 export async function recipeRows(
   recipe: RecipeView
 ): Promise<{ rows: RecipeRow[]; extras: RecipeExtra[] }> {
+  const lang = await getLang();
   const buyable = recipe.ingredients.filter((i) => i.productId);
   const stock = await stockStates(buyable.flatMap((i) => i.product?.id ?? []));
   const rows = await Promise.all(
@@ -56,7 +59,7 @@ export async function recipeRows(
         const similar = await relatedProducts(i.productId, SIMILAR_LIMIT);
         const states = await stockStates(similar.map((p) => p.id));
         const inStock = similar.find((p) => (states[p.id] ?? "out") !== "out");
-        alternative = inStock ? rowProduct(inStock) : null;
+        alternative = inStock ? rowProduct(inStock, lang) : null;
       }
       return {
         id: i.id,
@@ -65,7 +68,7 @@ export async function recipeRows(
         quantity: i.quantity,
         scales: i.scales,
         optional: i.optional,
-        product: i.product ? rowProduct(i.product) : null,
+        product: i.product ? rowProduct(i.product, lang) : null,
         soldOut,
         alternative,
       };

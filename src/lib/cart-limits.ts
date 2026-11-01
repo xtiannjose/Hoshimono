@@ -4,3 +4,6 @@
  * module code that talks to the database.
  */
 export const MAX_LINE_QUANTITY = 99;
+
+/** The longest note for the picker on a weighed Cart line. */
+export const MAX_NOTE_LENGTH = 200;

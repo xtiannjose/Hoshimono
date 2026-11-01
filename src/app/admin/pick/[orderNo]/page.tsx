@@ -4,11 +4,13 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { ORDER_STATUS_LABEL } from "@/components/order/status-labels";
+import { Button } from "@/components/ui/button";
 import { formatSlot, formatTime } from "@/lib/dates";
 import { listRelatedProducts } from "@/modules/catalog";
 import { getPickList, type PickLine } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
+import { phoneAnswerAction } from "../actions";
 import { FinishPicking, PickLineControls, StartPicking } from "./pick-controls";
 
 export const metadata: Metadata = { title: "Pick List" };
@@ -86,6 +88,39 @@ async function Pick({ params }: { params: Props["params"] }) {
             className="rounded-card border-border bg-card grid gap-3 border p-4"
           >
             <LineSummary line={line} />
+            {line.substitution?.answer === "waiting" && (
+              <form className="flex flex-wrap gap-2">
+                <span className="text-muted-foreground basis-full text-sm">
+                  They answered by phone?
+                </span>
+                <Button
+                  formAction={phoneAnswerAction.bind(
+                    null,
+                    list.id,
+                    line.id,
+                    list.orderNo,
+                    true
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  Yes, pack it
+                </Button>
+                <Button
+                  formAction={phoneAnswerAction.bind(
+                    null,
+                    list.id,
+                    line.id,
+                    list.orderNo,
+                    false
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  No, leave it out
+                </Button>
+              </form>
+            )}
             {picking && !line.substitution && (
               <PickLineControls
                 line={line}
@@ -101,6 +136,8 @@ async function Pick({ params }: { params: Props["params"] }) {
   );
 }
 
+const grams = (g: number | null) => `${(g ?? 0).toLocaleString("en-PH")} g`;
+
 function LineSummary({ line }: { line: PickLine }) {
   const sub = line.substitution;
   return (
@@ -109,8 +146,8 @@ function LineSummary({ line }: { line: PickLine }) {
         <b>{line.name}</b>
         <span className="tabular-nums">
           {line.weighed
-            ? `, about ${line.orderedWeightGrams} g`
-            : `, ${line.orderedQty} pcs`}
+            ? `, about ${grams(line.orderedWeightGrams)}`
+            : `, ${line.orderedQty} ${line.orderedQty === 1 ? "pc" : "pcs"}`}
         </span>
       </p>
       {line.note && (
@@ -119,15 +156,17 @@ function LineSummary({ line }: { line: PickLine }) {
         </p>
       )}
       <p className="text-muted-foreground text-sm">
-        {line.preference === "preferred" && line.preferred
-          ? `If missing: only ${line.preferred.name}`
-          : PREFERENCE[line.preference]}
+        {line.weighed
+          ? "Sold by weight: no substitute"
+          : line.preference === "preferred" && line.preferred
+            ? `If missing: only ${line.preferred.name}`
+            : PREFERENCE[line.preference]}
       </p>
       {line.status === "picked" && (
         <p className="text-sm font-semibold">
           Done
           {line.weighed
-            ? `: ${line.finalWeightGrams} g`
+            ? `: ${grams(line.finalWeightGrams)}`
             : `: found all ${line.orderedQty}`}
         </p>
       )}

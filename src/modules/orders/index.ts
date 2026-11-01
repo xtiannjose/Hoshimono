@@ -3,6 +3,7 @@
 export {
   MAX_COD_TOTAL_CENTS,
   MAX_OPEN_COD_ORDERS,
+  MAX_ORDER_ITEMS,
   placeOrder,
 } from "./internal/place-order";
 export type { PlaceOrderInput, PlaceOrderResult } from "./internal/place-order";
@@ -11,6 +12,7 @@ export {
   cancelOrder,
   confirmPaidOrder,
   expireUnpaidOrders,
+  ORDER_CANCELLED_JOB,
   ORDER_CONFIRMED_JOB,
   ORDER_DELIVERED_JOB,
   PAYMENT_WINDOW_MINUTES,
@@ -38,7 +40,6 @@ export {
   proposeSubstitution,
   recordPick,
   SUBSTITUTION_ASKED_JOB,
-  SUBSTITUTION_WINDOW_MINUTES,
 } from "./internal/picking";
 export type {
   PickLine,
@@ -56,3 +57,15 @@ export type { QueueRow, StaffOrderDetail } from "./internal/staff";
 export type { OrderDetail, OrderSummary } from "./internal/read";
 export { dailyReport, getReceipt } from "./internal/reports";
 export { getReorderLines, listBoughtBefore } from "./internal/again";
+export {
+  eraseOrderContacts,
+  hasOpenOrders,
+  orderData,
+} from "./internal/privacy";
+export {
+  answerSubstitutionByPhone,
+  changeOrderAddress,
+  handOverOrder,
+  moveOrderSlot,
+} from "./internal/changes";
+export type { MoveResult } from "./internal/changes";

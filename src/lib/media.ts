@@ -5,6 +5,12 @@ import path from "node:path";
  * Where uploaded files live. The app stores the returned URL and serves it
  * through next/image. Provider-agnostic like payments (docs/03 section 1).
  */
+/**
+ * Pixels an uploaded photo may have: a 48-megapixel phone photo fits, a
+ * small file that unpacks into gigabytes of pixels does not.
+ */
+export const MAX_IMAGE_PIXELS = 50_000_000;
+
 export interface MediaStore {
   /** Saves bytes under `key` and returns the public URL. */
   put(key: string, bytes: Buffer, contentType: string): Promise<string>;

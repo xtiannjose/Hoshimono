@@ -51,6 +51,11 @@ export const AREA_LINKS: Record<
       label: "Zones and Slots",
       hint: "Delivery fees, the weekly Slot schedule, one Slot at a time",
     },
+    {
+      href: "/admin/system",
+      label: "System",
+      hint: "When the cron last ran, jobs waiting, payment events",
+    },
   ],
   orders: [
     {
@@ -74,6 +79,13 @@ export const AREA_LINKS: Record<
       href: "/admin/import",
       label: "Import and export",
       hint: "Products as CSV",
+    },
+  ],
+  claims: [
+    {
+      href: "/admin/claims",
+      label: "Freshness Claims",
+      hint: "Reports on delivered items: approve, pay back or reject",
     },
   ],
   promotions: [
@@ -122,3 +134,15 @@ export const AREA_LINKS: Record<
     },
   ],
 };
+
+/** The admin menu, grouped by job (ADR 0018); every area appears once. */
+export const AREA_GROUPS: { label: string; areas: StaffArea[] }[] = [
+  {
+    label: "Orders and delivery",
+    areas: ["orders", "picking", "dispatch", "delivery", "claims", "refunds"],
+  },
+  { label: "Stock and Slots", areas: ["stock", "setup"] },
+  { label: "Catalogue", areas: ["catalog"] },
+  { label: "Offers and content", areas: ["promotions", "content"] },
+  { label: "People and reports", areas: ["reports", "staff", "audit"] },
+];

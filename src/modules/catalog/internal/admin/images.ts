@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import sharp, { type Metadata } from "sharp";
 
 import { db, inTransaction, type Client } from "@/lib/db";
-import { mediaStore } from "@/lib/media";
+import { MAX_IMAGE_PIXELS, mediaStore } from "@/lib/media";
 
 import { fieldError, type WriteResult } from "./products";
 
@@ -39,6 +39,8 @@ export async function addProductImage(
   if ((meta.width ?? 0) < MIN_SIDE || (meta.height ?? 0) < MIN_SIDE) {
     return error(`Use an image at least ${MIN_SIDE} x ${MIN_SIDE} pixels`);
   }
+  if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS)
+    return error("This image is too large. Use one under 50 megapixels");
   const product = await db.product.findUnique({
     where: { id: productId },
     select: { name: true, _count: { select: { images: true } } },
@@ -47,7 +49,7 @@ export async function addProductImage(
   if (product._count.images >= MAX_IMAGES)
     return error(`A Product can have at most ${MAX_IMAGES} images`);
 
-  const master = await sharp(file.bytes)
+  const master = await sharp(file.bytes, { limitInputPixels: MAX_IMAGE_PIXELS })
     .rotate() // respect camera orientation
     .resize(MASTER, MASTER, {
       fit: "contain",

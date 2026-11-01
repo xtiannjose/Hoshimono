@@ -23,8 +23,12 @@ export type ShoppingListView = {
   items: { product: ProductSummary; quantity: number }[];
 };
 
+/** What is wrong with a list's name; the shop words it (ADR 0019). */
+export type ListNameProblem =
+  "no_name" | "name_too_long" | "name_taken" | "too_many_lists" | "list_gone";
+
 type NameResult =
-  { ok: true; id: string } | { ok: false; errors: { name: string } };
+  { ok: true; id: string } | { ok: false; errors: { name: ListNameProblem } };
 
 const owned = (customerId: string, listId: string) =>
   isUuid(listId)
@@ -101,19 +105,18 @@ async function checkName(
   customerId: string,
   name: string,
   exceptId?: string
-): Promise<string | null> {
-  if (!name) return "Give the list a name.";
-  if (name.length > MAX_NAME)
-    return `Keep the name under ${MAX_NAME} characters.`;
+): Promise<ListNameProblem | null> {
+  if (!name) return "no_name";
+  if (name.length > MAX_NAME) return "name_too_long";
   const same = await db.shoppingList.findFirst({
     where: {
       customerId,
       name: { equals: name, mode: "insensitive" },
       ...(exceptId && { id: { not: exceptId } }),
     },
-    select: { name: true },
+    select: { id: true },
   });
-  return same ? `You already have a list called "${same.name}".` : null;
+  return same ? "name_taken" : null;
 }
 
 /** A new, empty list (a form result, ADR 0009). */
@@ -125,10 +128,7 @@ export async function createShoppingList(
   const problem = await checkName(customerId, name);
   if (problem) return { ok: false, errors: { name: problem } };
   if ((await db.shoppingList.count({ where: { customerId } })) >= MAX_LISTS)
-    return {
-      ok: false,
-      errors: { name: `You can keep up to ${MAX_LISTS} lists.` },
-    };
+    return { ok: false, errors: { name: "too_many_lists" } };
   const list = await db.shoppingList.create({
     data: { customerId, name },
     select: { id: true },
@@ -142,7 +142,7 @@ export async function renameShoppingList(
   rawName: string
 ): Promise<NameResult> {
   const list = await owned(customerId, listId);
-  if (!list) return { ok: false, errors: { name: "That list is gone." } };
+  if (!list) return { ok: false, errors: { name: "list_gone" } };
   const name = rawName.trim();
   const problem = await checkName(customerId, name, list.id);
   if (problem) return { ok: false, errors: { name: problem } };

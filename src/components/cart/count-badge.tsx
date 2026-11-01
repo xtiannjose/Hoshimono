@@ -8,9 +8,12 @@ import { Motion } from "@/components/motion";
 /** The header Cart count with its bump (docs/05 section 7); loaded lazily. */
 export default function CountBadge({
   count,
+  label,
   className,
 }: {
   count: number;
+  /** "items", in the page's language. */
+  label: string;
   className: string;
 }) {
   const reduce = useReducedMotion();
@@ -25,7 +28,7 @@ export default function CountBadge({
         className={className}
       >
         {count}
-        <span className="sr-only"> {count === 1 ? "item" : "items"}</span>
+        <span className="sr-only"> {label}</span>
       </m.span>
     </Motion>
   );

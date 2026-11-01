@@ -14,7 +14,7 @@ test("a Picker offers a substitute, the Customer refuses it, and pays only for w
   // Ligaya orders 5 Fresh Milk, cash on delivery. Each spec shops as its
   // own Customer: parallel specs on one account would share one Cart.
   const shopper = await (
-    await browser.newContext({ ...devices["Pixel 7"] })
+    await browser.newContext({ ...devices["Pixel 7"], serviceWorkers: "block" })
   ).newPage();
   await signIn(shopper, "ligaya@example.com", "/");
   await shopper.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
@@ -43,7 +43,7 @@ test("a Picker offers a substitute, the Customer refuses it, and pays only for w
 
   // The Picker finds 3 and offers a substitute for the other 2.
   const picker = await (
-    await browser.newContext({ ...devices["Pixel 7"] })
+    await browser.newContext({ ...devices["Pixel 7"], serviceWorkers: "block" })
   ).newPage();
   await signIn(picker, "picker@hoshimono.test", "/admin/pick");
   await picker.goto("/admin/pick", { waitUntil: "networkidle" });

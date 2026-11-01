@@ -1,3 +1,4 @@
+import { manilaDate } from "@/lib/dates";
 import { db } from "@/lib/db";
 import { formatMoney } from "@/lib/money";
 
@@ -34,11 +35,17 @@ export async function riderCashDay(riderId: string, day: string) {
       capturedCents: true,
       collectedNote: true,
       order: {
-        select: { orderNo: true, totalCents: true, finalTotalCents: true },
+        select: {
+          id: true,
+          orderNo: true,
+          totalCents: true,
+          finalTotalCents: true,
+        },
       },
     },
   });
   const orders = payments.map((p) => ({
+    orderId: p.order.id,
     orderNo: p.order.orderNo,
     dueCents: p.order.finalTotalCents ?? p.order.totalCents,
     collectedCents: p.capturedCents,
@@ -162,4 +169,84 @@ export async function recordCashHandover(
         ok: false,
         errors: { form: "This Rider's cash for the day is already counted." },
       };
+}
+
+type CashErrors = {
+  counted?: string;
+  cash?: string;
+  note?: string;
+  form?: string;
+};
+
+/**
+ * A day's count was wrong: record the right one, saying why. Who counted
+ * becomes who corrected it; the audit log keeps both.
+ */
+export async function correctCashHandover(
+  riderId: string,
+  day: string,
+  countedCents: number,
+  correctedById: string,
+  note: string
+): Promise<{ ok: true } | { ok: false; errors: CashErrors }> {
+  if (!DAY.test(day)) return { ok: false, errors: { form: "Choose a day." } };
+  if (!Number.isInteger(countedCents) || countedCents < 0) {
+    return { ok: false, errors: { counted: "Enter the cash you counted." } };
+  }
+  const why = note.trim();
+  if (!why)
+    return { ok: false, errors: { note: "Say why the count changes." } };
+  const { count } = await db.cashHandover.updateMany({
+    where: { riderId, day: manilaDay(day).date },
+    data: { countedCents, countedById: correctedById, note: why },
+  });
+  return count
+    ? { ok: true }
+    : { ok: false, errors: { form: "This day is not counted yet." } };
+}
+
+/**
+ * The Rider recorded the wrong cash for an Order: fix it, saying why. Only
+ * before that Rider's day is counted; after, correct the count.
+ */
+export async function correctCollectedCash(
+  orderId: string,
+  cashCents: number,
+  note: string
+): Promise<{ ok: true } | { ok: false; errors: CashErrors }> {
+  if (!Number.isInteger(cashCents) || cashCents < 0) {
+    return { ok: false, errors: { cash: "Enter the cash taken." } };
+  }
+  const why = note.trim();
+  if (!why) return { ok: false, errors: { note: "Say why the cash changes." } };
+  const payment = await db.payment.findFirst({
+    where: { orderId, method: "cod", status: "cod_collected" },
+    select: {
+      id: true,
+      order: { select: { riderId: true, deliveredAt: true } },
+    },
+  });
+  const { riderId, deliveredAt } = payment?.order ?? {};
+  if (!payment || !riderId || !deliveredAt) {
+    return {
+      ok: false,
+      errors: { form: "No cash was recorded for this Order." },
+    };
+  }
+  const counted = await db.cashHandover.count({
+    where: { riderId, day: manilaDay(manilaDate(deliveredAt)).date },
+  });
+  if (counted) {
+    return {
+      ok: false,
+      errors: {
+        form: "That day's cash is counted: correct the count instead.",
+      },
+    };
+  }
+  await db.payment.update({
+    where: { id: payment.id },
+    data: { capturedCents: cashCents, collectedNote: why },
+  });
+  return { ok: true };
 }

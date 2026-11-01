@@ -4,7 +4,9 @@ import { Suspense } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { manilaDate } from "@/lib/dates";
+import { FUNNEL_STEPS, funnelTotals, type FunnelStep } from "@/lib/funnel";
 import { formatMoney } from "@/lib/money";
+import { countClaims } from "@/modules/claims";
 import { dailyReport } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../staff-gate";
@@ -25,6 +27,12 @@ const dayLabel = (day: string) =>
     month: "short",
     timeZone: "UTC",
   }).format(new Date(`${day}T00:00:00Z`));
+const STEP_LABEL: Record<FunnelStep, string> = {
+  product_viewed: "Product pages viewed",
+  added_to_cart: "Added to a Cart",
+  checkout_started: "Checkouts started",
+  order_placed: "Orders placed",
+};
 const daysBefore = (day: string, n: number) =>
   new Date(Date.parse(`${day}T00:00:00Z`) - n * DAY_MS)
     .toISOString()
@@ -50,10 +58,20 @@ async function Report({
   const asked = Array.isArray(raw) ? raw[0] : raw;
   const today = manilaDate(new Date());
   const day = asked && DAY.test(asked) ? asked : today;
-  const week = await Promise.all(
-    Array.from({ length: 7 }, (_, i) => dailyReport(daysBefore(day, i)))
-  );
+  const [week, funnel] = await Promise.all([
+    Promise.all(
+      Array.from({ length: 7 }, (_, i) => dailyReport(daysBefore(day, i)))
+    ),
+    funnelTotals(daysBefore(day, 6), day),
+  ]);
   const r = week[0];
+  // Freshness Claims filed that Manila day (ADR 0016); launch wants fewer
+  // than 3 per 100 Orders.
+  const dayStart = new Date(`${day}T00:00:00+08:00`);
+  const claims = await countClaims({
+    gte: dayStart,
+    lt: new Date(dayStart.getTime() + DAY_MS),
+  });
   const tiles = [
     ["Orders placed", String(r.placed)],
     ["Delivered", String(r.delivered)],
@@ -63,6 +81,12 @@ async function Report({
     ["Fill rate", percent(r.fillRate)],
     ["Substitution rate", percent(r.substitutionRate)],
     ["Late deliveries", String(r.lateDeliveries)],
+    [
+      "Freshness Claims",
+      r.delivered
+        ? `${claims} (${Math.round((claims * 1000) / r.delivered) / 10} per 100)`
+        : String(claims),
+    ],
   ];
   return (
     <section className="grid max-w-5xl gap-6">
@@ -171,6 +195,51 @@ async function Report({
                 </td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+      {/* ADR 0017: counts per step, nothing about who. */}
+      <div className="rounded-card border-border bg-card overflow-x-auto border">
+        <table className="w-full text-left text-sm">
+          <caption className="px-4 pt-4 text-left">
+            <span className="type-h3 block">Shopping funnel</span>
+            <span className="text-muted-foreground block">
+              The 7 days to {dayLabel(day)}. Each step and the share of the step
+              before that went on to it.
+            </span>
+          </caption>
+          <thead>
+            <tr className="border-border border-b">
+              {["Step", "Count", "Went on"].map((h, i) => (
+                <th
+                  key={h}
+                  scope="col"
+                  className={`px-4 py-3 font-semibold ${i ? "text-right" : ""}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {FUNNEL_STEPS.map((step, i) => {
+              const before = i ? funnel[FUNNEL_STEPS[i - 1]] : 0;
+              return (
+                <tr key={step} className="border-border border-t">
+                  <th scope="row" className="px-4 py-2.5 font-semibold">
+                    {STEP_LABEL[step]}
+                  </th>
+                  <td className="px-4 py-2.5 text-right tabular-nums">
+                    {funnel[step]}
+                  </td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">
+                    {i === 0
+                      ? ""
+                      : percent(before ? funnel[step] / before : null)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

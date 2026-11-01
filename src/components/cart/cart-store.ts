@@ -2,8 +2,10 @@
 
 import { useSyncExternalStore } from "react";
 
-import { setQuantity } from "@/app/cart/actions";
+import { setQuantity } from "@/app/[lang]/cart/actions";
+import { sendStep } from "@/components/count-step";
 import { announce } from "@/components/live-region";
+import type { Messages } from "@/i18n/messages";
 import type { CartView } from "@/modules/cart";
 
 // One Cart per tab, shared by the header button, the drawer, the Cart page
@@ -92,14 +94,14 @@ const latest: Record<string, number> = {};
 export async function changeQuantity(
   productId: string,
   name: string,
-  next: number
+  next: number,
+  t: Messages["cart"]
 ) {
+  if (next > 0 && quantityIn(state, productId) === 0) sendStep("added_to_cart");
   const mine = ++sequence;
   latest[productId] = mine;
   update({ pending: { ...state.pending, [productId]: next } });
-  announce(
-    next === 0 ? `${name} removed from cart` : `${name}, ${next} in cart`
-  );
+  announce(next === 0 ? t.removed(name) : t.inCart(name, next));
   try {
     const result = await setQuantity(productId, next);
     // A newer tap on the same Product keeps its own optimistic value.
@@ -109,10 +111,12 @@ export async function changeQuantity(
       view: newer ? result.cart : state.view,
       pending: settled ? withoutPending(productId) : state.pending,
     });
-    if (settled && result.message) showNotice(productId, result.message);
+    if (settled && result.notice) {
+      showNotice(productId, t.notices[result.notice]);
+    }
   } catch {
     if (latest[productId] !== mine) return;
     update({ pending: withoutPending(productId) });
-    showNotice(productId, "We could not update your cart. Please try again.");
+    showNotice(productId, t.failed.update);
   }
 }

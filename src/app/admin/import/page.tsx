@@ -55,6 +55,9 @@ export default function ImportPage() {
               rows match existing Products by name.
             </p>
             <p>
+              {/* A file download from a Route Handler; the shop's catch-all
+                  page makes the lint rule take it for a page. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a
                 href="/admin/export"
                 className="font-semibold underline underline-offset-4"
@@ -71,9 +74,7 @@ export default function ImportPage() {
             <dl className="grid gap-2 pb-4 text-sm">
               {COLUMNS.map(([name, help]) => (
                 <div key={name} className="grid gap-1 sm:grid-cols-[200px_1fr]">
-                  <dt className="font-mono text-[13px] font-semibold">
-                    {name}
-                  </dt>
+                  <dt className="text-fine font-mono font-semibold">{name}</dt>
                   <dd className="text-muted-foreground">{help}</dd>
                 </div>
               ))}

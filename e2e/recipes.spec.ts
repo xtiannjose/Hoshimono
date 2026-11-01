@@ -73,6 +73,8 @@ test("a Content Editor writes a Recipe and publishes it; a sold-out ingredient o
   await expect(
     page.getByRole("heading", { level: 1, name: title })
   ).toBeVisible({ timeout: 30_000 });
+  // Admin to shop is a full page load (two root layouts): let it wake up.
+  await page.waitForLoadState("networkidle");
   const panel = page.getByRole("complementary", { name: "Ingredients" });
   await expect(panel.getByText("Sold out")).toBeVisible();
   await expect(panel.getByText("You will also need Ice.")).toBeVisible();

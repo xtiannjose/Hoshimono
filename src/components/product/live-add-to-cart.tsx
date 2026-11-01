@@ -11,6 +11,7 @@ import {
   useCart,
 } from "@/components/cart/cart-store";
 import { Motion } from "@/components/motion";
+import { useMessages } from "@/i18n/client";
 
 import { ADD_BUTTON } from "@/components/ui/button-classes";
 import { QuantityStepper } from "./quantity-stepper";
@@ -35,6 +36,8 @@ export default function LiveAddToCart({
   woke: boolean;
 }) {
   const quantity = useCart((s) => quantityIn(s, productId));
+  const cartWords = useMessages().cart;
+  const t = useMessages().product;
   const notice = useCart((s) =>
     s.notice?.productId === productId ? s.notice.text : null
   );
@@ -60,7 +63,7 @@ export default function LiveAddToCart({
 
   function change(next: number) {
     setSwapped(true);
-    void changeQuantity(productId, name, next);
+    void changeQuantity(productId, name, next, cartWords);
   }
 
   return (
@@ -79,26 +82,24 @@ export default function LiveAddToCart({
               ref={addRef}
               type="button"
               onClick={() => change(1)}
-              aria-label={`Add ${name} to cart`}
+              aria-label={t.addToCart(name)}
               className={ADD_BUTTON}
             >
               <PlusIcon size={18} aria-hidden />
-              Add
+              {t.add}
             </button>
           ) : (
             <QuantityStepper
               value={quantity}
               onChange={change}
-              label={`Quantity of ${name}`}
+              label={t.quantityOf(name)}
               max={max}
               plusRef={plusRef}
             />
           )}
         </m.div>
         {notice && (
-          <p className="text-warn text-[13px] leading-[18px] font-semibold">
-            {notice}
-          </p>
+          <p className="text-warn text-fine font-semibold">{notice}</p>
         )}
       </div>
     </Motion>

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import type { Prisma } from "@/generated/prisma/client";
 import { manilaDate } from "@/lib/dates";
-import { db } from "@/lib/db";
+import { db, isRetryable } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
 import { productName } from "@/lib/product-name";
 import {
@@ -12,13 +12,14 @@ import {
   getCart,
   getCartId,
   readCartVersion,
+  type VoucherProblem,
 } from "@/modules/cart";
-import { getAddress } from "@/modules/customers";
-import { bookSlot, resolveZone } from "@/modules/delivery";
+import { getAddress, isCustomerBlocked } from "@/modules/customers";
+import { bookSlot, onlinePaused, resolveZone } from "@/modules/delivery";
 import { OutOfStockError, reserveStock } from "@/modules/inventory";
 import { enqueueJob } from "@/modules/jobs";
 import { createCodPayment, createOnlinePayment } from "@/modules/payments";
-import { redeemVoucher, VOUCHER_REFUSAL } from "@/modules/pricing";
+import { redeemVoucher } from "@/modules/pricing";
 
 import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
 
@@ -29,6 +30,11 @@ import { OPEN_STATUSES, ORDER_CONFIRMED_JOB } from "./status";
  */
 export const MAX_OPEN_COD_ORDERS = 3;
 export const MAX_COD_TOTAL_CENTS = 2_000_000; // PHP 20,000
+/**
+ * Items (counted as units) in one Order, so one account cannot reserve the
+ * whole Hub. A big family week is under 100.
+ */
+export const MAX_ORDER_ITEMS = 200;
 
 export type PlaceOrderInput = {
   customerId: string;
@@ -51,8 +57,9 @@ export type PlaceOrderResult =
   | { ok: false; reason: "below_minimum"; shortByCents: number }
   | { ok: false; reason: "out_of_stock"; productIds: string[] }
   | { ok: false; reason: "over_cod_limit"; limitCents: number }
+  | { ok: false; reason: "too_many_items"; limit: number }
   /** The Cart's Voucher stopped applying, such as its last use going (ADR 0015). */
-  | { ok: false; reason: "voucher_unavailable"; message: string }
+  | { ok: false; reason: "voucher_unavailable"; problem: VoucherProblem }
   | {
       ok: false;
       reason:
@@ -65,6 +72,9 @@ export type PlaceOrderResult =
         | "already_placed"
         | "nothing_in_stock"
         | "too_many_open_orders"
+        | "unpaid_order_waiting"
+        | "online_paused"
+        | "blocked"
         | "cart_changed";
     };
 
@@ -120,17 +130,6 @@ async function replay(
 const isUniqueViolation = (error: unknown) =>
   (error as { code?: string }).code === "P2002";
 
-// Postgres gave up on the transaction (a deadlock or a write conflict):
-// nothing was saved, so trying again is safe.
-const isRetryable = (error: unknown) => {
-  const code = (error as { code?: string }).code;
-  return (
-    code === "P2034" ||
-    code === "40P01" ||
-    /deadlock detected|could not serialize/i.test(String(error))
-  );
-};
-
 /**
  * Turn the Customer's Cart into an Order (docs/03-ARCHITECTURE.md section 6).
  * Prices are recomputed here; nothing the browser sends is trusted except
@@ -151,11 +150,18 @@ export async function placeOrder(
 
   const earlier = await replay(order.customerId, order.idempotencyKey);
   if (earlier) return earlier;
+  if (await isCustomerBlocked(order.customerId)) {
+    return { ok: false, reason: "blocked" };
+  }
 
   const address = await getAddress(order.customerId, order.addressId);
   if (!address) return { ok: false, reason: "address_not_found" };
   const zone = await resolveZone(address);
   if (!zone) return { ok: false, reason: "out_of_zone" };
+  // The Hub turned GCash and card off for now (docs/runbook.md, 4a).
+  if (!cod && (await onlinePaused(zone.hubId))) {
+    return { ok: false, reason: "online_paused" };
+  }
 
   const owner = { customerId: order.customerId };
   const [cartId, cart] = await Promise.all([
@@ -172,6 +178,9 @@ export async function placeOrder(
     return { ok: false, reason: "empty_cart" };
   }
   if (lines.length === 0) return { ok: false, reason: "nothing_in_stock" };
+  if (lines.reduce((n, l) => n + l.quantity, 0) > MAX_ORDER_ITEMS) {
+    return { ok: false, reason: "too_many_items", limit: MAX_ORDER_ITEMS };
+  }
   if (priced.belowMinimumByCents > 0) {
     return {
       ok: false,
@@ -190,7 +199,7 @@ export async function placeOrder(
     return {
       ok: false,
       reason: "voucher_unavailable",
-      message: cart.voucher.problem,
+      problem: cart.voucher.problem,
     };
   }
   if (priced.totalCents !== order.expectedTotalCents) {
@@ -221,6 +230,16 @@ export async function placeOrder(
       : 0;
     if (open >= MAX_OPEN_COD_ORDERS) {
       throw new Refused({ ok: false, reason: "too_many_open_orders" });
+    }
+    // One unpaid online Order at a time: each holds stock for the Payment
+    // Window, and placing them back to back would hold it for good.
+    if (
+      !cod &&
+      (await tx.order.count({
+        where: { customerId: order.customerId, status: "pending_payment" },
+      }))
+    ) {
+      throw new Refused({ ok: false, reason: "unpaid_order_waiting" });
     }
     if (
       !(await bookSlot(tx, {
@@ -274,7 +293,7 @@ export async function placeOrder(
         throw new Refused({
           ok: false,
           reason: "voucher_unavailable",
-          message: VOUCHER_REFUSAL[redeemed.reason],
+          problem: redeemed.reason,
         });
       }
       await tx.order.update({

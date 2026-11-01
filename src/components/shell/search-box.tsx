@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 import type { Suggestion } from "@/app/api/search/suggest/route";
+import { useLocalPath, useMessages } from "@/i18n/client";
 
-const GROUPS: { kind: Suggestion["kind"]; label: string }[] = [
-  { kind: "product", label: "Products" },
-  { kind: "category", label: "Categories" },
-  { kind: "brand", label: "Brands" },
-];
+const KINDS: Suggestion["kind"][] = ["product", "category", "brand"];
 
 /**
  * Header search with suggestions: an ARIA 1.2 combobox over a plain GET
@@ -24,6 +21,8 @@ export function SearchBox({
   className?: string;
 }) {
   const router = useRouter();
+  const t = useMessages().shell;
+  const local = useLocalPath();
   const listId = useId();
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<Suggestion[]>([]);
@@ -73,14 +72,14 @@ export function SearchBox({
 
   function go(item: Suggestion) {
     setOpen(false);
-    router.push(item.href);
+    router.push(local(item.href));
   }
 
   return (
     <form
       ref={box}
       role="search"
-      action="/search"
+      action={local("/search")}
       onBlur={(e) => {
         if (!box.current?.contains(e.relatedTarget as Node)) setOpen(false);
       }}
@@ -92,7 +91,7 @@ export function SearchBox({
         aria-hidden
       />
       <label htmlFor={id} className="sr-only">
-        Search groceries
+        {t.searchLabel}
       </label>
       <input
         id={id}
@@ -105,7 +104,7 @@ export function SearchBox({
         aria-activedescendant={
           expanded && active >= 0 ? optionId(active) : undefined
         }
-        placeholder="Search groceries and brands"
+        placeholder={t.searchPlaceholder}
         autoComplete="off"
         ref={input}
         defaultValue=""
@@ -134,11 +133,12 @@ export function SearchBox({
       <div
         id={listId}
         role="listbox"
-        aria-label="Suggestions"
+        aria-label={t.suggestions}
         hidden={!expanded}
         className="rounded-card border-border bg-popover shadow-float absolute inset-x-0 top-[calc(100%+8px)] max-h-[70vh] overflow-y-auto border p-2"
       >
-        {GROUPS.map(({ kind, label }) => {
+        {KINDS.map((kind) => {
+          const label = t.suggestionGroups[kind];
           const group = shown
             .map((item, i) => ({ item, i }))
             .filter(({ item }) => item.kind === kind);

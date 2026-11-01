@@ -1,10 +1,19 @@
-import { PAYMENT_METHOD_LABEL } from "@/components/order/status-labels";
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import { formatSlot } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
+import { displayPhone } from "@/lib/phone";
 import type { OrderDetail } from "@/modules/orders";
 
 /** Delivery, items and totals of an Order, as stored at checkout. */
-export function OrderDetails({ order }: { order: OrderDetail }) {
+export function OrderDetails({
+  order,
+  lang = "en",
+}: {
+  order: OrderDetail;
+  lang?: Lang;
+}) {
+  const t = MESSAGES[lang].order;
   const { address } = order;
   // Weighed Products are charged by packed weight: the total is an estimate.
   const estimated = order.lines.some((l) => l.weighed);
@@ -12,37 +21,40 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
     <div className="grid gap-6">
       <dl className="grid gap-3 sm:grid-cols-2">
         <div>
-          <dt className="text-muted-foreground text-sm">Delivery slot</dt>
+          <dt className="text-muted-foreground text-sm">{t.slot}</dt>
           <dd className="font-semibold">
-            {formatSlot(order.slot.startsAt, order.slot.endsAt)}
+            {formatSlot(
+              order.slot.startsAt,
+              order.slot.endsAt,
+              undefined,
+              lang
+            )}
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-sm">Deliver to</dt>
+          <dt className="text-muted-foreground text-sm">{t.deliverTo}</dt>
           <dd>
             <b>{address.label}</b>, {address.line1}, {address.barangay},{" "}
             {address.city}
             <span className="text-muted-foreground block text-sm">
-              Landmark: {address.landmark}
+              {t.landmark(address.landmark)}
             </span>
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-sm">Payment</dt>
+          <dt className="text-muted-foreground text-sm">{t.payment}</dt>
           <dd>
-            {order.paymentMethod
-              ? PAYMENT_METHOD_LABEL[order.paymentMethod]
-              : "Online"}
+            {order.paymentMethod ? t.methods[order.paymentMethod] : t.online}
           </dd>
         </div>
         <div>
-          <dt className="text-muted-foreground text-sm">Mobile number</dt>
-          <dd className="tabular-nums">{order.contactPhone}</dd>
+          <dt className="text-muted-foreground text-sm">{t.mobile}</dt>
+          <dd className="tabular-nums">{displayPhone(order.contactPhone)}</dd>
         </div>
       </dl>
 
       <div>
-        <h2 className="type-h3 mb-2">Items</h2>
+        <h2 className="type-h3 mb-2">{t.items}</h2>
         <ul>
           {order.lines.map((line, i) => (
             <li
@@ -51,9 +63,12 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
             >
               <span>
                 {line.name}
-                <small className="text-muted-foreground block text-[13px]">
-                  {line.quantity} x {formatMoney(line.unitPriceCents)}
-                  {line.weighed ? ", by weight" : ""}
+                <small className="text-muted-foreground text-fine block">
+                  {t.lineDetail(
+                    line.quantity,
+                    formatMoney(line.unitPriceCents),
+                    line.weighed
+                  )}
                 </small>
               </span>
               <span className="tabular-nums">
@@ -64,49 +79,46 @@ export function OrderDetails({ order }: { order: OrderDetail }) {
         </ul>
         <dl className="mt-3 grid gap-2 tabular-nums">
           <div className="flex justify-between">
-            <dt>Subtotal</dt>
+            <dt>{t.subtotal}</dt>
             <dd>{formatMoney(order.subtotalCents)}</dd>
           </div>
           {order.discountCents > 0 && (
             <div className="flex justify-between">
-              <dt>Discount</dt>
+              <dt>{t.discount}</dt>
               <dd>-{formatMoney(order.discountCents)}</dd>
             </div>
           )}
           <div className="flex justify-between">
-            <dt>Delivery</dt>
+            <dt>{t.delivery}</dt>
             <dd>
               {order.deliveryFeeCents === 0
-                ? "Free"
+                ? t.free
                 : formatMoney(order.deliveryFeeCents)}
             </dd>
           </div>
           <div className="border-border font-display flex justify-between border-t pt-2 text-xl font-semibold">
-            <dt>{estimated ? "Estimated total" : "Total"}</dt>
+            <dt>{estimated ? t.estimatedTotal : t.total}</dt>
             <dd data-testid="order-total">{formatMoney(order.totalCents)}</dd>
           </div>
           {order.finalTotalCents !== null &&
             order.finalTotalCents !== order.totalCents && (
               <div className="flex justify-between font-semibold">
-                <dt>Final total, as packed</dt>
+                <dt>{t.finalTotal}</dt>
                 <dd>{formatMoney(order.finalTotalCents)}</dd>
               </div>
             )}
           {order.refundedCents > 0 && (
             <div className="flex justify-between">
               <dt>
-                Refund to your{" "}
-                {order.paymentMethod === "card" ? "card" : "GCash"}
+                {t.refund(order.paymentMethod === "card" ? "card" : "gcash")}
               </dt>
               <dd>{formatMoney(order.refundedCents)}</dd>
             </div>
           )}
         </dl>
-        <p className="text-muted-foreground mt-2 text-[13px]">
-          VAT included ({formatMoney(order.vatCents)}).
-          {estimated &&
-            order.finalTotalCents === null &&
-            " Weighed items are charged by the weight we pack, so the final amount may change a little."}
+        <p className="text-muted-foreground text-fine mt-2">
+          {t.vat(formatMoney(order.vatCents))}
+          {estimated && order.finalTotalCents === null && t.weighedNote}
         </p>
       </div>
     </div>

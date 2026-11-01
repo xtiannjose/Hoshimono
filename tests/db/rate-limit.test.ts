@@ -1,6 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 
-import { takeOrderAttempt } from "@/app/checkout/order-limits";
+import { takeOrderAttempt } from "@/app/[lang]/checkout/order-limits";
+import {
+  CODES_AN_HOUR,
+  codeLimits,
+  linkKey,
+} from "@/app/[lang]/sign-in/limits";
 import { purgeRateLimits, takeToken } from "@/lib/rate-limit";
 
 import { createTestDb } from "./helpers";
@@ -78,5 +83,44 @@ describe("takeOrderAttempt", () => {
     expect(await attempts("ben", 10)).not.toContain(false);
     expect(await takeOrderAttempt("cora", IP, NOW)).toBe(false);
     expect(await takeOrderAttempt("cora", "198.51.100.1", NOW)).toBe(true);
+  });
+});
+
+describe("sign-in code limits", () => {
+  const minutes = (m: number) => later(m * 60);
+
+  it("texts one number at most 10 codes a day, from any IPs", async () => {
+    const phone = "+639171230000";
+    for (let i = 0; i < 10; i++) {
+      expect(await codeLimits(phone, `10.0.0.${i % 4}`, minutes(i * 20))).toBe(
+        null
+      );
+    }
+    // A reason code the page words in its language (ADR 0019): the day's
+    // cap, so hours to wait.
+    const refused = await codeLimits(phone, "10.0.1.1", minutes(220));
+    expect(refused).toMatchObject({ reason: "too_many" });
+    expect(refused?.reason === "too_many" && refused.minutes).toBeGreaterThan(
+      60
+    );
+    expect(await codeLimits(phone, "10.0.1.1", minutes(24 * 60))).toBe(null);
+  });
+
+  it(`stops texting codes to anyone after ${CODES_AN_HOUR} in an hour`, async () => {
+    for (let i = 0; i < CODES_AN_HOUR; i++) {
+      const n = String(i).padStart(4, "0");
+      expect(
+        await codeLimits(`+63917000${n}`, `10.1.${i % 250}.${i}`, NOW)
+      ).toBe(null);
+    }
+    expect(await codeLimits("+639179999999", "10.2.0.1", NOW)).toEqual({
+      reason: "texts_paused",
+    });
+  }, 30_000); // 800 counter updates
+
+  it("counts one inbox once, however the address is written", () => {
+    expect(linkKey("J.Uan+shop@Gmail.com")).toBe("juan@gmail.com");
+    expect(linkKey("juan@googlemail.com")).toBe("juan@gmail.com");
+    expect(linkKey("j.uan+x@example.com")).toBe("j.uan@example.com");
   });
 });

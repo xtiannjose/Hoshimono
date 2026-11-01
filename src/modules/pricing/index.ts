@@ -16,7 +16,7 @@ export type {
   PriceLine,
   ZoneFees,
 } from "./internal/price-cart";
-export { spreadDiscount, voucherDiscount } from "./internal/discounts";
+export { spreadDiscount } from "./internal/discounts";
 export type { VoucherTerms } from "./internal/discounts";
 export { promotedPrice } from "./internal/promotion-price";
 export type { PromotedPrice, PromotionRule } from "./internal/promotion-price";
@@ -30,15 +30,14 @@ export {
 export type { PromotionInput } from "./internal/promotions";
 export {
   checkVoucher,
+  createCreditVoucher,
   createRewardVoucher,
   getVoucherForAdmin,
   listCustomerVouchers,
   listVouchersForAdmin,
-  normalizeCode,
   redeemVoucher,
   REFERRAL_REWARD_CENTS,
   saveVoucher,
-  VOUCHER_REFUSAL,
 } from "./internal/vouchers";
 export type {
   VoucherCheck,

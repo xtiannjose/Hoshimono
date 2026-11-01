@@ -2,7 +2,8 @@
 // (the senders log instead of sending). A production build only for the
 // end-to-end suite: E2E_MAILBOX=1 and an app URL on localhost. The URL is
 // inlined at build time, so a build for a real domain can never qualify,
-// even if E2E_MAILBOX were set there by mistake.
+// even if E2E_MAILBOX were set there by mistake. Never on Vercel, whatever
+// NODE_ENV says: every deployment there is reachable from the internet.
 
 const localApp = () =>
   /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(
@@ -11,6 +12,7 @@ const localApp = () =>
 
 /** Console email and SMS senders may run (they never reach a person). */
 export function consoleMessagesAllowed(): boolean {
+  if (process.env.VERCEL) return false;
   return (
     process.env.NODE_ENV !== "production" ||
     (process.env.E2E_MAILBOX === "1" && localApp())

@@ -110,10 +110,16 @@ async function Stock({
                   >
                     {r.name}
                   </Link>
-                  {r.low && (
-                    <span className="bg-warn-soft text-warn rounded-pill ml-2 px-2 py-0.5 text-xs font-bold">
-                      Low
+                  {r.short > 0 ? (
+                    <span className="border-err text-err rounded-pill ml-2 border px-2 py-0.5 text-xs font-bold">
+                      {r.short} short
                     </span>
+                  ) : (
+                    r.low && (
+                      <span className="bg-warn-soft text-warn rounded-pill ml-2 px-2 py-0.5 text-xs font-bold">
+                        Low
+                      </span>
+                    )
                   )}
                 </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">

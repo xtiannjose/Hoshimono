@@ -9,8 +9,14 @@ import {
   purgeExpiredHolds,
 } from "@/modules/delivery";
 import { purgeIdleCarts, queueCartReminders } from "@/modules/cart";
+import { purgeEndedSignIns } from "@/modules/identity";
 import { queueStockAlerts } from "@/modules/inventory";
-import { purgeDoneJobs, runDueJobs } from "@/modules/jobs";
+import {
+  CRON_TICK,
+  purgeDoneJobs,
+  recordHeartbeat,
+  runDueJobs,
+} from "@/modules/jobs";
 import { expireUnpaidOrders } from "@/modules/orders";
 import { paymentProvider } from "@/modules/payments";
 
@@ -71,6 +77,9 @@ export async function GET(
     ["rateLimits", () => purgeRateLimits(now)],
     ["carts", () => purgeIdleCarts(now)],
     ["doneJobs", () => purgeDoneJobs(now)],
+    ["signIns", () => purgeEndedSignIns(now)],
+    // For staff to see the cron still runs (/admin/system).
+    ["heartbeat", () => recordHeartbeat(CRON_TICK, now)],
   ];
   for (const [name, step] of steps) {
     try {

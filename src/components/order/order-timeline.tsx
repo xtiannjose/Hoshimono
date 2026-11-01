@@ -4,27 +4,32 @@ import {
   WarningCircleIcon,
 } from "@phosphor-icons/react/ssr";
 
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import { formatDateTime } from "@/lib/dates";
 import type { OrderDetail } from "@/modules/orders";
 
 type Status = OrderDetail["status"];
 
-const STEPS: { status: Status; label: string }[] = [
-  { status: "confirmed", label: "Order confirmed" },
-  { status: "picking", label: "Picking your items" },
-  { status: "picked", label: "Ready for the Rider" },
-  { status: "out_for_delivery", label: "On the way" },
-  { status: "delivered", label: "Delivered" },
-];
+const STEPS = [
+  "confirmed",
+  "picking",
+  "picked",
+  "out_for_delivery",
+  "delivered",
+] as const satisfies Status[];
 
 /** Where the Order is now, with the time each step happened (Manila time). */
 export function OrderTimeline({
   status,
   events,
+  lang,
 }: {
   status: Status;
   events: OrderDetail["events"];
+  lang: Lang;
 }) {
+  const t = MESSAGES[lang].order;
   if (status === "cancelled" || status === "delivery_failed") {
     return (
       <p
@@ -32,22 +37,20 @@ export function OrderTimeline({
         className="rounded-field bg-warn-soft text-warn flex items-center gap-2 px-4 py-3 font-semibold"
       >
         <WarningCircleIcon size={22} aria-hidden />
-        {status === "cancelled"
-          ? "This order was cancelled."
-          : "We could not deliver this order. We will contact you to try again."}
+        {status === "cancelled" ? t.cancelled : t.failed}
       </p>
     );
   }
-  const reached = STEPS.findIndex((s) => s.status === status);
+  const reached = STEPS.findIndex((s) => s === status);
   const at = (s: Status) => events.findLast((e) => e.to === s)?.at;
   return (
-    <ol aria-label="Order progress" className="grid gap-3">
+    <ol aria-label={t.progress} className="grid gap-3">
       {STEPS.map((step, i) => {
         const done = i <= reached;
-        const time = at(step.status);
+        const time = at(step);
         return (
           <li
-            key={step.status}
+            key={step}
             aria-current={i === reached ? "step" : undefined}
             className={`flex items-center gap-3 ${done ? "" : "text-muted-foreground"}`}
           >
@@ -57,12 +60,12 @@ export function OrderTimeline({
               <CircleIcon size={24} aria-hidden />
             )}
             <span className={i === reached ? "font-bold" : ""}>
-              {step.label}
-              {!done && <span className="sr-only"> (not yet)</span>}
+              {t.steps[step]}
+              {!done && <span className="sr-only">{t.notYet}</span>}
             </span>
             {done && time && (
               <span className="text-muted-foreground ml-auto text-sm tabular-nums">
-                {formatDateTime(time)}
+                {formatDateTime(time, lang)}
               </span>
             )}
           </li>

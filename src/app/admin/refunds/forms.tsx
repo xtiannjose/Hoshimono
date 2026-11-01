@@ -6,10 +6,9 @@ import { Button } from "@/components/ui/button";
 
 import { FormMessage } from "../form-message";
 import { settleRefundAction, type RefundFormState } from "./actions";
+import { INLINE_FIELD as FIELD } from "@/components/ui/field-classes";
 
 const initial: RefundFormState = { errors: {} };
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal";
 
 export function SettleRefundForms({ refundId }: { refundId: string }) {
   const [sent, markSent, sending] = useActionState(
@@ -24,8 +23,12 @@ export function SettleRefundForms({ refundId }: { refundId: string }) {
     <div className="grid gap-2">
       <form action={markSent} className="flex flex-wrap items-end gap-2">
         <label className="grid gap-1 text-sm font-semibold">
-          PayMongo refund id (optional)
-          <input name="providerRef" placeholder="ref_..." className={FIELD} />
+          PayMongo refund id, or how it was paid back (optional)
+          <input
+            name="providerRef"
+            placeholder="ref_... or GCash sent by hand, ref 1234"
+            className={FIELD}
+          />
         </label>
         <Button type="submit" size="sm" disabled={sending || retrying}>
           It went through

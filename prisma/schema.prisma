@@ -270,6 +270,7 @@ model Voucher {
   customer         Customer?           @relation(fields: [customerId], references: [id], onDelete: Cascade)
   redemptions      VoucherRedemption[]
   orders           Order[]
+  claims           FreshnessClaim[]
   createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -311,6 +312,62 @@ model ReferralReward {
   @@map("referral_rewards")
 }
 
+// ---------- claims (ADR 0016) ----------
+
+enum ClaimReason {
+  not_fresh
+  damaged
+  missing
+  wrong_item
+}
+
+enum ClaimStatus {
+  open
+  approved
+  rejected
+}
+
+enum ClaimPayback {
+  refund
+  voucher
+}
+
+// A Customer's report on one Order Line within 24 hours of delivery.
+model FreshnessClaim {
+  id            String        @id @default(uuid(7)) @db.Uuid
+  orderId       String        @map("order_id") @db.Uuid
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  orderLineId   String        @unique @map("order_line_id") @db.Uuid
+  orderLine     OrderLine     @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+  customerId    String        @map("customer_id") @db.Uuid
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  reason        ClaimReason
+  /// Items of the line claimed; a weighed line is claimed whole (1).
+  units         Int
+  note          String        @default("")
+  photoUrls     String[]      @default([]) @map("photo_urls")
+  /// Worked out by the server when filed (ADR 0016).
+  claimedCents  Int           @map("claimed_cents")
+  status        ClaimStatus   @default(open)
+  /// What was paid back, and how.
+  resolvedCents Int?          @map("resolved_cents")
+  payback       ClaimPayback?
+  voucherId     String?       @map("voucher_id") @db.Uuid
+  voucher       Voucher?      @relation(fields: [voucherId], references: [id], onDelete: Restrict)
+  refund        Refund?
+  decidedById   String?       @map("decided_by_id") @db.Uuid
+  decidedBy     Staff?        @relation(fields: [decidedById], references: [id], onDelete: Restrict)
+  decidedAt     DateTime?     @map("decided_at") @db.Timestamptz(3)
+  /// Shown to the Customer: why it was rejected or cut down.
+  decisionNote  String        @default("") @map("decision_note")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@map("freshness_claims")
+}
+
 // ---------- delivery ----------
 
 model Hub {
@@ -320,6 +377,11 @@ model Hub {
   lat            Float
   lng            Float
   isActive       Boolean         @default(true) @map("is_active")
+  /// Shown across the shop until noticeUntil, such as "Closed for the typhoon" (docs/runbook.md).
+  notice         String?
+  noticeUntil    DateTime?       @map("notice_until") @db.Timestamptz(3)
+  /// GCash and card off at Checkout, cash on delivery only; unpaid Orders still expire.
+  onlinePaused   Boolean         @default(false) @map("online_paused")
   zones          Zone[]
   slots          Slot[]
   slotTemplates  SlotTemplate[]
@@ -492,7 +554,6 @@ enum OrderStatus {
 
 enum PaymentStatus {
   unpaid
-  authorised
   paid
   partially_refunded
   refunded
@@ -607,7 +668,6 @@ model Order {
   deliveryFeeCents  Int                @map("delivery_fee_cents")
   vatCents          Int                @map("vat_cents")
   totalCents        Int                @map("total_cents")
-  authorisedCents   Int                @default(0) @map("authorised_cents")
   finalTotalCents   Int?               @map("final_total_cents")
   idempotencyKey    String             @unique @map("idempotency_key")
   placedAt          DateTime           @default(now()) @map("placed_at") @db.Timestamptz(3)
@@ -625,6 +685,7 @@ model Order {
   voucher           Voucher?           @relation(fields: [voucherId], references: [id], onDelete: Restrict)
   voucherRedemption VoucherRedemption?
   referralReward    ReferralReward?
+  claims            FreshnessClaim[]
   lines             OrderLine[]
   statusEvents      OrderStatusEvent[]
   payments          Payment[]
@@ -664,6 +725,7 @@ model OrderLine {
   note                   String?
   status                 OrderLineStatus        @default(pending)
   substitutions          Substitution[]
+  claim                  FreshnessClaim?
   createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -791,6 +853,8 @@ enum RefundReason {
   picked
   // Money arrived after the Order was cancelled.
   late_payment
+  // An approved Freshness Claim (ADR 0016): one Refund per claim.
+  claim
 }
 
 enum RefundStatus {
@@ -816,7 +880,13 @@ model Refund {
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   sentAt      DateTime?    @map("sent_at") @db.Timestamptz(3)
 
-  @@unique([paymentId, reason])
+  /// The Freshness Claim it pays back (reason claim).
+  claimId String?         @unique @map("claim_id") @db.Uuid
+  claim   FreshnessClaim? @relation(fields: [claimId], references: [id], onDelete: Restrict)
+
+  // One Refund per Payment and reason, except claims (one per claim): a
+  // partial unique index in the migration, which Prisma cannot express.
+  @@index([paymentId, reason])
   @@map("refunds")
 }
 
@@ -839,6 +909,12 @@ model PaymentEvent {
 
 // ---------- customers and staff ----------
 
+// The shop's languages (ADR 0017).
+enum Lang {
+  en
+  fil
+}
+
 model Customer {
   id             String              @id @default(uuid(7)) @db.Uuid
   // Linked on first sign-in (identity module).
@@ -848,6 +924,10 @@ model Customer {
   email          String?             @unique
   name           String
   marketingOptIn Boolean             @default(false) @map("marketing_opt_in")
+  /// Set by staff for an account that abuses the shop: it can place no Orders.
+  blockedAt      DateTime?           @map("blocked_at") @db.Timestamptz(3)
+  // The language they last shopped in; their messages use it (ADR 0021).
+  lang           Lang                @default(en)
   // Referrals (ADR 0015): their own code, made when first needed, and who
   // invited them.
   referralCode   String?             @unique @map("referral_code")
@@ -858,6 +938,7 @@ model Customer {
   rewardReceived ReferralReward?     @relation("Referee")
   vouchers       Voucher[]
   voucherUses    VoucherRedemption[]
+  claims         FreshnessClaim[]
   addresses      Address[]
   shoppingLists  ShoppingList[]
   stockAlerts    StockAlert[]
@@ -901,24 +982,25 @@ enum StaffRole {
 }
 
 model Staff {
-  id             String          @id @default(uuid(7)) @db.Uuid
-  authUserId     String?         @unique @map("auth_user_id")
-  authUser       AuthUser?       @relation(fields: [authUserId], references: [id], onDelete: SetNull)
-  email          String          @unique
+  id             String           @id @default(uuid(7)) @db.Uuid
+  authUserId     String?          @unique @map("auth_user_id")
+  authUser       AuthUser?        @relation(fields: [authUserId], references: [id], onDelete: SetNull)
+  email          String           @unique
   name           String
   role           StaffRole
-  isActive       Boolean         @default(true) @map("is_active")
+  isActive       Boolean          @default(true) @map("is_active")
   substitutions  Substitution[]
   stockMovements StockMovement[]
   auditLog       AuditLog[]
   orderNotes     OrderNote[]
+  claimsDecided  FreshnessClaim[]
   // A mobile number; a Rider's is shown to the Customer (ADR 0011).
   phone          String?
-  deliveries     Order[]         @relation("OrderRider")
-  handovers      CashHandover[]  @relation("HandoverRider")
-  handoversTaken CashHandover[]  @relation("HandoverCounter")
-  createdAt      DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  deliveries     Order[]          @relation("OrderRider")
+  handovers      CashHandover[]   @relation("HandoverRider")
+  handoversTaken CashHandover[]   @relation("HandoverCounter")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@map("staff")
 }
@@ -1011,12 +1093,23 @@ model AuthVerification {
 
 // ---------- jobs and notifications ----------
 
+// When something that runs on a schedule last ran, such as the cron tick,
+// for staff to see that it still runs (jobs module).
+model Heartbeat {
+  name String   @id
+  at   DateTime @db.Timestamptz(3)
+
+  @@map("heartbeats")
+}
+
 // Outbox for work after a commit (docs/03 section 11): the cron route
 // leases due rows with FOR UPDATE SKIP LOCKED and retries with backoff.
 model Job {
   id        String    @id @default(uuid(7)) @db.Uuid
   kind      String
   payload   Json      @default("{}")
+  /// Higher runs first: Order notices (0) before reminders and alerts (-1).
+  priority  Int       @default(0) @db.SmallInt
   runAt     DateTime  @default(now()) @map("run_at") @db.Timestamptz(3)
   attempts  Int       @default(0)
   lastError String?   @map("last_error")
@@ -1060,4 +1153,24 @@ model RateLimit {
 
   @@index([resetAt])
   @@map("rate_limits")
+}
+
+enum FunnelStep {
+  product_viewed
+  added_to_cart
+  checkout_started
+  order_placed
+
+  @@map("funnel_step")
+}
+
+// The shopping funnel (ADR 0017, src/lib/funnel.ts): how many times each
+// step happened per Manila day. Counts only: nothing about who.
+model FunnelCount {
+  day   DateTime   @db.Date
+  step  FunnelStep
+  count Int        @default(0)
+
+  @@id([day, step])
+  @@map("funnel_counts")
 }

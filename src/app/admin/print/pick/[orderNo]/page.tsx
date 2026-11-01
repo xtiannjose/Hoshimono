@@ -85,7 +85,9 @@ async function PickSheet({ params }: { params: Props["params"] }) {
                 {l.note && <span className="block italic">Note: {l.note}</span>}
               </td>
               <td className="py-2 text-right font-semibold tabular-nums">
-                {l.weighed ? `${l.orderedWeightGrams} g` : `${l.orderedQty}`}
+                {l.weighed
+                  ? `${(l.orderedWeightGrams ?? 0).toLocaleString("en-PH")} g`
+                  : `${l.orderedQty}`}
               </td>
               <td className="py-2 pl-4">
                 {l.weighed ? "No substitute" : IF_MISSING[l.preference]}

@@ -1,3 +1,5 @@
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 import type { UnitPrice } from "@/modules/catalog";
 import { formatMoney, moneyParts } from "@/lib/money";
 
@@ -11,6 +13,7 @@ type Props = {
   muted?: boolean;
   /** Product page shows the full amount at one size. */
   size?: "card" | "page";
+  lang: Lang;
 };
 
 /** Price, compare-at strikethrough and Unit Price, always together (design principle 2). */
@@ -21,7 +24,9 @@ export function PriceTag({
   isWeighed,
   muted = false,
   size = "card",
+  lang,
 }: Props) {
+  const t = MESSAGES[lang].product;
   const onSale = compareAtCents !== null && compareAtCents > priceCents;
   const { whole, fraction } = moneyParts(priceCents);
   const colour = muted ? "text-muted-foreground" : onSale ? "text-sale" : "";
@@ -34,7 +39,7 @@ export function PriceTag({
             : "text-[21px] leading-6"
         } ${colour}`}
       >
-        {isWeighed && <span className="sr-only">About </span>}
+        {isWeighed && <span className="sr-only">{t.about}</span>}
         {size === "page" ? (
           formatMoney(priceCents)
         ) : (
@@ -44,15 +49,15 @@ export function PriceTag({
           </>
         )}
         {onSale && (
-          <s className="text-muted-foreground ml-1.5 font-sans text-[13px] font-medium tracking-normal">
-            <span className="sr-only">was </span>
+          <s className="text-muted-foreground text-fine ml-1.5 font-sans font-medium tracking-normal">
+            <span className="sr-only">{t.was}</span>
             {formatMoney(compareAtCents)}
           </s>
         )}
       </p>
       {unitPrice && (
         <p className="text-muted-foreground text-xs leading-4 tabular-nums">
-          {unitPriceLabel(unitPrice)}
+          {unitPriceLabel(unitPrice, lang)}
         </p>
       )}
     </div>

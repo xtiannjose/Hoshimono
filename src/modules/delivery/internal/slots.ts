@@ -194,3 +194,36 @@ export async function purgeExpiredHolds(now = new Date()): Promise<number> {
   });
   return count;
 }
+
+/**
+ * For the alerting health check: whether any Slot in the next day still
+ * takes Orders. None means the Hub is full or the cron made no Slots.
+ */
+export async function hasOpenSlot(
+  hubId: string,
+  now = new Date()
+): Promise<boolean> {
+  const [{ open }] = await db.$queryRaw<{ open: boolean }[]>`
+    SELECT EXISTS (SELECT 1 FROM slots
+      WHERE hub_id = ${hubId}::uuid AND booked < capacity
+        AND starts_at > ${addMinutes(now, SLOT_CUTOFF_MINUTES)}
+        AND starts_at < ${addDays(now, 1)}
+    ) AS open`;
+  return open;
+}
+
+/**
+ * Close the Hub for a stretch (a typhoon, a power cut): every Slot starting
+ * between `from` and `to` takes no more Orders; those already booked keep
+ * their place. Returns how many Slots were closed.
+ */
+export async function closeSlots(
+  hubId: string,
+  from: Date,
+  to: Date
+): Promise<number> {
+  return db.$executeRaw`
+    UPDATE slots SET capacity = booked, updated_at = now()
+    WHERE hub_id = ${hubId}::uuid AND capacity > booked
+      AND starts_at >= ${from} AND starts_at < ${to}`;
+}

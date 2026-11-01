@@ -29,6 +29,15 @@ describe("test mode", () => {
     expect(consoleMessagesAllowed()).toBe(false);
   });
 
+  it("stays closed on any Vercel deployment, even one built for development", () => {
+    vi.stubEnv("VERCEL", "1");
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("E2E_MAILBOX", "1");
+    vi.stubEnv("NEXT_PUBLIC_APP_URL", "http://localhost:3000");
+    expect(consoleMessagesAllowed()).toBe(false);
+    expect(testMailboxEnabled()).toBe(false);
+  });
+
   it("allows console senders in development, the mailbox only on request", () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("E2E_MAILBOX", "");

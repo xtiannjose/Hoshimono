@@ -154,6 +154,10 @@ _Avoid_: Minimum spend, minimum order value, MOV
 A bookable delivery window at a Hub for a date, with a capacity of Orders. Customer copy says "delivery slot".
 _Avoid_: Timeslot, delivery window, appointment
 
+**Shop Notice**:
+A message staff set for a Hub that every shopper sees across the shop until a chosen time, such as a closure for a typhoon (docs/runbook.md, section 3).
+_Avoid_: Banner, announcement, alert
+
 **Slot Schedule**:
 A Hub's weekly pattern of delivery times (weekday, start, end, capacity) from which each date's Slots are made 7 days ahead. Admin copy calls one entry a "window" ([ADR 0012](docs/adr/0012-stock-slots-reports-receipts.md)).
 _Avoid_: Calling a schedule entry a Slot (a Slot is one date's window)
@@ -211,8 +215,14 @@ Stock taken off the shelf because it spoiled, broke or went missing, always with
 _Avoid_: Wastage, loss (as a stock reason)
 
 **Freshness Claim**:
-A customer's report, within the claim window after delivery, that an Order Line was not fresh or was damaged, resolved by refund or credit.
+A Customer's report, within 24 hours of delivery, that an Order Line was spoiled, damaged, missing or the wrong item. Staff approve it (refund to GCash or card, or a Voucher for a cash Order) or reject it with a reason ([ADR 0016](docs/adr/0016-freshness-claims.md)).
 _Avoid_: Complaint, return, ticket
+
+### Shop
+
+**Funnel**:
+The four shopping steps counted per Manila day: a Product page viewed, an item added to a Cart, a Checkout started and an Order placed. Counts only, never who ([ADR 0017](docs/adr/0017-filipino-pwa-and-funnel.md)).
+_Avoid_: Tracking, analytics events (for these counts), conversion pixel
 
 ### People
 

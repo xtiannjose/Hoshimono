@@ -7,6 +7,7 @@ import {
   createPaymongo,
   handleWebhook,
   listRefundsToCheck,
+  recordPaidByStaff,
   REFUND_JOB,
   refundOrderPayment,
   sendRefund,
@@ -293,6 +294,78 @@ describe("a paid webhook and its Order", () => {
   });
 });
 
+describe("a payment applied twice, or by hand", () => {
+  it("ignores a second paid event for a Payment already paid: no refund", async () => {
+    const { paymentId, sessionId } = await onlinePayment(30000);
+    const first = paidEvent({ sessionId, amount: 30000 });
+    expect(
+      await handleWebhook(paymongo, first, signed(first), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("applied");
+    // A different event id for the same checkout: not a duplicate delivery.
+    const second = paidEvent({ sessionId, amount: 30000 });
+    expect(
+      await handleWebhook(paymongo, second, signed(second), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("recorded");
+    expect(await db.refund.count({ where: { paymentId } })).toBe(0);
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
+    ).toMatchObject({ status: "paid", capturedCents: 30000 });
+  });
+
+  it("lets staff record money PayMongo shows when no webhook applied it", async () => {
+    const { paymentId } = await onlinePayment(41000);
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    expect(
+      await recordPaidByStaff(orderId, "pay_seen_in_dashboard", {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("applied");
+    expect(
+      await db.order.findUniqueOrThrow({ where: { id: orderId } })
+    ).toMatchObject({ status: "confirmed", paymentStatus: "paid" });
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
+    ).toMatchObject({
+      status: "paid",
+      capturedCents: 41000,
+      paymentRef: "pay_seen_in_dashboard",
+    });
+    // Once is enough.
+    expect(
+      await recordPaidByStaff(orderId, "pay_again", {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("not_waiting");
+  });
+
+  it("refunds money staff record for an Order that already closed", async () => {
+    const { paymentId } = await onlinePayment(22000);
+    const { orderId } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+    });
+    await db.order.update({
+      where: { id: orderId },
+      data: { status: "cancelled" },
+    });
+    await db.payment.update({
+      where: { id: paymentId },
+      data: { status: "failed" },
+    });
+    expect(
+      await recordPaidByStaff(orderId, "pay_late", { onPaid: confirmPaidOrder })
+    ).toBe("late");
+    expect(
+      await db.refund.findFirstOrThrow({ where: { paymentId } })
+    ).toMatchObject({ reason: "late_payment", amountCents: 22000 });
+  });
+});
+
 /** Jobs of `kind` whose payload has `key` set to `value`. */
 async function queued(kind: string, key: string, value: string) {
   const jobs = await db.job.findMany({ where: { kind } });
@@ -524,7 +597,6 @@ describe("startCheckout", () => {
         expired.push(ref);
         return "expired";
       },
-      capture: async () => {},
       refund: async () => ({ ok: true, refundRef: "ref_unused" }),
       verifyWebhook: () => false,
       parseEvent: () => {

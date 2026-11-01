@@ -17,7 +17,13 @@ export type {
   ProviderEvent,
 } from "./internal/provider";
 export { paymentProvider } from "./internal/active";
-export { listCashDay, recordCashHandover, riderCashDay } from "./internal/cash";
+export {
+  correctCashHandover,
+  correctCollectedCash,
+  listCashDay,
+  recordCashHandover,
+  riderCashDay,
+} from "./internal/cash";
 export {
   getRefundNotice,
   listRefundsToCheck,
@@ -29,6 +35,9 @@ export {
 } from "./internal/refunds";
 export {
   handleWebhook,
+  listPaymentEvents,
+  paymentsHealth,
+  recordPaidByStaff,
   type WebhookOptions,
   type WebhookResult,
 } from "./internal/webhooks";

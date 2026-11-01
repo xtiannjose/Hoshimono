@@ -12,14 +12,18 @@ const DONE_JOB_RETENTION_DAYS = 30;
 /**
  * Queue work to run after the current transaction commits. Pass the
  * transaction client so the job exists only if the change it follows does.
+ * `low`: marketing (reminders, alerts) waits behind Order notices when the
+ * queue is long.
  */
 export async function enqueueJob(
   client: Client,
   kind: string,
   payload: Prisma.InputJsonObject,
-  runAt = new Date()
+  { runAt = new Date(), low = false }: { runAt?: Date; low?: boolean } = {}
 ): Promise<void> {
-  await client.job.create({ data: { kind, payload, runAt } });
+  await client.job.create({
+    data: { kind, payload, runAt, priority: low ? -1 : 0 },
+  });
 }
 
 export type JobHandlers = Record<
@@ -46,7 +50,7 @@ export async function runDueJobs(
     WHERE id IN (
       SELECT id FROM jobs
       WHERE done_at IS NULL AND run_at <= ${now} AND attempts < ${MAX_ATTEMPTS}
-      ORDER BY run_at
+      ORDER BY priority DESC, run_at
       LIMIT ${limit}
       FOR UPDATE SKIP LOCKED)
     RETURNING id, kind, payload, attempts`;
@@ -87,4 +91,81 @@ export async function purgeDoneJobs(now = new Date()): Promise<number> {
     where: { doneAt: { lt: addDays(now, -DONE_JOB_RETENTION_DAYS) } },
   });
   return count;
+}
+
+/**
+ * For the alerting health check: jobs due more than 10 minutes ago and
+ * still not run (the cron is not ticking), and jobs that gave up today.
+ */
+export async function jobsHealth(
+  now = new Date()
+): Promise<{ behind: number; failed: number }> {
+  const [behind, failed] = await Promise.all([
+    db.job.count({
+      where: {
+        doneAt: null,
+        attempts: { lt: MAX_ATTEMPTS },
+        runAt: { lt: addMinutes(now, -10) },
+      },
+    }),
+    db.job.count({
+      where: {
+        doneAt: null,
+        attempts: { gte: MAX_ATTEMPTS },
+        createdAt: { gt: addDays(now, -1) },
+      },
+    }),
+  ]);
+  return { behind, failed };
+}
+
+/** The heartbeat of the every-minute cron tick (/api/cron/tick). */
+export const CRON_TICK = "cron.tick";
+
+/** Something that runs on a schedule ran now, such as the cron tick. */
+export async function recordHeartbeat(
+  name: string,
+  at = new Date()
+): Promise<void> {
+  await db.heartbeat.upsert({
+    where: { name },
+    create: { name, at },
+    update: { at },
+  });
+}
+
+/** When it last ran, or null if never. */
+export async function lastHeartbeat(name: string): Promise<Date | null> {
+  return (await db.heartbeat.findUnique({ where: { name } }))?.at ?? null;
+}
+
+/**
+ * When the cron last ticked, and whether that is too long ago: it runs
+ * every minute, so five quiet minutes means it stopped.
+ */
+export async function cronStatus(
+  now = new Date()
+): Promise<{ lastAt: Date | null; stopped: boolean }> {
+  const lastAt = await lastHeartbeat(CRON_TICK);
+  return {
+    lastAt,
+    stopped: !lastAt || now.getTime() - lastAt.getTime() > 5 * 60_000,
+  };
+}
+
+/** Jobs not done yet, oldest first: waiting, retrying or given up. */
+export function listOpenJobs(limit = 50) {
+  return db.job.findMany({
+    where: { doneAt: null },
+    orderBy: { runAt: "asc" },
+    take: limit,
+    select: {
+      id: true,
+      kind: true,
+      runAt: true,
+      attempts: true,
+      lastError: true,
+      createdAt: true,
+    },
+  });
 }

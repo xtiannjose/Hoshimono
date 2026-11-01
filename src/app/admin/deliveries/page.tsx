@@ -56,6 +56,11 @@ async function Deliveries() {
                     Note: {s.riderNotes}
                   </p>
                 )}
+                {s.notes.map((note, i) => (
+                  <p key={i} className="text-sm">
+                    <b>From the Hub:</b> {note}
+                  </p>
+                ))}
                 <p className="text-muted-foreground text-sm tabular-nums">
                   {formatSlot(s.slot.startsAt, s.slot.endsAt)}
                 </p>

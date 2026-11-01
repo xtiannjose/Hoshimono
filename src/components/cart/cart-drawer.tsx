@@ -1,13 +1,19 @@
 "use client";
 
 import { TruckIcon, XIcon } from "@phosphor-icons/react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Drawer } from "vaul";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
-import { loadCart, loadDelivery, type DeliveryRow } from "@/app/cart/actions";
+import {
+  loadCart,
+  loadDelivery,
+  type DeliveryRow,
+} from "@/app/[lang]/cart/actions";
 import { ICON_BUTTON, PRIMARY_BUTTON } from "@/components/ui/button-classes";
 import { z } from "@/config/z";
+import { useLang, useMessages } from "@/i18n/client";
+import { formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -31,6 +37,8 @@ const subscribe = (change: () => void) => {
 export default function CartDrawer() {
   const open = useCart((s) => s.open);
   const view = useCart((s) => s.view);
+  const lang = useLang();
+  const t = useMessages();
   const close = () => setCartOpen(false);
   const wide = useSyncExternalStore(
     subscribe,
@@ -80,16 +88,16 @@ export default function CartDrawer() {
           <div className="bg-border-strong mx-auto mt-2 h-[5px] w-10 rounded-full opacity-60 md:hidden" />
           <div className="flex items-center justify-between px-5 pt-3 pb-2 md:pt-5">
             <div className="flex items-baseline gap-2.5">
-              <Drawer.Title className="type-h3">Your cart</Drawer.Title>
+              <Drawer.Title className="type-h3">{t.cart.title}</Drawer.Title>
               {view && view.itemCount > 0 && (
                 <span className="text-muted-foreground text-sm">
-                  {view.itemCount} {view.itemCount === 1 ? "item" : "items"}
+                  {view.itemCount} {t.items(view.itemCount)}
                 </span>
               )}
             </div>
             <Drawer.Close className={`${ICON_BUTTON} bg-muted`}>
               <XIcon size={22} aria-hidden />
-              <span className="sr-only">Close cart</span>
+              <span className="sr-only">{t.cart.close}</span>
             </Drawer.Close>
           </div>
 
@@ -97,8 +105,31 @@ export default function CartDrawer() {
             <div className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
               <TruckIcon size={20} aria-hidden className="shrink-0" />
               <p className="min-w-0 flex-1">
-                <b className="block">{delivery.slot}</b>
-                <span className="text-muted-foreground">{delivery.note}</span>
+                <b className="block">
+                  {delivery.heldUntil
+                    ? formatSlot(
+                        delivery.startsAt,
+                        delivery.endsAt,
+                        undefined,
+                        lang
+                      )
+                    : t.shell.nextSlot(
+                        formatSlot(
+                          delivery.startsAt,
+                          delivery.endsAt,
+                          undefined,
+                          lang
+                        )
+                      )}
+                </b>
+                <span className="text-muted-foreground">
+                  {delivery.heldUntil
+                    ? t.cart.heldUntil(formatTime(delivery.heldUntil))
+                    : t.cart.deliverTo(
+                        delivery.address.label,
+                        delivery.address.barangay
+                      )}
+                </span>
               </p>
               {hasLines && (
                 <Link
@@ -106,14 +137,14 @@ export default function CartDrawer() {
                   onClick={close}
                   className="font-semibold underline underline-offset-[3px]"
                 >
-                  Change
+                  {t.cart.change}
                 </Link>
               )}
             </div>
           ) : delivery === null ? (
             <p className="rounded-field bg-muted mx-5 mb-1 flex items-center gap-3 px-3.5 py-2.5 text-sm">
               <TruckIcon size={20} aria-hidden className="shrink-0" />
-              Same-day delivery in 2-hour slots. Choose yours at checkout.
+              {t.cart.sameDay}
             </p>
           ) : (
             <Skeleton className="rounded-field mx-5 mb-1 h-14" />
@@ -142,14 +173,14 @@ export default function CartDrawer() {
                 aria-disabled={!canCheckout}
                 className={`${PRIMARY_BUTTON} w-full ${canCheckout ? "" : "pointer-events-none opacity-50"}`}
               >
-                Checkout, {formatMoney(view.priced.totalCents)}
+                {t.cart.checkout(formatMoney(view.priced.totalCents))}
               </Link>
               <Link
                 href="/cart"
                 onClick={close}
                 className="text-center text-sm font-semibold underline underline-offset-[3px]"
               >
-                See full cart
+                {t.cart.seeFullCart}
               </Link>
             </div>
           )}

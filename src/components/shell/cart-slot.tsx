@@ -1,4 +1,4 @@
-import { cartContext, readCartOwner } from "@/app/cart/owner";
+import { cartContext, readCartOwner } from "@/app/[lang]/cart/owner";
 import { CartButton, CartSync } from "@/components/cart/cart-button";
 import { getCart } from "@/modules/cart";
 

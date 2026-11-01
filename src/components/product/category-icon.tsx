@@ -1,50 +1,33 @@
 import {
-  AvocadoIcon,
   BasketIcon,
   BreadIcon,
   BroomIcon,
   CarrotIcon,
-  CoffeeIcon,
+  CheeseIcon,
   CookieIcon,
-  CowIcon,
-  DropIcon,
-  EggIcon,
   FishSimpleIcon,
-  GrainsIcon,
-  OrangeSliceIcon,
-  PackageIcon,
+  JarIcon,
+  PintGlassIcon,
   SnowflakeIcon,
 } from "@phosphor-icons/react/ssr";
 import type { IconProps } from "@phosphor-icons/react";
 import type { ComponentType } from "react";
 
-// Placeholder art until Product photography exists (mockup-v2 README).
+// Placeholder art until Product photography exists, one per top-level
+// Category, so a cheese never gets a basket (ADR 0018).
 const ICONS: Record<string, ComponentType<IconProps>> = {
-  "fruit-and-vegetables": OrangeSliceIcon,
-  fruit: OrangeSliceIcon,
-  vegetables: CarrotIcon,
-  "herbs-and-aromatics": AvocadoIcon,
-  "meat-and-fish": CowIcon,
-  pork: CowIcon,
-  chicken: CowIcon,
-  beef: CowIcon,
-  "fish-and-seafood": FishSimpleIcon,
-  "dairy-and-eggs": EggIcon,
-  milk: DropIcon,
-  eggs: EggIcon,
+  "fruit-and-vegetables": CarrotIcon,
+  "meat-and-fish": FishSimpleIcon,
+  "dairy-and-eggs": CheeseIcon,
   bakery: BreadIcon,
-  bread: BreadIcon,
   frozen: SnowflakeIcon,
-  "ice-cream": SnowflakeIcon,
-  pantry: GrainsIcon,
-  rice: GrainsIcon,
-  drinks: CoffeeIcon,
-  "coffee-and-tea": CoffeeIcon,
+  pantry: JarIcon,
+  drinks: PintGlassIcon,
   snacks: CookieIcon,
   household: BroomIcon,
-  "paper-goods": PackageIcon,
 };
 
+/** The icon for a top-level Category slug. */
 export function CategoryIcon({
   slug,
   size = 40,

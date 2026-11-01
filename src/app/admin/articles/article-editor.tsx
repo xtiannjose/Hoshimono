@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { saveArticleAction, type ContentFormState } from "../content/actions";
 import {
   FIELD,
+  INLINE_FIELD,
+  TEXTAREA,
   FieldError,
   Labeled,
   moved,
@@ -93,7 +95,7 @@ export function ArticleEditor({
             rows={3}
             value={intro}
             onChange={(ev) => setIntro(ev.target.value)}
-            className={`${FIELD} py-2`}
+            className={TEXTAREA}
           />
         </Labeled>
       </section>
@@ -137,7 +139,7 @@ export function ArticleEditor({
                       rows={6}
                       value={s.text}
                       onChange={(ev) => patch({ text: ev.target.value })}
-                      className={`${FIELD} py-2`}
+                      className={TEXTAREA}
                     />
                   </Labeled>
                 </div>
@@ -249,7 +251,7 @@ export function ArticleEditor({
             onChange={(ev) =>
               setStatus(ev.target.value as ArticleDraft["status"])
             }
-            className={`${FIELD} w-56`}
+            className={`${INLINE_FIELD} w-56`}
           >
             <option value="draft">Draft: only staff see it</option>
             <option value="published">Published: on the shop</option>

@@ -1,15 +1,15 @@
 "use client";
 
 import { ListPlusIcon } from "@phosphor-icons/react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useActionState, useState } from "react";
 
-import { type ListFormState } from "@/app/account/lists/actions";
+import { type ListFormState } from "@/app/[lang]/account/lists/actions";
 import { formKey } from "@/components/form-key";
 import { Button } from "@/components/ui/button";
+import { FIELD } from "@/components/ui/field-classes";
+import { useLang, useMessages } from "@/i18n/client";
 
-const FIELD =
-  "rounded-field border-input bg-card min-h-11 w-full border px-3 text-base";
 const initial: ListFormState = { errors: {} };
 
 /**
@@ -32,6 +32,8 @@ export function SaveToList({
   const [state, formAction, pending] = useActionState(action, initial);
   const [listId, setListId] = useState(lists[0]?.id ?? "new");
   const error = Object.values(state.errors)[0];
+  const lang = useLang();
+  const t = useMessages().lists;
   return (
     <details className="group">
       <summary className="rounded-pill border-input bg-card hover:bg-muted inline-flex min-h-11 cursor-pointer list-none items-center gap-2 border px-4 font-semibold [&::-webkit-details-marker]:hidden">
@@ -43,10 +45,11 @@ export function SaveToList({
         action={formAction}
         className="mt-3 grid max-w-sm gap-3"
       >
+        <input type="hidden" name="lang" value={lang} />
         {lists.length > 0 && (
           <div className="grid gap-1.5">
             <label htmlFor="list-choice" className="text-sm font-semibold">
-              List
+              {t.choose}
             </label>
             <select
               id="list-choice"
@@ -60,19 +63,19 @@ export function SaveToList({
                   {l.name}
                 </option>
               ))}
-              <option value="new">A new list</option>
+              <option value="new">{t.newList}</option>
             </select>
           </div>
         )}
         {listId === "new" && (
           <div className="grid gap-1.5">
             <label htmlFor="list-name" className="text-sm font-semibold">
-              Name of the new list
+              {t.newListName}
             </label>
             <input
               id="list-name"
               name="name"
-              placeholder="Weekly"
+              placeholder={t.placeholder}
               maxLength={60}
               className={FIELD}
             />
@@ -90,13 +93,13 @@ export function SaveToList({
               href="/account/lists"
               className="underline underline-offset-4"
             >
-              See your lists
+              {t.seeLists}
             </Link>
           </p>
         )}
         <div>
           <Button type="submit" variant="secondary" disabled={pending}>
-            {pending ? "Saving..." : "Save"}
+            {pending ? t.saving : t.save}
           </Button>
         </div>
       </form>

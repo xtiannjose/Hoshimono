@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizePhone } from "./phone";
+import { displayPhone, normalizePhone } from "./phone";
 
 describe("normalizePhone", () => {
   it("accepts the ways people type a PH mobile number", () => {
@@ -24,5 +24,14 @@ describe("normalizePhone", () => {
     ]) {
       expect(normalizePhone(raw), raw).toBeNull();
     }
+  });
+});
+
+describe("displayPhone", () => {
+  it("writes a stored number the way people type it", () => {
+    expect(displayPhone("+639171234567")).toBe("0917 123 4567");
+    // Round trip: what it shows is accepted back.
+    expect(normalizePhone(displayPhone("+639171234567"))).toBe("+639171234567");
+    expect(displayPhone("not a number")).toBe("not a number");
   });
 });

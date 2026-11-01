@@ -10,7 +10,9 @@ test("a Dispatcher moves an Order along with a note, and the Customer sees it", 
   browser,
 }) => {
   // Paolo places a cash-on-delivery Order (his own Cart: see picking.spec).
-  const shopper = await (await browser.newContext()).newPage();
+  const shopper = await (
+    await browser.newContext({ serviceWorkers: "block" })
+  ).newPage();
   await signIn(shopper, "paolo@example.com", "/");
   await shopper.goto("/c/dairy-and-eggs/milk", { waitUntil: "networkidle" });
   await shopper.getByRole("button", { name: "Add Fresh Milk to cart" }).click();
@@ -38,14 +40,16 @@ test("a Dispatcher moves an Order along with a note, and the Customer sees it", 
   const orderNo = shopper.url().split("/").pop()!;
 
   // The Dispatcher sees the queue, and only the queue.
-  const staff = await (await browser.newContext()).newPage();
+  const staff = await (
+    await browser.newContext({ serviceWorkers: "block" })
+  ).newPage();
   await signIn(staff, "dispatcher@hoshimono.test", "/admin");
   const menu = staff.getByRole("navigation", { name: "Admin" });
   await expect(menu.getByRole("link", { name: "Orders" })).toBeVisible();
   await expect(menu.getByRole("link", { name: "Products" })).toHaveCount(0);
   await staff.goto("/admin/products", { waitUntil: "networkidle" });
   await expect(
-    staff.getByRole("heading", { name: "We could not find that page" })
+    staff.getByRole("heading", { name: "We couldn't find that page" })
   ).toBeVisible();
 
   await staff.goto(`/admin/orders?q=${orderNo}`, { waitUntil: "networkidle" });

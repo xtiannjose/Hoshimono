@@ -5,9 +5,15 @@ export type { OrderConfirmedNotice } from "./internal/order-confirmed";
 export { sendRefundIssued } from "./internal/refund-issued";
 export type { RefundNotice } from "./internal/refund-issued";
 export { sendSubstitutionAsked } from "./internal/substitution-asked";
-export { sendDeliveryFailed, sendOutForDelivery } from "./internal/delivery";
+export {
+  sendDeliveryFailed,
+  sendOrderCancelled,
+  sendOutForDelivery,
+} from "./internal/delivery";
 export type { OutForDeliveryNotice } from "./internal/delivery";
 export type { SubstitutionNotice } from "./internal/substitution-asked";
+export { sendClaimDecided } from "./internal/claims";
+export type { ClaimNotice } from "./internal/claims";
 export { lastMessage, lastSignInLink } from "./internal/providers";
 export {
   sendBackInStock,
@@ -21,3 +27,10 @@ export type {
 } from "./internal/retention";
 export { sendSignInCode, sendSignInLink } from "./internal/sign-in";
 export type { EmailProvider, Sent, SmsProvider } from "./internal/providers";
+export { eraseRecipients, messageData } from "./internal/privacy";
+export {
+  sendSlotMoved,
+  sendStaffMessage,
+  sendVoucherGiven,
+} from "./internal/staff-messages";
+export type { VoucherGivenNotice } from "./internal/staff-messages";

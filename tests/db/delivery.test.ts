@@ -15,6 +15,7 @@ import {
   updateZoneFees,
   SLOT_HOLD_MINUTES,
   getSlotHold,
+  hasOpenSlot,
   holdSlot,
   listServiceAreas,
   listSlots,
@@ -479,5 +480,13 @@ describe("Zone fees (ADR 0012)", () => {
     expect((await listZonesForAdmin()).map((z) => z.name)).toContain(
       "Pasig and Mandaluyong"
     );
+  });
+});
+
+describe("hasOpenSlot", () => {
+  it("is false once every Slot in the next day is full", async () => {
+    expect(await hasOpenSlot(HUB, NOW)).toBe(true);
+    await db.$executeRaw`UPDATE slots SET booked = capacity`;
+    expect(await hasOpenSlot(HUB, NOW)).toBe(false);
   });
 });

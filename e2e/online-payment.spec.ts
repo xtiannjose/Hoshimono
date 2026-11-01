@@ -63,7 +63,7 @@ test("a failed GCash payment returns the Cart; paying again confirms the Order",
     timeout: 30_000,
   });
   await expect(
-    page.getByRole("heading", { name: "Your payment did not go through" })
+    page.getByRole("heading", { name: "Your payment didn't go through" })
   ).toBeVisible();
   await page.waitForLoadState("networkidle");
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);

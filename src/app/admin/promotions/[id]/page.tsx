@@ -71,7 +71,7 @@ async function EditPromotion({ params, searchParams }: Props) {
         }}
       />
       <form action={deletePromotionAction.bind(null, promotion.id)}>
-        <Button type="submit" variant="ghost" className="text-err">
+        <Button type="submit" variant="danger">
           Delete Promotion
         </Button>
       </form>

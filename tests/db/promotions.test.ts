@@ -263,14 +263,14 @@ describe("Vouchers (ADR 0015)", () => {
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect(results.find((r) => !r.ok)).toMatchObject({
       reason: "voucher_unavailable",
-      message: "This Voucher has been fully used.",
+      problem: "used_up",
     });
   });
 
   it("refuses a Voucher to a guest", async () => {
     expect(
       await setCartVoucher({ guestToken: "x".repeat(43) }, "SAVE10", NOW)
-    ).toEqual({ ok: false, message: "Sign in to use a Voucher." });
+    ).toEqual({ ok: false, reason: "sign_in" });
   });
 });
 

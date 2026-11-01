@@ -22,17 +22,6 @@ export type VoucherCheck =
   | { ok: true; voucherId: string; terms: VoucherTerms }
   | { ok: false; reason: VoucherRefusal };
 
-/** What to tell the Customer when a Voucher does not apply. */
-export const VOUCHER_REFUSAL: Record<VoucherRefusal, string> = {
-  not_found: "We do not know that code. Check it and try again.",
-  not_started: "This Voucher has not started yet.",
-  ended: "This Voucher has ended.",
-  not_yours: "This Voucher belongs to another account.",
-  first_order_only: "This Voucher is for a first order only.",
-  used_up: "This Voucher has been fully used.",
-  used_by_you: "You have already used this Voucher.",
-};
-
 /** Codes are kept upper case without spaces: "save 10" is "SAVE10". */
 export const normalizeCode = (code: string) =>
   code.toUpperCase().replace(/\s+/g, "");
@@ -146,30 +135,74 @@ export const REFERRAL_REWARD_CENTS = 10000;
 const REWARD_MIN_SPEND_CENTS = 50000;
 const REWARD_DAYS = 60;
 
-/** A personal ₱100 Voucher for a Referral (ADR 0015), in the caller's transaction. */
-export async function createRewardVoucher(
+/** A one-use Voucher for one Customer, in the caller's transaction. */
+async function personalVoucher(
   tx: Prisma.TransactionClient,
-  customerId: string,
-  now = new Date()
+  input: {
+    customerId: string;
+    prefix: string;
+    valueCents: number;
+    minSpendCents: number;
+    days: number;
+    now: Date;
+  }
 ): Promise<{ id: string; code: string; minSpendCents: number; endsAt: Date }> {
   for (;;) {
-    const code = `FRIEND-${randomCode(6)}`;
+    const code = `${input.prefix}-${randomCode(6)}`;
     if (await tx.voucher.count({ where: { code } })) continue;
     return tx.voucher.create({
       data: {
         code,
         kind: "amount",
-        value: REFERRAL_REWARD_CENTS,
-        minSpendCents: REWARD_MIN_SPEND_CENTS,
-        startsAt: now,
-        endsAt: new Date(now.getTime() + REWARD_DAYS * 24 * 60 * 60 * 1000),
+        value: input.valueCents,
+        minSpendCents: input.minSpendCents,
+        startsAt: input.now,
+        endsAt: new Date(
+          input.now.getTime() + input.days * 24 * 60 * 60 * 1000
+        ),
         usageLimit: 1,
         perCustomerLimit: 1,
-        customerId,
+        customerId: input.customerId,
       },
       select: { id: true, code: true, minSpendCents: true, endsAt: true },
     });
   }
+}
+
+/**
+ * Store credit for an approved Freshness Claim on a cash Order (ADR 0016):
+ * the amount off the next order, no minimum spend, 90 days.
+ */
+export function createCreditVoucher(
+  tx: Prisma.TransactionClient,
+  customerId: string,
+  valueCents: number,
+  now = new Date()
+) {
+  return personalVoucher(tx, {
+    customerId,
+    prefix: "CREDIT",
+    valueCents,
+    minSpendCents: 0,
+    days: 90,
+    now,
+  });
+}
+
+/** A personal ₱100 Voucher for a Referral (ADR 0015), in the caller's transaction. */
+export function createRewardVoucher(
+  tx: Prisma.TransactionClient,
+  customerId: string,
+  now = new Date()
+) {
+  return personalVoucher(tx, {
+    customerId,
+    prefix: "FRIEND",
+    valueCents: REFERRAL_REWARD_CENTS,
+    minSpendCents: REWARD_MIN_SPEND_CENTS,
+    days: REWARD_DAYS,
+    now,
+  });
 }
 
 /** A Customer's own Vouchers (Referral rewards), with whether they were used. */

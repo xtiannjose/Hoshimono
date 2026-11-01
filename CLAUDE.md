@@ -16,14 +16,15 @@ Online supermarket (Next.js + TypeScript + Postgres) for Metro Manila. Planning 
 - **Any UI work** read `docs/05-DESIGN-SYSTEM.md` and run the `design-taste-frontend` skill first.
 - **Environment, env vars, scripts** read `docs/06-SETUP.md`.
 - **Which skill fits which job** read `docs/08-TOOLING.md`.
+- **Something broke in operations (stuck payment, wrong refund, Hub shutdown, outage)** read `docs/runbook.md`.
 
 ## Rules that code and config cannot tell you
 
 - **Money is integer centavos** (`PHP 59.00` is `5900`). Format only at the UI edge with `lib/money.ts`. See ADR 0002.
 - **Modules own their tables.** Import another module only through its `index.ts`. Reaching into `modules/x/internal/` from outside `x` is a boundary violation.
 - **Order lines snapshot price, name and tax at checkout.** Catalog edits never rewrite past orders.
-- **Weighed items** (meat, fruit by kg) store an estimated weight at checkout and a final weight at pick. Cards authorise estimate plus 10% and capture the final amount; wallets charge the estimate and refund any difference (`docs/03-ARCHITECTURE.md` section 8).
-- **How a module says no** (ADR 0009): reads return `null`; business refusals return `{ ok: false, reason }`; form checks return `{ ok: false, errors: { field: message } }`; bugs and outages throw and are caught only at the edge.
+- **Weighed Products** (meat, fruit by kg) store an estimated weight at checkout and a final weight at pick. Every online method, cards included, charges the estimate; there are no card holds. At `picked` the Final Total follows what was packed, never above the estimate, and the difference is refunded in one go (ADR 0008).
+- **How a module says no** (ADR 0009): reads return `null`; business refusals return `{ ok: false, reason }`; form checks return `{ ok: false, errors: { field: message } }` (Customer forms return a code per field instead, which the page words in its language, ADR 0019); bugs and outages throw and are caught only at the edge.
 - **Webhooks are idempotent.** Every payment webhook handler dedupes on the provider event id before touching an Order.
 - **Server Components by default.** `"use client"` only for leaf components with state, Motion or browser APIs.
 - **Prices, stock and totals are always recomputed on the server.** Treat client-sent totals as untrusted.

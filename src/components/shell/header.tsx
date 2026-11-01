@@ -1,8 +1,8 @@
 import { UserIcon } from "@phosphor-icons/react/ssr";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { CartButton } from "@/components/cart/cart-button";
+import Link from "@/components/link";
 import { BrandLogo } from "@/components/shell/brand-logo";
 import { CartSlot } from "@/components/shell/cart-slot";
 import { CategoryNav } from "@/components/shell/category-nav";
@@ -10,11 +10,21 @@ import {
   DeliveryButton,
   DeliverySlot,
 } from "@/components/shell/delivery-button";
+import {
+  LanguageLink,
+  LanguageSwitch,
+} from "@/components/shell/language-switch";
 import { SearchBox } from "@/components/shell/search-box";
 import { ThemeToggle } from "@/components/shell/theme-toggle";
 import { z } from "@/config/z";
+import type { Lang } from "@/i18n/lang";
+import { MESSAGES } from "@/i18n/messages";
 
-export function Header() {
+const ROUND =
+  "rounded-pill hover:bg-muted grid size-11 place-items-center text-sm font-bold";
+
+export function Header({ lang }: { lang: Lang }) {
+  const t = MESSAGES[lang].shell;
   return (
     <>
       <header
@@ -30,16 +40,15 @@ export function Header() {
             className="col-span-2 row-start-2 mb-3 md:col-span-1 md:col-start-2 md:row-start-1 md:mb-0"
           />
           <div className="col-start-2 row-start-1 flex items-center gap-1 justify-self-end sm:gap-2 md:col-start-3">
-            <Suspense fallback={<DeliveryButton />}>
-              <DeliverySlot />
+            <Suspense fallback={<DeliveryButton lang={lang} />}>
+              <DeliverySlot lang={lang} />
             </Suspense>
-            <Link
-              href="/account"
-              aria-label="Account"
-              className="rounded-pill hover:bg-muted grid size-11 place-items-center"
-            >
+            <Link href="/account" aria-label={t.account} className={ROUND}>
               <UserIcon size={24} aria-hidden />
             </Link>
+            <Suspense fallback={<LanguageLink className={ROUND} />}>
+              <LanguageSwitch className={ROUND} />
+            </Suspense>
             <ThemeToggle />
             <Suspense fallback={<CartButton />}>
               <CartSlot />
@@ -55,7 +64,7 @@ export function Header() {
         className="md:border-border md:bg-bg/90 md:sticky md:top-18 md:border-b md:backdrop-blur-md md:backdrop-saturate-150 md:motion-reduce:backdrop-blur-none print:hidden"
       >
         <Suspense fallback={<div className="h-16 md:h-12" />}>
-          <CategoryNav />
+          <CategoryNav lang={lang} />
         </Suspense>
       </div>
     </>

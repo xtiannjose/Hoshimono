@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import sharp, { type Metadata } from "sharp";
 
 import { db } from "@/lib/db";
-import { mediaStore } from "@/lib/media";
+import { MAX_IMAGE_PIXELS, mediaStore } from "@/lib/media";
 import { isUuid } from "@/lib/uuid";
 
 const MIN_WIDTH = 1000;
@@ -43,6 +43,8 @@ export async function setContentPhoto(
     return refuse("Use a JPEG, PNG or WebP image.");
   if ((meta.width ?? 0) < MIN_WIDTH)
     return refuse(`Use an image at least ${MIN_WIDTH} pixels wide.`);
+  if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_IMAGE_PIXELS)
+    return refuse("This image is too large. Use one under 50 megapixels.");
 
   const table = kind === "recipe" ? db.recipe : db.article;
   const before = isUuid(id)
@@ -56,7 +58,7 @@ export async function setContentPhoto(
       `That ${kind === "recipe" ? "Recipe" : "Article"} no longer exists.`
     );
 
-  const master = await sharp(file.bytes)
+  const master = await sharp(file.bytes, { limitInputPixels: MAX_IMAGE_PIXELS })
     .rotate() // respect camera orientation
     .resize({ width: MASTER_WIDTH, withoutEnlargement: true })
     .webp({ quality: 82 })

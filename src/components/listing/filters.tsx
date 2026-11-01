@@ -1,6 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/link";
 
 import { Button } from "@/components/ui/button";
+import { getMessages } from "@/i18n/server";
 import type { CategoryNode, ProductFacets } from "@/modules/catalog";
 
 type Props = {
@@ -27,7 +28,7 @@ const OPTION = "flex min-h-11 cursor-pointer items-center gap-3";
 const BOX = "size-5 accent-[var(--ink)]";
 
 /** A plain GET form, so filters work without JavaScript (PRD CAT-2). */
-export function Filters({
+export async function Filters({
   id,
   action,
   sort,
@@ -35,12 +36,13 @@ export function Filters({
   selected,
   subCategories,
 }: Props) {
+  const t = (await getMessages()).listing;
   return (
     <form id={id} action={action} className="grid gap-6">
       {sort !== "featured" && <input type="hidden" name="sort" value={sort} />}
       {subCategories.length > 0 && (
         <div className={GROUP}>
-          <h2 className={HEADING}>Categories</h2>
+          <h2 className={HEADING}>{t.categories}</h2>
           {subCategories.map(({ node, href }) => (
             <Link
               key={node.slug}
@@ -54,27 +56,27 @@ export function Filters({
       )}
       {facets.dietaryTags.length > 0 && (
         <fieldset className={GROUP}>
-          <legend className={HEADING}>Dietary</legend>
-          {facets.dietaryTags.map((t) => (
-            <label key={t.tag} className={OPTION}>
+          <legend className={HEADING}>{t.dietary}</legend>
+          {facets.dietaryTags.map((d) => (
+            <label key={d.tag} className={OPTION}>
               <input
                 type="checkbox"
                 name="diet"
-                value={t.tag}
-                defaultChecked={selected.dietaryTags.includes(t.tag)}
+                value={d.tag}
+                defaultChecked={selected.dietaryTags.includes(d.tag)}
                 className={BOX}
               />
-              {tagLabel(t.tag)}
-              <span className="text-muted-foreground">({t.count})</span>
+              {tagLabel(d.tag)}
+              <span className="text-muted-foreground">({d.count})</span>
             </label>
           ))}
         </fieldset>
       )}
       <fieldset className={GROUP}>
-        <legend className={HEADING}>Price</legend>
+        <legend className={HEADING}>{t.price}</legend>
         <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
           <label className="grid gap-1 text-sm">
-            Min ₱
+            {t.min}
             <input
               name="min"
               inputMode="decimal"
@@ -87,9 +89,9 @@ export function Filters({
               className="rounded-field border-input bg-card h-11 w-full border px-3 text-base"
             />
           </label>
-          <span className="text-muted-foreground pb-3">to</span>
+          <span className="text-muted-foreground pb-3">{t.to}</span>
           <label className="grid gap-1 text-sm">
-            Max ₱
+            {t.max}
             <input
               name="max"
               inputMode="decimal"
@@ -106,7 +108,7 @@ export function Filters({
       </fieldset>
       {facets.brands.length > 0 && (
         <fieldset className={GROUP}>
-          <legend className={HEADING}>Brand</legend>
+          <legend className={HEADING}>{t.brand}</legend>
           {facets.brands.map((b) => (
             <label key={b.name} className={OPTION}>
               <input
@@ -123,12 +125,12 @@ export function Filters({
         </fieldset>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit">Apply filters</Button>
+        <Button type="submit">{t.apply}</Button>
         <Link
           href={action}
           className="inline-flex min-h-12 items-center px-3 font-semibold underline underline-offset-4"
         >
-          Clear filters
+          {t.clear}
         </Link>
       </div>
     </form>

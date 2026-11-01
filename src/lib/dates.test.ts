@@ -36,6 +36,23 @@ describe("dates", () => {
     expect(
       formatSlot(at("2026-10-22T00:00:00Z"), at("2026-10-22T02:00:00Z"), NOW)
     ).toBe("Thu, 22 Oct, 8:00 to 10:00 AM");
+    // Filipino pages (ADR 0017).
+    expect(
+      formatSlot(
+        at("2026-10-22T00:00:00Z"),
+        at("2026-10-22T02:00:00Z"),
+        NOW,
+        "fil"
+      )
+    ).toBe("Huw, 22 Okt, 8:00 hanggang 10:00 AM");
+    expect(
+      slotParts(
+        at("2026-10-20T02:00:00Z"),
+        at("2026-10-20T04:00:00Z"),
+        NOW,
+        "fil"
+      ).day
+    ).toBe("Bukas");
   });
 
   it("writes dates day first, as docs/05 section 8 asks", () => {

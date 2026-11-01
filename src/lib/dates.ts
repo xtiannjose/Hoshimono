@@ -1,5 +1,15 @@
+import type { Lang } from "@/i18n/lang";
+
 // Store UTC, show Asia/Manila (CLAUDE.md). Manila has no daylight saving.
 const ZONE = "Asia/Manila";
+
+// Here, not in the dictionaries: Client Components format dates, and the
+// dictionaries must not all reach the browser.
+const WORDS = {
+  en: { today: "Today", tomorrow: "Tomorrow", to: "to" },
+  fil: { today: "Ngayon", tomorrow: "Bukas", to: "hanggang" },
+};
+const LOCALE = { en: "en-PH", fil: "fil-PH" };
 
 /** `date` moved by `minutes`; negative goes back. */
 export function addMinutes(date: Date, minutes: number): Date {
@@ -28,9 +38,13 @@ const time = new Intl.DateTimeFormat("en-PH", {
   hour12: true,
 });
 
-const parts = (date: Date, options: Intl.DateTimeFormatOptions) => {
+const parts = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+  lang: Lang = "en"
+) => {
   const out: Record<string, string> = {};
-  for (const p of new Intl.DateTimeFormat("en-PH", {
+  for (const p of new Intl.DateTimeFormat(LOCALE[lang], {
     timeZone: ZONE,
     ...options,
   }).formatToParts(date)) {
@@ -39,19 +53,23 @@ const parts = (date: Date, options: Intl.DateTimeFormatOptions) => {
   return out;
 };
 
-/** "Thu, 22 Oct": day before month (docs/05 section 8). */
-function dayLabel(date: Date): string {
-  const p = parts(date, { weekday: "short", day: "numeric", month: "short" });
+/** "Thu, 22 Oct" ("Huw, 22 Okt"): day before month (docs/05 section 8). */
+function dayLabel(date: Date, lang: Lang): string {
+  const p = parts(
+    date,
+    { weekday: "short", day: "numeric", month: "short" },
+    lang
+  );
   return `${p.weekday}, ${p.day} ${p.month}`;
 }
 
-function dayName(date: Date, now: Date): string {
+function dayName(date: Date, now: Date, lang: Lang): string {
   const target = manilaDate(date);
-  if (target === manilaDate(now)) return "Today";
+  if (target === manilaDate(now)) return WORDS[lang].today;
   if (target === manilaDate(addDays(now, 1))) {
-    return "Tomorrow";
+    return WORDS[lang].tomorrow;
   }
-  return dayLabel(date);
+  return dayLabel(date, lang);
 }
 
 const clock = (date: Date) =>
@@ -69,14 +87,15 @@ export function formatTime(date: Date): string {
 export function slotParts(
   startsAt: Date,
   endsAt: Date,
-  now = new Date()
+  now = new Date(),
+  lang: Lang = "en"
 ): { day: string; time: string } {
   const start = clock(startsAt);
   const end = clock(endsAt);
   const sameHalf = start.slice(-2) === end.slice(-2);
   return {
-    day: dayName(startsAt, now),
-    time: `${sameHalf ? start.slice(0, -3) : start} to ${end}`,
+    day: dayName(startsAt, now, lang),
+    time: `${sameHalf ? start.slice(0, -3) : start} ${WORDS[lang].to} ${end}`,
   };
 }
 
@@ -84,22 +103,26 @@ export function slotParts(
 export function formatSlot(
   startsAt: Date,
   endsAt: Date,
-  now = new Date()
+  now = new Date(),
+  lang: Lang = "en"
 ): string {
-  const { day, time } = slotParts(startsAt, endsAt, now);
+  const { day, time } = slotParts(startsAt, endsAt, now, lang);
   return `${day}, ${time}`;
 }
 
-/** "19 Oct 2026, 4:05 PM" in Manila. */
 /** "21 Oct 2026", in Manila. */
-export function formatDate(date: Date): string {
-  const p = parts(date, { day: "numeric", month: "short", year: "numeric" });
+export function formatDate(date: Date, lang: Lang = "en"): string {
+  const p = parts(
+    date,
+    { day: "numeric", month: "short", year: "numeric" },
+    lang
+  );
   return `${p.day} ${p.month} ${p.year}`;
 }
 
-export function formatDateTime(date: Date): string {
-  const p = parts(date, { day: "numeric", month: "short", year: "numeric" });
-  return `${p.day} ${p.month} ${p.year}, ${clock(date)}`;
+/** "19 Oct 2026, 4:05 PM" in Manila. */
+export function formatDateTime(date: Date, lang: Lang = "en"): string {
+  return `${formatDate(date, lang)}, ${clock(date)}`;
 }
 
 /** Day names by JavaScript weekday number (0 is Sunday), as Slot templates store them. */

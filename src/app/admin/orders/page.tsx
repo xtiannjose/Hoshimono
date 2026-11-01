@@ -13,13 +13,12 @@ import { formatMoney } from "@/lib/money";
 import { listOrdersForStaff } from "@/modules/orders";
 
 import { AdminSkeleton, StaffGate } from "../staff-gate";
+import { INLINE_FIELD as FIELD } from "@/components/ui/field-classes";
 
 export const metadata: Metadata = { title: "Orders" };
 
 type Props = PageProps<"/admin/orders">;
 
-const FIELD =
-  "rounded-field border-input bg-card h-11 border px-3 text-base font-normal";
 const STATUSES = Object.keys(ORDER_STATUS_LABEL) as OrderStatus[];
 const PAID_BY = { cod: "Cash", gcash: "GCash", card: "Card" } as const;
 

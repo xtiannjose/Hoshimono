@@ -29,8 +29,8 @@ Create these up front; several take days to approve, so start the payment ones i
 
 | Service                     | For                                                           | Phase   | Notes                                                                                                      |
 | --------------------------- | ------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| GitHub                      | Repo, CI, PRs                                                 | 0       | Private repository                                                                                         |
-| Vercel                      | Hosting, preview deployments                                  | 0       | Connect to the GitHub repo                                                                                 |
+| Git host (GitHub or other)  | Repo, CI, pull requests                                       | 0       | Private repository. None for now: the code lives in Google Drive (section 11)                              |
+| Vercel                      | Hosting, preview deployments                                  | 0       | Connect to the git repository                                                                              |
 | Neon                        | Managed Postgres ([ADR 0005](adr/0005-neon-postgres-host.md)) | 0       | Pick the Singapore region (`ap-southeast-1`) for latency to Manila; use branches for dev, preview and test |
 | Google Cloud Console        | OAuth sign-in, Maps/Places key                                | 0 and 2 | Restrict keys by HTTP referrer and API                                                                     |
 | Resend                      | Transactional email                                           | 2       | Verify your sending domain                                                                                 |
@@ -164,22 +164,26 @@ Sign-in is by magic link or text code, and no email or SMS account exists yet, s
 
 ## 7. Scripts to define in `package.json`
 
-| Script       | Command                                         | Purpose                               |
-| ------------ | ----------------------------------------------- | ------------------------------------- |
-| `dev`        | `next dev`                                      | Dev server                            |
-| `build`      | `next build`                                    | Production build                      |
-| `start`      | `next start`                                    | Run the build                         |
-| `lint`       | `eslint .`                                      | Lint                                  |
-| `typecheck`  | `tsc --noEmit`                                  | Types                                 |
-| `format`     | `prettier --write .`                            | Format                                |
-| `test`       | `vitest run`                                    | Unit and integration tests            |
-| `test:watch` | `vitest`                                        | Watch mode                            |
-| `test:e2e`   | `playwright test`                               | End-to-end tests                      |
-| `db:migrate` | `prisma migrate dev`                            | Create and apply a migration locally  |
-| `db:deploy`  | `prisma migrate deploy`                         | Apply migrations in CI and production |
-| `db:seed`    | `prisma db seed`                                | Seed data                             |
-| `db:studio`  | `prisma studio`                                 | Browse data                           |
-| `check`      | `npm run lint && npm run typecheck && npm test` | The pre-push gate                     |
+| Script             | Command                                         | Purpose                                                                           |
+| ------------------ | ----------------------------------------------- | --------------------------------------------------------------------------------- |
+| `dev`              | `next dev`                                      | Dev server                                                                        |
+| `build`            | `next build`                                    | Production build                                                                  |
+| `start`            | `next start`                                    | Run the build                                                                     |
+| `lint`             | `eslint .`                                      | Lint                                                                              |
+| `typecheck`        | `tsc --noEmit`                                  | Types                                                                             |
+| `format`           | `prettier --write .`                            | Format                                                                            |
+| `test`             | `vitest run`                                    | Unit and integration tests                                                        |
+| `test:watch`       | `vitest`                                        | Watch mode                                                                        |
+| `test:e2e`         | `playwright test`                               | End-to-end tests                                                                  |
+| `db:migrate`       | `prisma migrate dev`                            | Create and apply a migration locally                                              |
+| `db:deploy`        | `prisma migrate deploy`                         | Apply migrations in CI and production                                             |
+| `db:seed`          | `prisma db seed`                                | Seed data (local databases only; a remote dev branch needs `ALLOW_REMOTE_SEED=1`) |
+| `db:studio`        | `prisma studio`                                 | Browse data                                                                       |
+| `db:dry-run`       | `tsx prisma/dry-run.ts`                         | 20 Orders for the Hub dry run (`docs/dry-run.md`)                                 |
+| `db:restore-drill` | `bash scripts/restore-drill.sh`                 | Back up, restore and compare (`docs/backup-restore.md`)                           |
+| `load:checkout`    | `tsx scripts/load-checkout.ts`                  | Checkout load test on `hoshimono_load` (`docs/load-test.md`)                      |
+| `load:pages`       | `tsx scripts/load-pages.mts`                    | Shop pages load test against a running server                                     |
+| `check`            | `npm run lint && npm run typecheck && npm test` | The pre-push gate                                                                 |
 
 ## 8. Git, hooks and CI
 
@@ -192,7 +196,7 @@ Commit only when you are ready (Conventional Commits, for example `chore: scaffo
 
 1. Run the `setup-pre-commit` skill in Claude Code to install Husky, lint-staged (Prettier), type checking and tests on commit.
 2. Agent sessions are guarded by `.claude/hooks/block-dangerous-git.mjs` (installed with the `git-guardrails-claude-code` skill, then narrowed on 2026-10-17 at the owner's request). Agents may push only as `git push [-u] origin <feature-branch>`. Pushes to `main`, force pushes, branch deletes, `reset --hard`, `clean -f`, `branch -D` and `gh pr merge` stay blocked, so the owner merges every pull request. `.claude/hooks/block-dangerous-git.test.mjs` pins these rules (`npm run test:hooks`).
-3. Create the GitHub repository, add the remote, push `main`, enable branch protection (PRs required, CI must pass).
+3. When a git host is chosen (none for now, see section 11): create a private repository, add it as `origin`, push `main`, enable branch protection (pull requests required, CI must pass).
 4. Add `.github/workflows/ci.yml`: install, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`. Add the Playwright job from Phase 2.
 5. Import the repository in Vercel; every pull request now gets a preview deployment.
 
@@ -218,3 +222,25 @@ Phase 0 is only done when all of these pass:
 | Prisma cannot connect                             | Use `sslmode=require`; use `DIRECT_URL` for migrations and the pooled URL for the app            |
 | CRLF warnings from Git                            | Section 1 `core.autocrlf input`; the repo already has `.gitattributes` with `* text=auto eol=lf` |
 | Long paths error on `npm install`                 | `git config --system core.longpaths true` and enable Windows long paths                          |
+
+## 11. Two computers, through Google Drive
+
+There is no git host for now, so the project moves between computers as one file in Google Drive: `hoshimono.bundle`, every branch and commit. It never holds `node_modules`, builds or `.env*` files. Never put the project folder itself in Drive: its packages, caches and git internals sync badly, and `.env.local` holds secrets.
+
+**Make the file** (at the end of each work session): `npm run backup`. With Google Drive for desktop installed it lands straight in `G:\My Drive\Coding Projects\Personal\Hoshimono`; without it, upload `backups/hoshimono.bundle` to that Drive folder by hand. Drive keeps the earlier versions.
+
+**First time on another computer:**
+
+1. Install Git, Node.js (LTS) and Docker Desktop.
+2. Download `hoshimono.bundle` from Drive, then `git clone hoshimono.bundle Hoshimono` and `cd Hoshimono`.
+3. `git switch <branch>` for the newest branch (roadmap section 0 lists them in order).
+4. Copy `.env.example` to `.env.local` and fill it in (section 5), and make `.env.test` for the tests (section 6). Neither is in the bundle. Development secrets can be new ones (`openssl rand -base64 32`).
+5. Start the database container (section 6), then `npm install`, `npm run db:deploy`, `npm run db:seed`.
+6. `git remote add drive "<path to hoshimono.bundle>"`, so later updates are one fetch.
+
+**Each time you switch computers:**
+
+1. On the computer you leave: commit, then `npm run backup` (and upload it if Drive for desktop is not installed).
+2. On the computer you arrive at: download the new `hoshimono.bundle` to the same place, then `git fetch drive` and `git pull drive <branch>`; a new branch is `git switch -c <branch> drive/<branch>` after the fetch. Run `npm install` and `npm run db:deploy` when packages or migrations changed.
+
+Work on one computer at a time: two computers changing the same branch between backups end up with diverging histories that need a merge.

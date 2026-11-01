@@ -1,7 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type { ActorType, OrderStatus } from "@/generated/prisma/enums";
 import { addMinutes } from "@/lib/dates";
-import { db, inTransaction, type Client } from "@/lib/db";
+import { db, inTransaction, retryConflicts, type Client } from "@/lib/db";
 import { returnLinesToCart } from "@/modules/cart";
 import { releaseSlot } from "@/modules/delivery";
 import {
@@ -24,8 +24,10 @@ const NEXT: Record<OrderStatus, OrderStatus[]> = {
   pending_payment: ["confirmed", "cancelled"],
   confirmed: ["picking", "cancelled"],
   picking: ["picked", "cancelled"],
-  picked: ["out_for_delivery"],
-  out_for_delivery: ["delivered", "delivery_failed"],
+  // Cancelling a packed Order puts what was picked back on the shelf.
+  picked: ["out_for_delivery", "cancelled"],
+  // Cancelling on the way: the Rider brings it back (ADR 0022).
+  out_for_delivery: ["delivered", "delivery_failed", "cancelled"],
   delivery_failed: ["out_for_delivery", "cancelled"],
   delivered: [],
   cancelled: [],
@@ -47,6 +49,9 @@ export const ORDER_CONFIRMED_JOB = "order.confirmed";
 /** Job run once an Order is delivered, such as a Referral reward (ADR 0015). */
 export const ORDER_DELIVERED_JOB = "order.delivered";
 
+/** Job that tells the Customer staff cancelled their Order. */
+export const ORDER_CANCELLED_JOB = "order.cancelled";
+
 export type Actor = { type: ActorType; id?: string | null };
 
 /**
@@ -61,85 +66,95 @@ export async function transitionOrder(
   reason?: string,
   options: { from?: OrderStatus[]; client?: Client } = {}
 ): Promise<boolean> {
-  return inTransaction(
-    options.client ?? db,
-    async (tx) => {
-      const [order] = await tx.$queryRaw<
-        { status: OrderStatus; hub_id: string; slot_id: string }[]
-      >`SELECT status, hub_id, slot_id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
-      if (!order || !NEXT[order.status].includes(to)) return false;
-      if (options.from && !options.from.includes(order.status)) return false;
+  const run = () =>
+    inTransaction(
+      options.client ?? db,
+      async (tx) => {
+        const [order] = await tx.$queryRaw<
+          { status: OrderStatus; hub_id: string; slot_id: string }[]
+        >`SELECT status, hub_id, slot_id FROM orders WHERE id = ${orderId}::uuid FOR UPDATE`;
+        if (!order || !NEXT[order.status].includes(to)) return false;
+        if (options.from && !options.from.includes(order.status)) return false;
 
-      const now = new Date();
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: to,
-          cancelledAt: to === "cancelled" ? now : undefined,
-          deliveredAt: to === "delivered" ? now : undefined,
-        },
-      });
-      await tx.orderStatusEvent.create({
-        data: {
-          orderId,
-          from: order.status,
-          to,
-          actorType: actor.type,
-          actorId: actor.id ?? null,
-          reason: reason ?? null,
-          at: now,
-        },
-      });
-      if (to === "cancelled") {
-        // Slot first, then stock: the order placeOrder locks them in, so a
-        // cancel and a checkout cannot deadlock.
-        await releaseSlot(tx, order.slot_id);
-        if (AFTER_PICK.includes(order.status)) {
-          // Already off the shelf count: what was taken goes back (ADR 0012).
-          await returnStock(tx, {
-            hubId: order.hub_id,
+        const now = new Date();
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: to,
+            cancelledAt: to === "cancelled" ? now : undefined,
+            deliveredAt: to === "delivered" ? now : undefined,
+          },
+        });
+        await tx.orderStatusEvent.create({
+          data: {
             orderId,
-            lines: (await stockTaken(tx, orderId)).map((l) => ({
-              productId: l.productId,
-              quantity: l.taken,
-            })),
-          });
-        } else {
-          const lines = await tx.orderLine.findMany({
-            where: { orderId },
-            select: { productId: true, orderedQty: true },
-          });
-          await releaseStock(tx, {
-            hubId: order.hub_id,
-            orderId,
-            lines: lines.map((l) => ({
-              productId: l.productId,
-              quantity: l.orderedQty,
-            })),
-          });
+            from: order.status,
+            to,
+            actorType: actor.type,
+            actorId: actor.id ?? null,
+            reason: reason ?? null,
+            at: now,
+          },
+        });
+        if (to === "cancelled") {
+          // The Customer cancelled it, or watched it expire; staff say so,
+          // queued before any refund so the messages arrive in that order.
+          if (actor.type === "staff") {
+            await enqueueJob(tx, ORDER_CANCELLED_JOB, { orderId });
+          }
+          // Slot first, then stock: the order placeOrder locks them in, so a
+          // cancel and a checkout cannot deadlock.
+          await releaseSlot(tx, order.slot_id);
+          if (AFTER_PICK.includes(order.status)) {
+            // Already off the shelf count: what was taken goes back (ADR 0012).
+            await returnStock(tx, {
+              hubId: order.hub_id,
+              orderId,
+              lines: (await stockTaken(tx, orderId)).map((l) => ({
+                productId: l.productId,
+                quantity: l.taken,
+              })),
+            });
+          } else {
+            const lines = await tx.orderLine.findMany({
+              where: { orderId },
+              select: { productId: true, orderedQty: true },
+            });
+            await releaseStock(tx, {
+              hubId: order.hub_id,
+              orderId,
+              lines: lines.map((l) => ({
+                productId: l.productId,
+                quantity: l.orderedQty,
+              })),
+            });
+          }
+          if (await voidCodPayment(tx, orderId)) {
+            await tx.order.update({
+              where: { id: orderId },
+              data: { paymentStatus: "unpaid" },
+            });
+          } else if ((await refundOrderPayment(tx, orderId, "cancelled")) > 0) {
+            // Paid online: everything still held goes back (ADR 0008).
+            await tx.order.update({
+              where: { id: orderId },
+              data: { paymentStatus: "refunded" },
+            });
+          }
         }
-        if (await voidCodPayment(tx, orderId)) {
-          await tx.order.update({
-            where: { id: orderId },
-            data: { paymentStatus: "unpaid" },
-          });
-        } else if ((await refundOrderPayment(tx, orderId, "cancelled")) > 0) {
-          // Paid online: everything still held goes back (ADR 0008).
-          await tx.order.update({
-            where: { id: orderId },
-            data: { paymentStatus: "refunded" },
-          });
-        }
-      }
-      if (to === "picked") await settlePicked(tx, orderId);
-      if (to === "delivered")
-        await enqueueJob(tx, ORDER_DELIVERED_JOB, { orderId });
-      return true;
-    },
-    // Cancel and pick lock stock rows that checkouts also lock: placeOrder's
-    // 15-second budget, not the 5-second default (ADR 0012).
-    { timeout: 15_000 }
-  );
+        if (to === "picked") await settlePicked(tx, orderId);
+        if (to === "delivered")
+          await enqueueJob(tx, ORDER_DELIVERED_JOB, { orderId });
+        return true;
+      },
+      // Cancel and pick lock stock rows that checkouts also lock: placeOrder's
+      // 15-second budget, not the 5-second default (ADR 0012).
+      { timeout: 15_000 }
+    );
+  // Its own transaction may lose a deadlock to a checkout or another pick
+  // on the same stock: nothing was saved, so it runs again. Inside a
+  // caller's transaction, the caller decides.
+  return options.client ? run() : retryConflicts(run);
 }
 
 // Statuses after picking: the Order's items are off the shelf count.

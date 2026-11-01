@@ -108,9 +108,8 @@ function merge(lines: PickedStock[]): PickedStock[] {
 
 /**
  * Picking is done (ADR 0012): the Order's reservations are released and
- * what was packed leaves the shelf count. A substitute was not reserved,
- * so its count never drops below what other Orders have reserved; the
- * movement records what was actually taken.
+ * what was packed leaves the shelf count, never below 0. The count may
+ * end below what other Orders reserved: they come up short (ADR 0022).
  */
 export async function pickStock(
   tx: Prisma.TransactionClient,
@@ -130,7 +129,8 @@ export async function pickStock(
       throw new Error(`No stock level for ${productId} at hub ${hubId}`);
     // A negative reserved breaks the table check: an accounting bug surfaces.
     const reservedAfter = row.reserved - reserved;
-    const onHandAfter = Math.max(row.on_hand - taken, reservedAfter);
+    // Below 0 only if the count was off: the next count sets it right.
+    const onHandAfter = Math.max(row.on_hand - taken, 0);
     await tx.stockLevel.update({
       where: { productId_hubId: { productId, hubId } },
       data: { reserved: reservedAfter, onHand: onHandAfter },

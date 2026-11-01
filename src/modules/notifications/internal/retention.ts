@@ -1,16 +1,21 @@
+import type { Lang } from "@/i18n/lang";
+
 import {
   emailProvider,
   smsProvider,
   type EmailProvider,
   type SmsProvider,
 } from "./providers";
-import { sendOnce } from "./send-once";
+import { sendAll, sendOnce } from "./send-once";
+import { WORDS } from "./words";
 
 // Cart Reminders and Stock Alerts (ADR 0014).
 
 export type CartReminderNotice = {
   cartId: string;
   email: string;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   name: string;
   /** Product names in the Cart. */
   items: string[];
@@ -26,7 +31,7 @@ export async function sendCartReminder(
   notice: CartReminderNotice,
   providers: { email?: EmailProvider } = {}
 ): Promise<void> {
-  const first = notice.name.split(" ")[0] || "there";
+  const t = WORDS[notice.lang].cartReminder;
   const more = notice.items.length - SHOWN;
   await sendOnce(
     {
@@ -38,15 +43,15 @@ export async function sendCartReminder(
     () =>
       (providers.email ?? emailProvider()).send({
         to: notice.email,
-        subject: "Your cart is waiting",
+        subject: t.subject,
         text: [
-          `Hi ${first}, you left these in your cart:`,
+          t.left(notice.name.split(" ")[0]),
           ...notice.items.slice(0, SHOWN).map((i) => `- ${i}`),
-          ...(more > 0 ? [`and ${more} more`] : []),
+          ...(more > 0 ? [t.more(more)] : []),
           "",
-          `Pick a delivery slot and check out: ${notice.cartUrl}`,
+          t.checkout(notice.cartUrl),
           "",
-          `Do not want these emails? ${notice.stopUrl}`,
+          t.stop(notice.stopUrl),
         ].join("\n"),
       })
   );
@@ -56,6 +61,8 @@ export type StockAlertNotice = {
   alertId: string;
   email: string | null;
   phone: string | null;
+  /** The Customer's language (ADR 0021). */
+  lang: Lang;
   product: string;
   productUrl: string;
 };
@@ -65,35 +72,35 @@ export async function sendBackInStock(
   notice: StockAlertNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
+  const t = WORDS[notice.lang].backInStock;
   const ref = `stock-alert:${notice.alertId}`;
-  const line = `${notice.product} is back in stock.`;
-  if (notice.email) {
-    const email = notice.email;
-    await sendOnce(
-      { template: "back_in_stock", channel: "email", ref, recipient: email },
-      () =>
-        (providers.email ?? emailProvider()).send({
-          to: email,
-          subject: `${notice.product} is back`,
-          text: [
-            `${line} You asked us to tell you.`,
-            "",
-            `Add it to your cart: ${notice.productUrl}`,
-          ].join("\n"),
-        })
-    );
-  }
-  if (notice.phone) {
-    const phone = notice.phone;
-    await sendOnce(
-      { template: "back_in_stock", channel: "sms", ref, recipient: phone },
-      () =>
-        (providers.sms ?? smsProvider()).send({
-          to: phone,
-          text: `Hoshimono: ${line} ${notice.productUrl}`,
-        })
-    );
-  }
+  const line = t.line(notice.product);
+  const { email, phone } = notice;
+  await sendAll([
+    () =>
+      email &&
+      sendOnce(
+        { template: "back_in_stock", channel: "email", ref, recipient: email },
+        () =>
+          (providers.email ?? emailProvider()).send({
+            to: email,
+            subject: t.subject(notice.product),
+            text: [`${line} ${t.asked}`, "", t.add(notice.productUrl)].join(
+              "\n"
+            ),
+          })
+      ),
+    () =>
+      phone &&
+      sendOnce(
+        { template: "back_in_stock", channel: "sms", ref, recipient: phone },
+        () =>
+          (providers.sms ?? smsProvider()).send({
+            to: phone,
+            text: `Hoshimono: ${line} ${notice.productUrl}`,
+          })
+      ),
+  ]);
 }
 
 export type ReferralRewardNotice = {
@@ -102,8 +109,10 @@ export type ReferralRewardNotice = {
   role: "referrer" | "referee";
   email: string | null;
   phone: string | null;
+  /** This person's language (ADR 0021). */
+  lang: Lang;
   name: string;
-  /** The friend's first name, for the referrer's message. */
+  /** The friend's first name, for the referrer's message; empty if none. */
   friend: string;
   code: string;
   /** Formatted, such as "₱100.00". */
@@ -118,12 +127,16 @@ export async function sendReferralReward(
   notice: ReferralRewardNotice,
   providers: { email?: EmailProvider; sms?: SmsProvider } = {}
 ): Promise<void> {
-  const first = notice.name.split(" ")[0] || "there";
+  const words = WORDS[notice.lang];
+  const t = words.referral;
   const why =
-    notice.role === "referrer"
-      ? `${notice.friend} got their first Hoshimono order, thanks to you.`
-      : "Your first Hoshimono order arrived. Welcome!";
-  const what = `Here is ${notice.amount} off your next order: use code ${notice.code} on orders of ${notice.minSpend} or more, until ${notice.until}.`;
+    notice.role === "referrer" ? t.referrer(notice.friend) : t.referee;
+  const what = t.voucher(
+    notice.amount,
+    notice.code,
+    notice.minSpend,
+    notice.until
+  );
   const ref = `referral:${notice.rewardId}:${notice.role}`;
   if (notice.email) {
     const email = notice.email;
@@ -132,8 +145,14 @@ export async function sendReferralReward(
       () =>
         (providers.email ?? emailProvider()).send({
           to: email,
-          subject: `${notice.amount} off your next order`,
-          text: [`Hi ${first},`, why, what, "", notice.shopUrl].join("\n"),
+          subject: t.subject(notice.amount),
+          text: [
+            words.greet(notice.name.split(" ")[0]),
+            why,
+            what,
+            "",
+            notice.shopUrl,
+          ].join("\n"),
         })
     );
   } else if (notice.phone) {

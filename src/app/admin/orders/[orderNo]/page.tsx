@@ -3,22 +3,38 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { CLAIM_STATUS } from "@/components/order/claim-labels";
 import { OrderDetails } from "@/components/order/order-details";
+import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS_LABEL,
 } from "@/components/order/status-labels";
 import type { OrderStatus } from "@/generated/prisma/enums";
-import { formatDateTime } from "@/lib/dates";
+import { formatDateTime, formatSlot } from "@/lib/dates";
+import { claimableLines, listOrderClaims } from "@/modules/claims";
+import { listAddresses } from "@/modules/customers";
+import { listSlots } from "@/modules/delivery";
 import { formatMoney } from "@/lib/money";
+import { currentStaff, staffAreas } from "@/modules/identity";
 import {
   getOrderForStaff,
   MAX_ORDER_NOTE_LENGTH,
   staffMoves,
 } from "@/modules/orders";
 
+import { FileClaimForm } from "../../claims/decision-forms";
 import { AdminSkeleton, StaffGate } from "../../staff-gate";
-import { MoveForm, NoteForm } from "./order-forms";
+import { blockCustomerAction } from "../actions";
+import {
+  ChangeAddressForm,
+  MoveForm,
+  MoveSlotForm,
+  NoteForm,
+  RecordPaymentForm,
+  TextCustomerForm,
+  VoucherForm,
+} from "./order-forms";
 
 export const metadata: Metadata = { title: "Order" };
 
@@ -55,8 +71,37 @@ export default function AdminOrder({ params }: Props) {
 
 async function Order({ params }: { params: Props["params"] }) {
   const { orderNo } = await params;
-  const order = await getOrderForStaff(orderNo);
+  const [order, staff] = await Promise.all([
+    getOrderForStaff(orderNo),
+    currentStaff(),
+  ]);
   if (!order) notFound();
+  // Money tools for those who handle refunds (docs/runbook.md).
+  const money = !!staff && staffAreas(staff.role).includes("refunds");
+  // Claims for a Customer who called in (ADR 0022).
+  const claims =
+    !!staff &&
+    staffAreas(staff.role).includes("claims") &&
+    order.status === "delivered"
+      ? await Promise.all([
+          claimableLines(order.orderNo, order.customerId),
+          listOrderClaims(order.id, order.customerId),
+        ])
+      : null;
+  // Still at the Hub: its Slot and address can change (docs/runbook.md).
+  const atHub = ["confirmed", "picking", "picked", "delivery_failed"].includes(
+    order.status
+  );
+  const [slots, addresses] = atHub
+    ? await Promise.all([
+        listSlots(order.hubId),
+        listAddresses(order.customerId),
+      ])
+    : [[], []];
+  const unpaidOnline =
+    order.payment &&
+    order.payment.method !== "cod" &&
+    (order.payment.status === "unpaid" || order.payment.status === "failed");
   const moves = staffMoves(order.status).map((to) => ({
     to,
     label: MOVE_LABEL[to],
@@ -85,6 +130,28 @@ async function Order({ params }: { params: Props["params"] }) {
             Payment: {PAYMENT_STATUS_LABEL[order.paymentStatus]}
           </span>
         </p>
+        {money && (order.payment?.providerRef || order.payment?.paymentRef) && (
+          <p className="text-muted-foreground text-sm">
+            In PayMongo:{" "}
+            {order.payment.providerRef && (
+              <>
+                checkout{" "}
+                <span className="font-mono select-all">
+                  {order.payment.providerRef}
+                </span>
+              </>
+            )}
+            {order.payment.providerRef && order.payment.paymentRef && ", "}
+            {order.payment.paymentRef && (
+              <>
+                payment{" "}
+                <span className="font-mono select-all">
+                  {order.payment.paymentRef}
+                </span>
+              </>
+            )}
+          </p>
+        )}
       </div>
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -101,6 +168,29 @@ async function Order({ params }: { params: Props["params"] }) {
               </span>
             </p>
             {order.riderNotes && <p>Note for the Rider: {order.riderNotes}</p>}
+            {order.customer.blocked && (
+              <p className="text-err font-semibold">
+                Blocked: this account can place no Orders.
+              </p>
+            )}
+            {money && (
+              <form>
+                <Button
+                  formAction={blockCustomerAction.bind(
+                    null,
+                    order.id,
+                    order.orderNo,
+                    !order.customer.blocked
+                  )}
+                  variant="secondary"
+                  size="sm"
+                >
+                  {order.customer.blocked
+                    ? "Unblock this Customer"
+                    : "Block this Customer from ordering"}
+                </Button>
+              </form>
+            )}
           </section>
           <OrderDetails order={order} />
           <section aria-labelledby="h-history" className={PANEL}>
@@ -128,6 +218,25 @@ async function Order({ params }: { params: Props["params"] }) {
             <h2 id="h-move" className="type-h3">
               Next step
             </h2>
+            {(order.status === "picked" ||
+              order.status === "out_for_delivery") && (
+              <p className="text-muted-foreground">
+                It goes out and is delivered through{" "}
+                <Link
+                  href="/admin/dispatch"
+                  className="font-semibold underline underline-offset-4"
+                >
+                  Dispatch
+                </Link>
+                , with a Rider and the Customer&apos;s PIN.
+              </p>
+            )}
+            {order.status === "out_for_delivery" && (
+              <p className="text-muted-foreground">
+                To cancel it, call the Rider first: they bring it back to the
+                Hub, and what was packed goes back on the shelf.
+              </p>
+            )}
             {moves.length > 0 ? (
               <MoveForm
                 orderId={order.id}
@@ -135,27 +244,16 @@ async function Order({ params }: { params: Props["params"] }) {
                 status={order.status}
                 moves={moves}
               />
-            ) : (
+            ) : order.status === "pending_payment" ? (
               <p className="text-muted-foreground">
-                {order.status === "pending_payment" ? (
-                  "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on."
-                ) : order.status === "picked" ||
-                  order.status === "out_for_delivery" ? (
-                  <>
-                    It goes out and is delivered through{" "}
-                    <Link
-                      href="/admin/dispatch"
-                      className="font-semibold underline underline-offset-4"
-                    >
-                      Dispatch
-                    </Link>
-                    , with a Rider and the Customer&apos;s PIN.
-                  </>
-                ) : (
-                  "Nothing more to do: this Order is closed."
-                )}
+                Waiting for the Customer to pay. The payment, or the 15-minute
+                Payment Window, moves it on.
               </p>
-            )}
+            ) : order.status !== "out_for_delivery" ? (
+              <p className="text-muted-foreground">
+                Nothing more to do: this Order is closed.
+              </p>
+            ) : null}
           </section>
           {order.refunds.length > 0 && (
             <section aria-labelledby="h-refunds" className={PANEL}>
@@ -169,6 +267,12 @@ async function Order({ params }: { params: Props["params"] }) {
                       {r.reason.replaceAll("_", " ")}
                       <span className="text-muted-foreground block text-sm">
                         {REFUND_STATUS[r.status]}
+                        {r.providerRef && (
+                          <span className="font-mono select-all">
+                            {" "}
+                            {r.providerRef}
+                          </span>
+                        )}
                       </span>
                     </span>
                     <span className="tabular-nums">
@@ -179,6 +283,106 @@ async function Order({ params }: { params: Props["params"] }) {
               </ul>
             </section>
           )}
+          {claims && (
+            <section aria-labelledby="h-claims" className={PANEL}>
+              <h2 id="h-claims" className="type-h3">
+                Freshness Claims
+              </h2>
+              {claims[1].length > 0 && (
+                <ul className="grid gap-2">
+                  {claims[1].map((c) => (
+                    <li key={c.id} className="flex justify-between gap-3">
+                      <Link
+                        href={`/admin/claims/${c.id}`}
+                        className="font-semibold hover:underline"
+                      >
+                        {c.orderLine.nameSnapshot}
+                      </Link>
+                      <span className="text-muted-foreground text-sm">
+                        {CLAIM_STATUS[c.status]}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {claims[0]?.lines.some((l) => !l.claim && l.units > 0) ? (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    The Customer called or wrote in? File it for them, any time
+                    after delivery. You decide it next.
+                  </p>
+                  <FileClaimForm
+                    orderNo={order.orderNo}
+                    lines={claims[0].lines
+                      .filter((l) => !l.claim && l.units > 0)
+                      .map((l) => ({
+                        id: l.id,
+                        label: `${l.name} (up to ${l.units}, ${formatMoney(l.amountCents)})`,
+                      }))}
+                  />
+                </>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Every item already has a claim.
+                </p>
+              )}
+            </section>
+          )}
+          {money && unpaidOnline && (
+            <section aria-labelledby="h-paid" className={PANEL}>
+              <h2 id="h-paid" className="type-h3">
+                Paid in PayMongo?
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                If PayMongo shows this Order paid but it still waits here,
+                record it. An Order that closed meanwhile gets the money back as
+                a refund.
+              </p>
+              <RecordPaymentForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                amount={formatMoney(order.payment!.amountCents)}
+              />
+            </section>
+          )}
+          {atHub && (
+            <section aria-labelledby="h-delivery" className={PANEL}>
+              <h2 id="h-delivery" className="type-h3">
+                Delivery
+              </h2>
+              <MoveSlotForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                slots={slots
+                  .filter(
+                    (s) =>
+                      s.state !== "full" &&
+                      s.startsAt.getTime() !== order.slot.startsAt.getTime()
+                  )
+                  .map((s) => ({
+                    id: s.id,
+                    label: formatSlot(s.startsAt, s.endsAt),
+                  }))}
+              />
+              <ChangeAddressForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                addresses={addresses.map((a) => ({
+                  id: a.id,
+                  label: `${a.label}: ${a.line1}, ${a.barangay}`,
+                }))}
+              />
+            </section>
+          )}
+          <section aria-labelledby="h-contact" className={PANEL}>
+            <h2 id="h-contact" className="type-h3">
+              Customer contact
+            </h2>
+            <TextCustomerForm orderId={order.id} orderNo={order.orderNo} />
+            {money && (
+              <VoucherForm orderId={order.id} orderNo={order.orderNo} />
+            )}
+          </section>
           <section aria-labelledby="h-notes" className={PANEL}>
             <h2 id="h-notes" className="type-h3">
               Notes
