@@ -855,6 +855,9 @@ enum RefundReason {
   late_payment
   // An approved Freshness Claim (ADR 0016): one Refund per claim.
   claim
+  // Recorded by staff: paid back outside the app, in the provider's
+  // dashboard, in cash or by transfer (ADR 0023). Any number per Payment.
+  staff
 }
 
 enum RefundStatus {
@@ -876,6 +879,9 @@ model Refund {
   reason      RefundReason
   status      RefundStatus @default(pending)
   providerRef String?      @map("provider_ref")
+  /// How staff paid it back outside the provider (cash, a transfer by
+  /// hand). Set, the Customer gets no GCash or card refund message.
+  paidBackBy  String?      @map("paid_back_by")
   lastError   String?      @map("last_error")
   createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
   sentAt      DateTime?    @map("sent_at") @db.Timestamptz(3)

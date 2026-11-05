@@ -120,11 +120,11 @@ async function Cash({ searchParams }: { searchParams: Props["searchParams"] }) {
                 ) : (
                   <CountCashForm riderId={r.riderId} day={day} />
                 )}
-                {d.handover ? (
+                {d.handover && (
                   <CorrectCountForm riderId={r.riderId} day={day} />
-                ) : (
-                  <CorrectOrderCashForm orders={d.orders} />
                 )}
+                {/* After the count too: the recorded total follows (ADR 0023). */}
+                <CorrectOrderCashForm orders={d.orders} />
               </li>
             );
           })}

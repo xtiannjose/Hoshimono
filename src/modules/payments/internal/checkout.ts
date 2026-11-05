@@ -1,3 +1,4 @@
+import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 
 import type { PaymentProvider } from "./provider";
@@ -49,6 +50,21 @@ export async function startCheckout(
     select: { checkoutUrl: true },
   });
   return kept.checkoutUrl;
+}
+
+/**
+ * An unpaid online Payment fails, in the caller's transaction: no paid
+ * event can confirm its Order now; money that arrives is refunded as late.
+ * Staff use it when the provider charged a different amount (ADR 0023).
+ */
+export async function failUnpaidPayment(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<void> {
+  await tx.payment.updateMany({
+    where: { orderId, method: { not: "cod" }, status: "unpaid" },
+    data: { status: "failed" },
+  });
 }
 
 /**

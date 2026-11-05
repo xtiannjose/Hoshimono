@@ -11,7 +11,11 @@ import { recordAudits, requireStaff } from "@/modules/identity";
 import { runDueJobs } from "@/modules/jobs";
 import { formatDate, formatSlot, formatTime } from "@/lib/dates";
 import { formatMoney, parseMoney } from "@/lib/money";
-import { setCustomerBlocked } from "@/modules/customers";
+import {
+  saveAddress,
+  setCustomerBlocked,
+  type AddressProblem,
+} from "@/modules/customers";
 import {
   sendSlotMoved,
   sendStaffMessage,
@@ -19,11 +23,13 @@ import {
 } from "@/modules/notifications";
 import {
   addOrderNote,
+  cancelUnpaidByStaff,
   changeOrderAddress,
   confirmPaidOrder,
   finishPicking,
   getOrderForNotice,
   moveOrderSlot,
+  recordRefundByStaff,
   staffMoves,
   transitionOrder,
 } from "@/modules/orders";
@@ -37,7 +43,12 @@ import { adminWrite } from "../admin-write";
 export type OrderFormState = {
   errors: Record<string, string>;
   saved?: boolean;
+  /** What was typed, refilled after an error (React clears the form). */
+  values?: Record<string, string>;
 };
+
+const typed = (fd: FormData, names: string[]) =>
+  Object.fromEntries(names.map((n) => [n, String(fd.get(n) ?? "")]));
 
 // Moves that need a reason, for the history and the Customer's questions.
 const NEEDS_REASON: OrderStatus[] = ["cancelled", "delivery_failed"];
@@ -427,4 +438,160 @@ export async function blockCustomerAction(
     },
   ]);
   refresh();
+}
+
+/**
+ * Money already given back outside the app (ADR 0023): a refund made in
+ * PayMongo's dashboard, or cash or a transfer. Audited, with an Order Note.
+ */
+export async function recordRefundAction(
+  orderId: string,
+  orderNo: string,
+  _prev: OrderFormState,
+  fd: FormData
+): Promise<OrderFormState> {
+  const staff = await requireStaff("refunds", `/admin/orders/${orderNo}`);
+  const input = {
+    amountCents: parseMoney(String(fd.get("amount") ?? "")) ?? Number.NaN,
+    providerRef: String(fd.get("providerRef") ?? ""),
+    paidBackBy: String(fd.get("paidBackBy") ?? ""),
+  };
+  const result = await recordRefundByStaff(orderId, input);
+  if (!result.ok)
+    return {
+      errors: result.errors,
+      values: typed(fd, ["amount", "providerRef", "paidBackBy"]),
+    };
+  const how = input.paidBackBy.trim() || `PayMongo ${input.providerRef.trim()}`;
+  await addOrderNote(
+    orderId,
+    staff.id,
+    `Recorded ${formatMoney(input.amountCents)} given back: ${how}.`
+  );
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "refund_recorded",
+      entity: "order",
+      entityId: orderId,
+      after: input,
+    },
+  ]);
+  after(() => runDueJobs(jobHandlers).then(() => undefined));
+  refresh();
+  return { errors: {}, saved: true };
+}
+
+/**
+ * PayMongo charged a different amount and it was refunded in its
+ * dashboard: close the Order still waiting for payment (ADR 0023), audited.
+ */
+export async function cancelUnpaidAction(
+  orderId: string,
+  orderNo: string,
+  _prev: OrderFormState,
+  fd: FormData
+): Promise<OrderFormState> {
+  const staff = await requireStaff("refunds", `/admin/orders/${orderNo}`);
+  if (fd.get("refunded") !== "on") {
+    return {
+      errors: {
+        refunded: "Refund it in PayMongo's dashboard first, then tick the box.",
+      },
+    };
+  }
+  const reason = String(fd.get("reason") ?? "");
+  const result = await cancelUnpaidByStaff(orderId, staff.id, reason);
+  if (!result.ok) {
+    return "errors" in result
+      ? { errors: result.errors }
+      : {
+          errors: {
+            form: "It is no longer waiting for payment. Reload to see where it is.",
+          },
+        };
+  }
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "status",
+      entity: "order",
+      entityId: orderId,
+      before: { status: "pending_payment" },
+      after: { status: "cancelled", reason },
+    },
+  ]);
+  after(() => runDueJobs(jobHandlers).then(() => undefined));
+  refresh();
+  return { errors: {}, saved: true };
+}
+
+const ADDRESS_PROBLEM: Record<AddressProblem, string> = {
+  no_label: "Give the address a name.",
+  no_street: "Enter the house or unit number and street.",
+  no_barangay: "Enter the barangay.",
+  no_city: "Choose the city.",
+  no_landmark: "Enter a landmark the Rider can look for.",
+  too_long: "That is too long.",
+  not_served: "No Zone delivers there.",
+  not_found: "That address is gone.",
+  too_many: "The Customer has 10 addresses: change to one of them.",
+  invalid: "Check the address.",
+};
+
+/**
+ * Staff type a new address the Customer gives by phone: it is saved to
+ * their addresses and the Order goes there (ADR 0023), at the Delivery
+ * Fee it was placed with. Audited, with an Order Note.
+ */
+export async function newAddressAction(
+  orderId: string,
+  orderNo: string,
+  _prev: OrderFormState,
+  fd: FormData
+): Promise<OrderFormState> {
+  const staff = await requireStaff("orders", `/admin/orders/${orderNo}`);
+  const order = await getOrderForNotice(orderId);
+  if (!order) return { errors: { form: "This Order no longer exists." } };
+  const field = (name: string) => String(fd.get(name) ?? "");
+  const saved = await saveAddress(order.customerId, {
+    label: field("label"),
+    line1: field("line1"),
+    barangay: field("barangay"),
+    city: field("city"),
+    landmark: field("landmark"),
+  });
+  const values = typed(fd, ["line1", "city", "barangay", "landmark", "label"]);
+  if (!saved.ok) {
+    const [name, problem] = Object.entries(saved.errors)[0];
+    return { errors: { [name]: ADDRESS_PROBLEM[problem!] }, values };
+  }
+  const moved = await changeOrderAddress(orderId, saved.address.id);
+  if (!moved.ok) {
+    return {
+      errors: {
+        form:
+          moved.reason === "other_hub"
+            ? "Saved to their addresses, but another Hub delivers there: cancel, and the Customer orders again."
+            : "Saved to their addresses, but this Order has left the Hub.",
+      },
+      values,
+    };
+  }
+  await addOrderNote(
+    orderId,
+    staff.id,
+    "Delivery address changed (typed by staff)."
+  );
+  await recordAudits([
+    {
+      staffId: staff.id,
+      action: "address",
+      entity: "order",
+      entityId: orderId,
+      after: { addressId: saved.address.id },
+    },
+  ]);
+  refresh();
+  return { errors: {}, saved: true };
 }

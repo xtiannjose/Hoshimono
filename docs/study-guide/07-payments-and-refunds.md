@@ -2,7 +2,7 @@
 
 "Checkout and payment webhooks must never double-charge or lose an Order" (PRD section 7). This chapter shows how Hoshimono takes cash on delivery and online payments through PayMongo, how it learns that a payment went through, what happens when it does not, and how money goes back, exactly once.
 
-Words used here: [Payment, Payment Event, Refund, Final Total, Payment Window, Cash Handover](../../GLOSSARY.md#buying). Decisions: [ADR 0003](../adr/0003-payment-provider-interface.md) (the provider interface and PayMongo) and [ADR 0008](../adr/0008-weighed-items-online-and-refunds.md) (weighed items and refunds).
+Words used here: [Payment, Payment Event, Refund, Final Total, Payment Window, Cash Handover](../../GLOSSARY.md#buying). Decisions: [ADR 0003](../adr/0003-payment-provider-interface.md) (the provider interface and PayMongo) and [ADR 0008](../adr/0008-weighed-items-online-and-refunds.md) (weighed items and refunds); [ADR 0023](../adr/0023-money-given-back-outside-the-app.md) adds money staff give back outside the app.
 
 ## 7.1 The Payment record
 
@@ -122,7 +122,7 @@ A **webhook** is a message the provider sends to our server, on its own, when so
 2. **Record the event exactly once.** In a transaction, insert the raw event into `payment_events` with `skipDuplicates`. The table has a unique constraint on (provider, provider event id), so a repeat of the same event, even one arriving at the same instant, inserts nothing. Then the answer is `duplicate` and nothing else happens. This is what makes webhooks **idempotent**: delivering the same message ten times has the effect of delivering it once. (Providers retry webhooks until they get a 200, so repeats are normal.)
 3. **Find the Payment** by the checkout id. None: keep the event, unprocessed, for a person to look at (`unmatched`).
 4. **Ignore anything that is not a payment** (`recorded`): the event is kept, nothing changes.
-5. **Check the amount.** If the paid amount differs from what the Payment asked for, refuse to mark it paid (`mismatch`) and log it loudly.
+5. **Check the amount.** If the paid amount differs from what the Payment asked for, refuse to mark it paid (`mismatch`) and log it loudly. What staff do next is in section 7.6.
 6. **Mark the Payment paid**: status `paid`, `captured_cents`, and `payment_ref` (needed later for refunds). Mark the event processed.
 7. **Confirm the Order in the same transaction.** `confirmPaidOrder` moves the Order from `pending_payment` to `confirmed` through `transitionOrder`, sets its payment status to `paid`, and queues `order.confirmed`. Because it runs inside the webhook's transaction, the Payment and the Order change together or not at all.
 8. **Late money.** If the Order was no longer waiting (the Payment Window had already cancelled it), `confirmPaidOrder` answers `late`, and the money goes straight back: a full refund with reason `late_payment`.
@@ -142,7 +142,9 @@ The Customer comes back to a Cart with everything still in it.
 
 ## 7.6 Giving up on paying
 
-"Back to cart" on the pay page (`backToCartAction`), and "Cancel" on the Order page for an unpaid Order, call `orders.abandonPayment`. It runs the same two steps as the Payment Window, at once, for that one Order. If PayMongo refuses to close the checkout because a payment is going through, the page says so and waits for the webhook. The ordinary `cancelOrder` only accepts `confirmed` Orders, so no path can cancel an unpaid Order while its checkout is still open.
+"Back to cart" on the pay page (`backToCartAction`), and "Cancel" on the Order page for an unpaid Order, call `orders.abandonPayment`. It runs the same two steps as the Payment Window, at once, for that one Order. If PayMongo refuses to close the checkout because a payment is going through, the page says so and waits for the webhook. The ordinary `cancelOrder` only accepts `confirmed` Orders, so no path can cancel an unpaid Order while its checkout is still open, with one exception.
+
+**When PayMongo took a different amount** (the `mismatch` above), the Order would wait forever: PayMongo will not close a paid checkout, and the app will not confirm the wrong amount. An Admin refunds it in PayMongo's dashboard, then closes the Order from its admin page, with a reason for the History (`orders.cancelUnpaidByStaff`, [ADR 0023](../adr/0023-money-given-back-outside-the-app.md)). It runs the same `cancelUnpaid` as the Payment Window, and also marks the Payment `failed` (`payments.failUnpaidPayment`), so no paid event can confirm it later. If the right amount does arrive, it is refunded as `late_payment`, like money for any closed Order. The lines go back to the Cart and the Customer gets the cancel notice.
 
 ## 7.7 Weighed items paid online
 
@@ -166,8 +168,9 @@ A refund is money we cannot take back once sent, and a provider can fail in ways
 | `picked`       | Picking finishes and the Final Total is below what was paid             | The difference                          | `settlePicked` in `status.ts`                |
 | `late_payment` | Money arrives for an Order already cancelled                            | All of it                               | `handleWebhook` in `webhooks.ts`             |
 | `claim`        | A Freshness Claim is approved on an online Order                        | The approved amount, up to what is left | `decideClaim` in `claims/internal/decide.ts` |
+| `staff`        | Staff record money already given back outside the app                   | What they type, up to what is left      | `recordStaffRefund` in `refunds.ts`          |
 
-COD Orders have no online Payment, so these triggers find nothing to refund for them (`refundOrderPayment` returns 0). A cash Order's approved claim becomes a Voucher instead (chapter 9).
+COD Orders have no online Payment, so the first four triggers find nothing to refund for them (`refundOrderPayment` returns 0). A cash Order's approved claim becomes a Voucher instead (chapter 9). Only `staff` can be recorded on a cash Order (below).
 
 ### Step 1: record what is owed, inside the triggering transaction
 
@@ -175,7 +178,7 @@ COD Orders have no online Payment, so these triggers find nothing to refund for 
 
 1. **Lock the Payment row** (`FOR UPDATE`), so two triggers at once cannot both take the same remainder.
 2. Work out what is left: `captured_cents - refunded_cents`. The refund is the smaller of the amount asked and what is left. Nothing left: return 0.
-3. **Insert a `refunds` row** (status `pending`) with `skipDuplicates`. The database allows only one refund per Payment and reason (and, for claims, one per claim), so a trigger that fires twice records one refund.
+3. **Insert a `refunds` row** (status `pending`) with `skipDuplicates`. The database allows only one refund per Payment and reason (for claims, one per claim; for `staff`, any number), so a trigger that fires twice records one refund.
 4. Raise `refunded_cents` and set the Payment to `refunded` or `partially_refunded`. The database check `refunded_cents <= captured_cents` makes refunding more than was paid impossible.
 5. **Queue the `payment.refund` job** in the same transaction.
 
@@ -191,7 +194,7 @@ Because all this is in the trigger's transaction, a refund is owed if and only i
    - **Success**: mark `sent` with PayMongo's refund id and the time.
    - **A clear no** (PayMongo answered 4xx, such as insufficient payout balance): put it back to `pending` with the reason and throw, so the job retries later (1, 4, 9, 16 minutes).
    - **No clear answer** (a network error, a 5xx): mark **`needs_review`** with the error. Never resend.
-4. Then the job tells the Customer by email and SMS (`sendRefundIssued`), once. A claim's refund is told in the claim's own message instead.
+4. Then the job tells the Customer by email and SMS (`sendRefundIssued`), once. A claim's refund is told in the claim's own message instead. A refund paid back another way (it has `paid_back_by`, below) gets no message at all.
 
 ```mermaid
 stateDiagram-v2
@@ -200,7 +203,7 @@ stateDiagram-v2
     sending --> sent: provider says yes
     sending --> pending: provider says a clear no (retry later)
     sending --> needs_review: no clear answer, or a run cut off
-    needs_review --> sent: a person confirms it went through
+    needs_review --> sent: a person confirms it went through, or was paid back another way
     needs_review --> pending: a person says send again
     sent --> [*]
 ```
@@ -239,17 +242,30 @@ sequenceDiagram
 
 ### Step 3: a person checks the unclear ones
 
-Admins see `/admin/refunds` ("Refunds to check"): every refund marked `needs_review`, and every one still `pending` with an error after its retries (`listRefundsToCheck`). Each shows the PayMongo payment id to look up in PayMongo's dashboard. Since 29 October the Order page shows the same to Admins: "In PayMongo: checkout ..., payment ..." under the status line, and each sent refund's PayMongo refund id ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)). Two buttons (`settleRefund`):
+Admins see `/admin/refunds` ("Refunds to check"): every refund marked `needs_review`, and every one still `pending` with an error after its retries (`listRefundsToCheck`). Each shows the PayMongo payment id to look up in PayMongo's dashboard. Since 29 October the Order page shows the same to Admins: "In PayMongo: checkout ..., payment ..." under the status line, and each sent refund's PayMongo refund id ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)). Three answers (`settleRefund`):
 
 - **"It went through"**: mark it `sent` (optionally with PayMongo's refund id); the job then tells the Customer.
-- **"Send again"**: put it back to `pending`; the job sends it.
+- **"It did not: send again"**: put it back to `pending`; the job sends it.
+- **"Paid back another way"**: the person says how (required), such as "GCash sent by hand". It is marked `sent` with that in `paid_back_by`, and the Customer gets no GCash or card message; staff text them. Before [ADR 0023](../adr/0023-money-given-back-outside-the-app.md), "It went through" was the only way to clear it, and it texted the Customer that the money went to their GCash or card when it had not.
 
 What staff do on this screen, step by step, is in the [runbook](../runbook.md), section 2c.
+
+### Money given back outside the app
+
+Sometimes the money goes back without the app: a refund an Admin makes in PayMongo's dashboard, or cash or a transfer by hand. Since 29 October an Admin records it from the Order page (`recordStaffRefund`, [ADR 0023](../adr/0023-money-given-back-outside-the-app.md)):
+
+- It is a `refunds` row with reason `staff`, already `sent`. The app never sends this money; it only keeps the record.
+- It holds either PayMongo's refund id (`provider_ref`) or how it was paid back (`paid_back_by`, such as "Cash with the next delivery").
+- It locks the Payment and raises `refunded_cents` like any refund, so the total can never pass what was taken.
+- On a GCash or card Payment, the status follows: `partially_refunded` or `refunded`. A cash Payment stays `cod_collected`, so the Rider's cash count does not change.
+- A dashboard refund queues `payment.refund`. The job finds it already sent and only tells the Customer, once per refund.
+- One paid another way gets no message, because the app cannot say how it went. Staff text the Customer.
+- Like every refund, it cannot be undone in the app, so staff record it only after the money went.
 
 ## 7.9 What the Customer sees
 
 - On the Order page: the estimated total with a note while weighed Products are not yet weighed, then the Final Total once it differs, and the amount refunded to GCash or card.
-- An email and SMS for each refund sent (except claims, which have their own message).
+- An email and SMS for each refund sent (except claims, which have their own message, and money paid back another way, which staff text them about).
 - For an Order paid too late, a full refund and the Order stays cancelled.
 
 ## Where to look in the code

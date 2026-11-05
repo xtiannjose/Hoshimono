@@ -10,6 +10,7 @@ export {
   MAX_ATTEMPTS,
   recordHeartbeat,
   purgeDoneJobs,
+  retryJob,
   runDueJobs,
 } from "./internal/jobs";
 export type { JobHandlers, RunReport } from "./internal/jobs";

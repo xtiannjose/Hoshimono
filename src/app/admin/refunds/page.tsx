@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { REFUND_REASON_LABEL } from "@/components/order/status-labels";
 import { formatDateTime } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { listRefundsToCheck } from "@/modules/payments";
@@ -10,13 +11,6 @@ import { AdminSkeleton, StaffGate } from "../staff-gate";
 import { SettleRefundForms } from "./forms";
 
 export const metadata: Metadata = { title: "Refunds to check" };
-
-const WHY = {
-  cancelled: "Paid Order cancelled",
-  picked: "Packed less than paid",
-  late_payment: "Paid after cancellation",
-  claim: "Freshness Claim",
-} as const;
 
 export default function AdminRefunds() {
   return (
@@ -50,7 +44,8 @@ async function Refunds() {
               <div className="grid gap-1">
                 <p>
                   <b className="tabular-nums">{formatMoney(r.amountCents)}</b>{" "}
-                  to {r.method === "card" ? "card" : "GCash"}, {WHY[r.reason]}
+                  to {r.method === "card" ? "card" : "GCash"},{" "}
+                  {REFUND_REASON_LABEL[r.reason]}
                 </p>
                 <p className="text-sm">
                   Order{" "}

@@ -206,8 +206,9 @@ export async function correctCashHandover(
 }
 
 /**
- * The Rider recorded the wrong cash for an Order: fix it, saying why. Only
- * before that Rider's day is counted; after, correct the count.
+ * The Rider recorded the wrong cash for an Order: fix it, saying why. If
+ * that Rider's day is already counted, its recorded total follows, so the
+ * short or over shows against the count (ADR 0023).
  */
 export async function correctCollectedCash(
   orderId: string,
@@ -223,6 +224,8 @@ export async function correctCollectedCash(
     where: { orderId, method: "cod", status: "cod_collected" },
     select: {
       id: true,
+      capturedCents: true,
+      refundedCents: true,
       order: { select: { riderId: true, deliveredAt: true } },
     },
   });
@@ -233,20 +236,23 @@ export async function correctCollectedCash(
       errors: { form: "No cash was recorded for this Order." },
     };
   }
-  const counted = await db.cashHandover.count({
-    where: { riderId, day: manilaDay(manilaDate(deliveredAt)).date },
-  });
-  if (counted) {
+  if (cashCents < payment.refundedCents) {
     return {
       ok: false,
       errors: {
-        form: "That day's cash is counted: correct the count instead.",
+        cash: `${formatMoney(payment.refundedCents)} was given back: enter at least that.`,
       },
     };
   }
-  await db.payment.update({
-    where: { id: payment.id },
-    data: { capturedCents: cashCents, collectedNote: why },
-  });
+  await db.$transaction([
+    db.payment.update({
+      where: { id: payment.id },
+      data: { capturedCents: cashCents, collectedNote: why },
+    }),
+    db.cashHandover.updateMany({
+      where: { riderId, day: manilaDay(manilaDate(deliveredAt)).date },
+      data: { recordedCents: { increment: cashCents - payment.capturedCents } },
+    }),
+  ]);
   return { ok: true };
 }

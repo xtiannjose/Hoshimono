@@ -13,6 +13,7 @@ import {
 import { enqueueJob } from "@/modules/jobs";
 import {
   closeOnlinePayment,
+  failUnpaidPayment,
   refundOrderPayment,
   voidCodPayment,
   type PaymentProvider,
@@ -380,6 +381,33 @@ export async function abandonPayment(
   );
 }
 
+/**
+ * Staff close an Order waiting for a payment that will never settle on its
+ * own: the provider charged a different amount, refunded in its dashboard
+ * (ADR 0023). The Payment fails, so the right amount arriving later is
+ * refunded as late; the lines go back to the Customer's Cart and they are
+ * told. Audited by the caller.
+ */
+export async function cancelUnpaidByStaff(
+  orderId: string,
+  staffId: string,
+  reason: string
+): Promise<
+  | { ok: true }
+  | { ok: false; reason: "not_waiting" }
+  | { ok: false; errors: { reason: string } }
+> {
+  const why = reason.trim();
+  if (!why)
+    return {
+      ok: false,
+      errors: { reason: "Say what happened: it goes in the History." },
+    };
+  return (await cancelUnpaid(orderId, { type: "staff", id: staffId }, why))
+    ? { ok: true }
+    : { ok: false, reason: "not_waiting" };
+}
+
 // The Order row, then the Cart, then (in transitionOrder) Slot and stock:
 // placeOrder takes Cart, Slot, stock in that order, so the two cannot deadlock.
 async function cancelUnpaid(
@@ -409,6 +437,8 @@ async function cancelUnpaid(
         note: l.note,
       }))
     );
+    // Closed by the provider already, unless staff close it (ADR 0023).
+    await failUnpaidPayment(tx, orderId);
     await tx.order.update({
       where: { id: orderId },
       data: { paymentStatus: "failed" },

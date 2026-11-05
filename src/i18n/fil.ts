@@ -551,7 +551,9 @@ export const fil: Messages = {
     total: "Total",
     finalTotal: "Final na total, ayon sa ini-pack",
     refund: (method) =>
-      `Ibinalik sa ${method === "card" ? "card" : "GCash"} mo`,
+      method === "cod"
+        ? "Ibinalik sa iyo"
+        : `Ibinalik sa ${method === "card" ? "card" : "GCash"} mo`,
     vat: (amount) => `Kasama na ang VAT (${amount}).`,
     weighedNote:
       " Ang mga item na binebenta ayon sa timbang ay sinisingil ayon sa timbang na ini-pack namin, kaya puwedeng magbago nang kaunti ang final na halaga.",

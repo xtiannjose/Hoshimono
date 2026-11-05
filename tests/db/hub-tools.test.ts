@@ -269,7 +269,7 @@ describe("handOverOrder", () => {
 });
 
 describe("cash corrections", () => {
-  it("fixes an Order's cash before the count, and the count after", async () => {
+  it("fixes an Order's cash before or after the count, and the count", async () => {
     const orderId = await placed();
     await transitionOrder(orderId, "picking", dispatcher);
     await finishPicking(orderId, dispatcher);
@@ -302,9 +302,16 @@ describe("cash corrections", () => {
       dispatcher.id,
       ""
     );
+    // After the count: the day's recorded total follows (ADR 0023).
     expect(
-      await correctCollectedCash(orderId, finalTotalCents!, "Again")
-    ).toMatchObject({ ok: false, errors: { form: expect.any(String) } });
+      await correctCollectedCash(orderId, finalTotalCents!, "Found the receipt")
+    ).toEqual({ ok: true });
+    expect(
+      await db.cashHandover.findFirstOrThrow({ where: { riderId: RIDER } })
+    ).toMatchObject({
+      recordedCents: finalTotalCents!,
+      countedCents: finalTotalCents! - 500,
+    });
     expect(
       await correctCashHandover(
         RIDER,

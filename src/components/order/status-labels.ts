@@ -2,6 +2,7 @@ import type {
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
+  RefundReason,
 } from "@/generated/prisma/enums";
 
 /** An Order's status in words, for Customers and staff alike. */
@@ -32,4 +33,13 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
   failed: "Not paid",
   cod_pending: "Cash on delivery",
   cod_collected: "Cash collected",
+};
+
+/** Why a refund was owed, for staff. */
+export const REFUND_REASON_LABEL: Record<RefundReason, string> = {
+  cancelled: "Paid Order cancelled",
+  picked: "Packed less than paid",
+  late_payment: "Paid after cancellation",
+  claim: "Freshness Claim",
+  staff: "Recorded by staff",
 };

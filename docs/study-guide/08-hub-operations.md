@@ -13,7 +13,7 @@ stateDiagram-v2
     [*] --> pending_payment: placeOrder, GCash or card
     [*] --> confirmed: placeOrder, cash on delivery
     pending_payment --> confirmed: paid webhook (confirmPaidOrder)
-    pending_payment --> cancelled: Payment Window ends, or Back to cart
+    pending_payment --> cancelled: Payment Window ends, Back to cart, or an Admin after a wrong amount
     confirmed --> picking: Picker starts
     confirmed --> cancelled: Customer cancels, or Staff with a reason
     picking --> picked: finishPicking (Final Total set)
@@ -49,7 +49,7 @@ Every status change in the app goes through one function, `orders.transitionOrde
 
 Cancel and pick lock stock rows that Checkouts also lock, so this transaction has the same 15-second budget as `placeOrder`, and it locks in the same order (Slot, then stock) so the two can never deadlock.
 
-**Payment status** moves alongside but separately: `cod_pending` to `cod_collected` (or `unpaid` if cancelled); `unpaid` to `paid` to `partially_refunded` or `refunded` (or `failed` if the Payment Window ends).
+**Payment status** moves alongside but separately: `cod_pending` to `cod_collected` (or `unpaid` if cancelled); `unpaid` to `paid` to `partially_refunded` or `refunded` (or `failed` if the Payment Window ends, or an Admin closes it after a wrong amount). A cash Payment stays `cod_collected` even when staff record cash given back (chapter 7).
 
 ## 8.2 The order queue
 
@@ -57,7 +57,7 @@ Cancel and pick lock stock rows that Checkouts also lock, so this transaction ha
 
 - Sorted by Slot time; filtered by status and delivery day; searched by Order Number, name, email or mobile.
 - An Order's page (`/admin/orders/[orderNo]`) shows the Customer, the lines, the totals, the full history with who moved it and why, refunds, and **Order Notes**: notes Staff leave for each other ("Gate code 4421"), up to 500 characters, never shown to the Customer.
-- Staff can move an Order only along `staffMoves`: the lifecycle, minus moves that belong to dispatch (out for delivery, delivered, failed) and minus anything for an unpaid online Order (its webhook or the Payment Window settles it). Cancelling needs a reason, which goes in the history. Choosing "Picked" here runs the same `finishPicking` as the Picker's screen.
+- Staff can move an Order only along `staffMoves`: the lifecycle, minus moves that belong to dispatch (out for delivery, delivered, failed) and minus anything for an unpaid online Order (its webhook or the Payment Window settles it). The one exception is a separate Admin panel for when PayMongo took a different amount (chapter 7.6). Cancelling needs a reason, which goes in the history. Choosing "Picked" here runs the same `finishPicking` as the Picker's screen.
 - Every move and note is written to the audit log in the same transaction (section 8.10).
 
 ## 8.3 Picking and Substitutions
@@ -191,6 +191,8 @@ At the end of the day, `/admin/cash` (area `dispatch`) lists, for a Manila date,
 
 The Dispatcher counts the Rider's cash and records it (`recordCashHandover`): one **Cash Handover** per Rider per day (`cash_handovers`, unique on Rider and day), with the recorded total, the counted total and who counted. If the count is short of what the Rider recorded, a note is required ("₱150.00 is missing. Say what happened."). A day is counted once.
 
+Mistakes are fixed, not hidden. A wrong count is corrected with a reason (`correctCashHandover`). A wrong amount the Rider typed for one Order is corrected with a reason too (`correctCollectedCash`), before or after the count. After the count, the Cash Handover's recorded total moves with the correction, so the short or over shows against what was counted ([ADR 0023](../adr/0023-money-given-back-outside-the-app.md)). It cannot go below cash already given back to the Customer (chapter 7, "Money given back outside the app").
+
 ## 8.6 Stock
 
 Stock is kept per Product per Hub in `stock_levels`: `on_hand` (on the shelf), `reserved` (promised to placed, unpicked Orders) and `low_stock_threshold`. Every change writes a row in `stock_movements` with a reason, the amount, and the Order or Staff member behind it. The movement log is append-only, so stock can always be explained.
@@ -264,16 +266,17 @@ Most staff Server Actions use one helper, `adminWrite` in `src/app/admin/admin-w
 
 ## When plans change: the staff tools (28 and 29 Oct)
 
-The runbook ([docs/runbook.md](../runbook.md)) first listed what staff could not do in the app. Most of it now has a tool, and each tool goes through the same rules as the rest of the app:
+The runbook ([docs/runbook.md](../runbook.md)) first listed what staff could not do in the app. Almost all of it now has a tool ([ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md), then [ADR 0023](../adr/0023-money-given-back-outside-the-app.md)), and each tool goes through the same rules as the rest of the app:
 
 - **Order page.** Record a payment PayMongo shows but no webhook applied: it goes through the same code as a verified webhook (`recordPaidByStaff` in `src/modules/payments/internal/webhooks.ts`), so the Order is confirmed, or refunded if it had closed. Text the Customer; give a Voucher; move the Order to another Slot that still takes Orders, or to another saved address the same Hub serves, in any of its Zones, keeping the Delivery Fee it was placed with (`src/modules/orders/internal/changes.ts`, [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)); cancel even when packed or on the way, which puts what was picked back on the shelf; block an account from ordering. Admins also see the Order's PayMongo checkout, payment and refund ids.
+- **Order page, since ADR 0023.** Type a new address the Customer gives by phone (Dispatchers and Admins): it is saved to their addresses first, with the same checks as the shop (`customers.saveAddress`, only where a Zone delivers), then the Order moves there under the same rule as above (same Hub, Delivery Fee as placed). Admins also record money given back outside the app (chapter 7), and close an Order still waiting for payment when PayMongo took a different amount (chapter 7.6). Each is audited, and the money ones add an Order Note.
 - **Freshness Claims.** File a claim for a Customer who called in, from a delivered Order's page; reopen a rejected claim (chapter 9).
 - **Stock.** A physical count may go below what is reserved (section 8.6).
 - **Dispatch.** Hand an Order on its way to another Rider (the PIN stays; the Customer is told who is coming).
 - **Picking.** Record a Customer's answer to a substitute given by phone, through the same function as the link.
-- **Cash.** Correct one Order's cash before the day is counted, or the count after.
+- **Cash.** Correct one Order's cash, before or after the day is counted (section 8.5), or the count itself.
 - **Zones and Slots, Hub status.** A Shop Notice every shopper sees until a chosen time, GCash and card paused (cash on delivery only), and whole days closed to new Orders.
-- **System.** When the cron last ran (each tick leaves a heartbeat), every job not done with its last error, and the newest payment events.
+- **System.** When the cron last ran (each tick leaves a heartbeat), every job not done with its last error, and the newest payment events. A job that gave up has a **Try again** button (`jobs.retryJob`): it goes back to the queue with all its tries, from the next tick (chapter 10).
 
 A status change that loses a Postgres deadlock to a checkout or another pick on the same stock now runs again (`retryConflicts` in `src/lib/db.ts`) instead of showing an error page.
 
