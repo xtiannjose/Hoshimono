@@ -1,10 +1,12 @@
 import type { Prisma } from "@/generated/prisma/client";
 import type {
   PaymentMethod,
+  PaymentStatus,
   RefundReason,
   RefundStatus,
 } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
+import { formatMoney } from "@/lib/money";
 import { enqueueJob } from "@/modules/jobs";
 
 import { paymentProvider } from "./active";
@@ -162,6 +164,8 @@ export async function getRefundNotice(refundId: string): Promise<{
   reason: RefundReason;
   status: RefundStatus;
   method: PaymentMethod;
+  /** Paid back outside the provider: no GCash or card message. */
+  paidBackBy: string | null;
 } | null> {
   const refund = await db.refund.findUnique({
     where: { id: refundId },
@@ -169,6 +173,7 @@ export async function getRefundNotice(refundId: string): Promise<{
       amountCents: true,
       reason: true,
       status: true,
+      paidBackBy: true,
       payment: { select: { orderId: true, method: true } },
     },
   });
@@ -179,8 +184,95 @@ export async function getRefundNotice(refundId: string): Promise<{
         reason: refund.reason,
         status: refund.status,
         method: refund.payment.method,
+        paidBackBy: refund.paidBackBy,
       }
     : null;
+}
+
+export type StaffRefundInput = {
+  amountCents: number;
+  /** PayMongo's refund id, for one made in its dashboard. */
+  providerRef: string;
+  /** Or how it was paid back: cash, a transfer by hand. */
+  paidBackBy: string;
+};
+
+/**
+ * Staff record money already given back outside the app (ADR 0023): a
+ * refund made in the provider's dashboard, or cash or a transfer by hand.
+ * Never past what was taken. One made in the dashboard gets the usual
+ * refund message; one paid another way gets none (staff text the Customer).
+ * A cash Order's Payment stays collected: the Rider's day is unchanged.
+ * In the caller's transaction; a form result (ADR 0009).
+ */
+export async function recordStaffRefund(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  input: StaffRefundInput
+): Promise<
+  | { ok: true; online: boolean; status: PaymentStatus }
+  | { ok: false; errors: { amount?: string; how?: string; form?: string } }
+> {
+  const [payment] = await tx.$queryRaw<
+    {
+      id: string;
+      method: PaymentMethod;
+      status: PaymentStatus;
+      captured_cents: number;
+      refunded_cents: number;
+    }[]
+  >`SELECT id, method, status, captured_cents, refunded_cents FROM payments
+    WHERE order_id = ${orderId}::uuid AND captured_cents > 0
+    ORDER BY created_at DESC LIMIT 1 FOR UPDATE`;
+  if (!payment)
+    return { ok: false, errors: { form: "Nothing was paid for this Order." } };
+  const online = payment.method !== "cod";
+  const left = payment.captured_cents - payment.refunded_cents;
+  const amount = input.amountCents;
+  if (!Number.isInteger(amount) || amount < 1 || amount > left)
+    return {
+      ok: false,
+      errors: { amount: `Up to ${formatMoney(left)} is left to give back.` },
+    };
+  const providerRef = online ? input.providerRef.trim() || null : null;
+  // A PayMongo refund id says how: the Customer gets its message.
+  const paidBackBy = providerRef ? null : input.paidBackBy.trim() || null;
+  if (!providerRef && !paidBackBy)
+    return {
+      ok: false,
+      errors: {
+        how: online
+          ? "Give PayMongo's refund id, or say how it was paid back."
+          : "Say how the cash was given back.",
+      },
+    };
+
+  const refund = await tx.refund.create({
+    data: {
+      paymentId: payment.id,
+      reason: "staff",
+      amountCents: amount,
+      status: "sent",
+      sentAt: new Date(),
+      providerRef,
+      paidBackBy,
+    },
+    select: { id: true },
+  });
+  const refunded = payment.refunded_cents + amount;
+  const status: PaymentStatus = !online
+    ? payment.status
+    : refunded === payment.captured_cents
+      ? "refunded"
+      : "partially_refunded";
+  await tx.payment.update({
+    where: { id: payment.id },
+    data: { refundedCents: refunded, status },
+  });
+  // Made in the dashboard: the job only tells the Customer.
+  if (online && !paidBackBy)
+    await enqueueJob(tx, REFUND_JOB, { refundId: refund.id });
+  return { ok: true, online, status };
 }
 
 export type RefundToCheck = {
@@ -238,13 +330,31 @@ export async function listRefundsToCheck(): Promise<RefundToCheck[]> {
 /**
  * A person's answer for a refund to check. "sent": the provider shows it
  * went through (the Customer is then told); "retry": it did not, send it
- * again. False when the refund is not waiting for an answer.
+ * again; "elsewhere": paid back another way, said in `detail` (ADR 0023),
+ * and the Customer gets no GCash or card message. False when the refund is
+ * not waiting for an answer.
  */
 export async function settleRefund(
   refundId: string,
-  outcome: "sent" | "retry",
-  providerRef?: string
+  outcome: "sent" | "retry" | "elsewhere",
+  detail?: string
 ): Promise<boolean> {
+  const providerRef = detail;
+  if (outcome === "elsewhere") {
+    const how = detail?.trim();
+    if (!how) return false;
+    const { count } = await db.refund.updateMany({
+      where: { id: refundId, status: { in: ["needs_review", "pending"] } },
+      data: {
+        status: "sent",
+        sentAt: new Date(),
+        paidBackBy: how,
+        providerRef: null,
+        lastError: null,
+      },
+    });
+    return count === 1;
+  }
   return db.$transaction(async (tx) => {
     const { count } = await tx.refund.updateMany({
       where: { id: refundId, status: { in: ["needs_review", "pending"] } },

@@ -246,6 +246,8 @@ export const jobHandlers: JobHandlers = {
     await sendRefund(refundId);
     const refund = await getRefundNotice(refundId);
     if (!refund || refund.status !== "sent" || refund.method === "cod") return;
+    // Paid back another way: staff text the Customer (ADR 0023).
+    if (refund.paidBackBy) return;
     // A claim's refund is told in the claim's own message (ADR 0016).
     if (refund.reason === "claim") return;
     const order = await getOrderForNotice(refund.orderId);
@@ -259,6 +261,7 @@ export const jobHandlers: JobHandlers = {
       amount: formatMoney(refund.amountCents),
       method: refund.method,
       reason: refund.reason,
+      refundId,
       trackingUrl: trackingUrl(order.customer.lang, order.orderNo),
     });
   },

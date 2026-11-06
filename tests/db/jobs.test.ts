@@ -6,6 +6,7 @@ import {
   jobsHealth,
   MAX_ATTEMPTS,
   purgeDoneJobs,
+  retryJob,
   runDueJobs,
 } from "@/modules/jobs";
 
@@ -65,6 +66,29 @@ describe("runDueJobs", () => {
       done: 0,
       failed: 0,
     });
+  });
+
+  it("sends a job that gave up back to the queue when staff ask", async () => {
+    await enqueueJob(appDb, "flaky", {}, { runAt: NOW });
+    const job = await db.job.findFirstOrThrow();
+    // Still trying on its own: nothing to do.
+    expect(await retryJob(job.id, NOW)).toBe(false);
+    await db.job.update({
+      where: { id: job.id },
+      data: { attempts: MAX_ATTEMPTS, lastError: "Error: SMS gateway down" },
+    });
+    expect(await retryJob(job.id, NOW)).toBe(true);
+    expect(await db.job.findFirstOrThrow()).toMatchObject({
+      attempts: 0,
+      runAt: NOW,
+      lastError: "Error: SMS gateway down",
+    });
+    const seen: unknown[] = [];
+    await runDueJobs(
+      { flaky: async (p: unknown) => void seen.push(p) },
+      { now: NOW }
+    );
+    expect(seen).toHaveLength(1);
   });
 
   it("never runs a job twice when two cron calls overlap", async () => {

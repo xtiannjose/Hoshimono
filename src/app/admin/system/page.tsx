@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/dates";
-import { cronStatus, listOpenJobs } from "@/modules/jobs";
+import { cronStatus, listOpenJobs, MAX_ATTEMPTS } from "@/modules/jobs";
 import { listPaymentEvents } from "@/modules/payments";
 
 import { AdminSkeleton, StaffGate } from "../staff-gate";
+import { retryJobAction } from "./actions";
 
 export const metadata: Metadata = { title: "System" };
 
@@ -63,6 +65,9 @@ async function System() {
                 <th scope="col">Due</th>
                 <th scope="col">Tries</th>
                 <th scope="col">Last error</th>
+                <th scope="col">
+                  <span className="sr-only">Try again</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +78,16 @@ async function System() {
                   <td className="tabular-nums">{j.attempts}</td>
                   <td className="text-muted-foreground">
                     {j.lastError?.slice(0, 160) ?? ""}
+                  </td>
+                  <td>
+                    {j.attempts >= MAX_ATTEMPTS && (
+                      <form action={retryJobAction}>
+                        <input type="hidden" name="jobId" value={j.id} />
+                        <Button type="submit" size="sm" variant="secondary">
+                          Try again
+                        </Button>
+                      </form>
+                    )}
                   </td>
                 </tr>
               ))}

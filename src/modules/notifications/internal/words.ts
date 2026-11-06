@@ -68,6 +68,8 @@ const en = {
       `Your order ${orderNo} came to less than you paid, so we refunded the ${amount} difference to ${to}.`,
     late_payment: (amount: string, to: string, orderNo: string) =>
       `Your payment for order ${orderNo} arrived after the order was cancelled, so we refunded all ${amount} to ${to}.`,
+    staff: (amount: string, to: string, orderNo: string) =>
+      `We refunded ${amount} to ${to} for order ${orderNo}.`,
     when: {
       gcash: "It usually shows within a day.",
       card: "It can take a few banking days to show on your card.",
@@ -167,6 +169,8 @@ const fil: typeof en = {
       `Mas mababa ang naging total ng order ${orderNo} kaysa sa ibinayad mo, kaya ibinalik namin ang ${amount} na sobra sa ${to}.`,
     late_payment: (amount, to, orderNo) =>
       `Dumating ang bayad mo para sa order ${orderNo} nang na-cancel na ito, kaya ibinalik namin ang buong ${amount} sa ${to}.`,
+    staff: (amount, to, orderNo) =>
+      `Ibinalik namin ang ${amount} sa ${to} para sa order ${orderNo}.`,
     when: {
       gcash: "Karaniwang pumapasok ito sa loob ng isang araw.",
       card: "Puwedeng abutin ng ilang banking day bago ito lumabas sa card mo.",

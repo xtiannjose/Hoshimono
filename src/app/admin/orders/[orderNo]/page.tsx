@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import {
   ORDER_STATUS_LABEL,
   PAYMENT_STATUS_LABEL,
+  REFUND_REASON_LABEL,
 } from "@/components/order/status-labels";
 import type { OrderStatus } from "@/generated/prisma/enums";
 import { formatDateTime, formatSlot } from "@/lib/dates";
 import { claimableLines, listOrderClaims } from "@/modules/claims";
 import { listAddresses } from "@/modules/customers";
-import { listSlots } from "@/modules/delivery";
+import { listServiceAreas, listSlots } from "@/modules/delivery";
 import { formatMoney } from "@/lib/money";
 import { currentStaff, staffAreas } from "@/modules/identity";
 import {
@@ -30,8 +31,11 @@ import {
   ChangeAddressForm,
   MoveForm,
   MoveSlotForm,
+  NewAddressForm,
   NoteForm,
+  CancelUnpaidForm,
   RecordPaymentForm,
+  RecordRefundForm,
   TextCustomerForm,
   VoucherForm,
 } from "./order-forms";
@@ -92,12 +96,20 @@ async function Order({ params }: { params: Props["params"] }) {
   const atHub = ["confirmed", "picking", "picked", "delivery_failed"].includes(
     order.status
   );
-  const [slots, addresses] = atHub
+  const [slots, addresses, areas] = atHub
     ? await Promise.all([
         listSlots(order.hubId),
         listAddresses(order.customerId),
+        listServiceAreas(),
       ])
-    : [[], []];
+    : [[], [], []];
+  // Money taken that staff may have given back outside the app (ADR 0023).
+  const canRecordRefund =
+    money &&
+    !!order.payment &&
+    ["paid", "partially_refunded", "cod_collected"].includes(
+      order.payment.status
+    );
   const unpaidOnline =
     order.payment &&
     order.payment.method !== "cod" &&
@@ -255,32 +267,50 @@ async function Order({ params }: { params: Props["params"] }) {
               </p>
             ) : null}
           </section>
-          {order.refunds.length > 0 && (
+          {(order.refunds.length > 0 || canRecordRefund) && (
             <section aria-labelledby="h-refunds" className={PANEL}>
               <h2 id="h-refunds" className="type-h3">
                 Refunds
               </h2>
-              <ul className="grid gap-2">
-                {order.refunds.map((r, i) => (
-                  <li key={i} className="flex justify-between gap-3">
-                    <span>
-                      {r.reason.replaceAll("_", " ")}
-                      <span className="text-muted-foreground block text-sm">
-                        {REFUND_STATUS[r.status]}
-                        {r.providerRef && (
-                          <span className="font-mono select-all">
-                            {" "}
-                            {r.providerRef}
-                          </span>
-                        )}
+              {order.refunds.length > 0 && (
+                <ul className="grid gap-2">
+                  {order.refunds.map((r, i) => (
+                    <li key={i} className="flex justify-between gap-3">
+                      <span>
+                        {REFUND_REASON_LABEL[r.reason]}
+                        <span className="text-muted-foreground block text-sm">
+                          {r.paidBackBy
+                            ? `Paid back: ${r.paidBackBy}`
+                            : REFUND_STATUS[r.status]}
+                          {r.providerRef && (
+                            <span className="font-mono select-all">
+                              {" "}
+                              {r.providerRef}
+                            </span>
+                          )}
+                        </span>
                       </span>
-                    </span>
-                    <span className="tabular-nums">
-                      {formatMoney(r.amountCents)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+                      <span className="tabular-nums">
+                        {formatMoney(r.amountCents)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {canRecordRefund && (
+                <details>
+                  <summary className="cursor-pointer text-sm font-semibold">
+                    Record money given back outside the app
+                  </summary>
+                  <div className="mt-3">
+                    <RecordRefundForm
+                      orderId={order.id}
+                      orderNo={order.orderNo}
+                      online={order.payment!.method !== "cod"}
+                    />
+                  </div>
+                </details>
+              )}
             </section>
           )}
           {claims && (
@@ -345,6 +375,19 @@ async function Order({ params }: { params: Props["params"] }) {
               />
             </section>
           )}
+          {money && order.status === "pending_payment" && (
+            <section aria-labelledby="h-wrong-amount" className={PANEL}>
+              <h2 id="h-wrong-amount" className="type-h3">
+                PayMongo took a different amount?
+              </h2>
+              <p className="text-muted-foreground text-sm">
+                The app will not confirm it. Refund it in PayMongo&apos;s
+                dashboard, then cancel the Order here. If the right amount
+                arrives later, it is refunded on its own.
+              </p>
+              <CancelUnpaidForm orderId={order.id} orderNo={order.orderNo} />
+            </section>
+          )}
           {atHub && (
             <section aria-labelledby="h-delivery" className={PANEL}>
               <h2 id="h-delivery" className="type-h3">
@@ -371,6 +414,11 @@ async function Order({ params }: { params: Props["params"] }) {
                   id: a.id,
                   label: `${a.label}: ${a.line1}, ${a.barangay}`,
                 }))}
+              />
+              <NewAddressForm
+                orderId={order.id}
+                orderNo={order.orderNo}
+                cities={areas.map((a) => a.city)}
               />
             </section>
           )}

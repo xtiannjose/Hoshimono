@@ -30,7 +30,16 @@ From roadmap section 0, as of 29 October:
 - The security review and its fixes, abuse tests included ([`docs/security-review.md`](../security-review.md), chapter 11.8).
 - An automated accessibility sweep of every page a guest, a Customer and an Admin can open, light and dark (`e2e/a11y-sweep.spec.ts`).
 - Draft policy pages, the runbook, and this study guide.
-- Staff tools for what the runbook said the app could not do (28 and 29 Oct, chapter 8 and [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)): cancelling an Order on the way, claims filed for a Customer and reopened, counts below what is reserved, a new address in another Zone, and the PayMongo ids on the Order page. The few gaps left, such as charging a Customer more after checkout or changing an Order's Hub, are in the runbook's last section, "Things the app cannot do yet".
+- Staff tools for what the runbook said the app could not do (28 and 29 Oct, chapter 8 and [ADR 0022](../adr/0022-staff-tools-for-the-last-runbook-gaps.md)): cancelling an Order on the way, claims filed for a Customer and reopened, counts below what is reserved, a new address in another Zone, and the PayMongo ids on the Order page.
+- The last staff gaps that needed no account and no new business rule (29 Oct, chapters 7 and 8, [ADR 0023](../adr/0023-money-given-back-outside-the-app.md)): recording money given back outside the app, clearing a refund to check as paid back another way, fixing one Order's cash after the count, closing an Order PayMongo charged the wrong amount, typing a new address given by phone, and retrying a job that gave up from the System page.
+
+**Still not possible in the app**, and why (the runbook's last section, "Things the app cannot do yet", keeps the list):
+
+- Charging a Customer more after checkout, or taking back a refund: the app takes one payment per Order.
+- A refund the app sends through PayMongo for anything but a cancel, a pick or a Freshness Claim, or changing an approved claim: a business rule for the owner to decide. Until then, staff refund in PayMongo's dashboard and record it.
+- Changing an Order's Hub: staff cancel it and the Customer orders again.
+- Recording a second PayMongo payment for one Order (rare: two checkouts paid at once): the app knows one payment per Order, so staff refund the extra in PayMongo's dashboard and keep it in an Order Note.
+- Sentry error alerts: they need the Sentry account (below).
 
 **Left:**
 

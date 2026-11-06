@@ -2,7 +2,13 @@ import { createHmac, randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { confirmPaidOrder, ORDER_CONFIRMED_JOB } from "@/modules/orders";
+import {
+  cancelUnpaidByStaff,
+  confirmPaidOrder,
+  ORDER_CANCELLED_JOB,
+  ORDER_CONFIRMED_JOB,
+  recordRefundByStaff,
+} from "@/modules/orders";
 import {
   createPaymongo,
   handleWebhook,
@@ -374,6 +380,58 @@ async function queued(kind: string, key: string, value: string) {
   ).length;
 }
 
+describe("an Order PayMongo charged a different amount (ADR 0023)", () => {
+  it("staff close it: its Payment fails, the Customer is told, the right money later goes back", async () => {
+    const { paymentId, sessionId } = await onlinePayment(28000);
+    const { orderId, order } = await db.payment.findUniqueOrThrow({
+      where: { id: paymentId },
+      include: { order: true },
+    });
+    await db.slot.update({
+      where: { id: order.slotId },
+      data: { booked: { increment: 1 } },
+    });
+    const wrong = paidEvent({ sessionId, amount: 25000 });
+    expect(
+      await handleWebhook(paymongo, wrong, signed(wrong), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("mismatch");
+
+    const staff = seedId("staff:admin");
+    expect(await cancelUnpaidByStaff(orderId, staff, " ")).toMatchObject({
+      ok: false,
+      errors: { reason: expect.any(String) },
+    });
+    expect(
+      await cancelUnpaidByStaff(
+        orderId,
+        staff,
+        "PayMongo took ₱250.00; refunded in its dashboard"
+      )
+    ).toEqual({ ok: true });
+    expect(
+      await db.order.findUniqueOrThrow({ where: { id: orderId } })
+    ).toMatchObject({ status: "cancelled", paymentStatus: "failed" });
+    expect(
+      await db.payment.findUniqueOrThrow({ where: { id: paymentId } })
+    ).toMatchObject({ status: "failed" });
+    expect(await queued(ORDER_CANCELLED_JOB, "orderId", orderId)).toBe(1);
+    expect(await cancelUnpaidByStaff(orderId, staff, "Again")).toEqual({
+      ok: false,
+      reason: "not_waiting",
+    });
+
+    // The right amount arriving after all is refunded as late.
+    const right = paidEvent({ sessionId, amount: 28000 });
+    expect(
+      await handleWebhook(paymongo, right, signed(right), {
+        onPaid: confirmPaidOrder,
+      })
+    ).toBe("late");
+  });
+});
+
 describe("refunds", () => {
   /** An Order paid online through a real paid webhook. */
   async function paid(amountCents = 69400) {
@@ -574,6 +632,25 @@ describe("refunds to check", () => {
     const sent = await refundIn("sent");
     expect(await settleRefund(sent.id, "retry")).toBe(false);
   });
+
+  it("clears a refund paid back another way, without the GCash or card message", async () => {
+    const refund = await refundIn("needs_review", "PayMongo 400: balance");
+
+    expect(await settleRefund(refund.id, "elsewhere", " ")).toBe(false);
+    expect(
+      await settleRefund(refund.id, "elsewhere", "GCash sent by hand, ref 1234")
+    ).toBe(true);
+
+    expect(
+      await db.refund.findUniqueOrThrow({ where: { id: refund.id } })
+    ).toMatchObject({
+      status: "sent",
+      paidBackBy: "GCash sent by hand, ref 1234",
+      providerRef: null,
+    });
+    // Only the first send was queued: nothing more goes to the Customer.
+    expect(await queued(REFUND_JOB, "refundId", refund.id)).toBe(1);
+  });
 });
 
 describe("startCheckout", () => {
@@ -678,5 +755,89 @@ describe("startCheckout", () => {
 
     expect(await startCheckout(provider, { orderId, ...urls })).toBeNull();
     expect(created).toHaveLength(0);
+  });
+});
+
+describe("refunds staff record (ADR 0023)", () => {
+  /** An online Order paid through a real paid webhook. */
+  async function paidOrder(amountCents: number) {
+    const { paymentId, sessionId } = await onlinePayment(amountCents);
+    const body = paidEvent({ sessionId, amount: amountCents });
+    await handleWebhook(paymongo, body, signed(body));
+    return (await db.payment.findUniqueOrThrow({ where: { id: paymentId } }))
+      .orderId;
+  }
+
+  it("records refunds made in PayMongo's dashboard, and the Customer is told", async () => {
+    const orderId = await paidOrder(30000);
+    const dashboard = { providerRef: "ref_dashboard_1", paidBackBy: "" };
+    expect(
+      await recordRefundByStaff(orderId, { ...dashboard, amountCents: 30001 })
+    ).toEqual({
+      ok: false,
+      errors: { amount: "Up to ₱300.00 is left to give back." },
+    });
+    expect(
+      await recordRefundByStaff(orderId, {
+        amountCents: 10000,
+        providerRef: " ",
+        paidBackBy: "",
+      })
+    ).toMatchObject({ ok: false, errors: { how: expect.any(String) } });
+
+    expect(
+      await recordRefundByStaff(orderId, { ...dashboard, amountCents: 10000 })
+    ).toEqual({ ok: true });
+    expect(
+      await recordRefundByStaff(orderId, {
+        amountCents: 20000,
+        providerRef: "ref_dashboard_2",
+        paidBackBy: "",
+      })
+    ).toEqual({ ok: true });
+
+    const refunds = await db.refund.findMany({
+      where: { payment: { orderId } },
+      orderBy: { amountCents: "asc" },
+    });
+    expect(refunds).toMatchObject([
+      { reason: "staff", status: "sent", providerRef: "ref_dashboard_1" },
+      { reason: "staff", status: "sent", providerRef: "ref_dashboard_2" },
+    ]);
+    expect(await queued(REFUND_JOB, "refundId", refunds[0].id)).toBe(1);
+    expect(
+      await db.order.findUniqueOrThrow({ where: { id: orderId } })
+    ).toMatchObject({ paymentStatus: "refunded" });
+  });
+
+  it("records cash given back on a cash Order, with no GCash or card message", async () => {
+    const { orderId } = await db.payment.update({
+      where: { id: (await onlinePayment(50000)).paymentId },
+      data: { method: "cod", status: "cod_collected", capturedCents: 50000 },
+    });
+    expect(
+      await recordRefundByStaff(orderId, {
+        amountCents: 5000,
+        providerRef: "",
+        paidBackBy: "",
+      })
+    ).toMatchObject({ ok: false, errors: { how: expect.any(String) } });
+    expect(
+      await recordRefundByStaff(orderId, {
+        amountCents: 5000,
+        providerRef: "",
+        paidBackBy: "Cash with the next delivery",
+      })
+    ).toEqual({ ok: true });
+    const payment = await db.payment.findFirstOrThrow({ where: { orderId } });
+    // Still counted as the Rider's cash for the day (ADR 0011).
+    expect(payment).toMatchObject({
+      status: "cod_collected",
+      refundedCents: 5000,
+    });
+    const refund = await db.refund.findFirstOrThrow({
+      where: { paymentId: payment.id },
+    });
+    expect(await queued(REFUND_JOB, "refundId", refund.id)).toBe(0);
   });
 });

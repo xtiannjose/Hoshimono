@@ -4,15 +4,16 @@ Status: v0.3, 2026-10-19. This is the build plan: what we build, in which order,
 
 Estimates assume **one full-time developer working with Claude Code**, starting **Monday 19 October 2026**. Dates are indicative and show order and size, not promises. A batch is 2 to 5 working days and should land as **one branch**.
 
-## 0. Where we are (updated 2026-10-29)
+## 0. Where we are (updated 2026-11-05)
 
 Resume here: read this section, then the batch named first under Next.
 
 **Done**
 
 - 29 Oct, after `phase-5/filipino-messages`, the runbook's last gaps that need no account ([ADR 0022](adr/0022-staff-tools-for-the-last-runbook-gaps.md)):
+  - `phase-6/staff-gaps-2` ([ADR 0023](adr/0023-money-given-back-outside-the-app.md)): staff record money given back outside the app (a PayMongo dashboard refund, cash or a transfer); clear a refund to check as paid another way, without the GCash or card text; correct one Order's cash after the day is counted; close an Order PayMongo charged a different amount; type a new address the Customer gives by phone; send a job that gave up back to the queue from System. A cash Order's money given back reads "Given back to you".
   - `phase-6/staff-gaps`: cancel an Order On the way (the Rider brings it back); staff file a Freshness Claim for a Customer who called, and reopen a rejected one; a shelf count below what is reserved (the Product stops selling, the Stock screens show how many are short); an address in another Zone of the same Hub at the placed fee; PayMongo checkout, payment and refund ids on the Order page. The runbook's stale "not possible yet" notes now point to the tools.
-- 28 and 29 Oct, the development backlog besides feature ideas, on eight more branches after `phase-5/filipino-rest`, each built on the one before (not yet pushed):
+- 28 and 29 Oct, the development backlog besides feature ideas, on eight more branches after `phase-5/filipino-rest`, each built on the one before (merged into `main` with PR #22 on 1 Nov):
   - `phase-6/privacy`: a Customer downloads their data or deletes their account ([ADR 0020](adr/0020-customer-data-export-and-deletion.md)).
   - `phase-6/hub-money-tools`: record a payment PayMongo shows but no webhook applied; a second "paid" event no longer refunds; cancel a packed Order; text a Customer; give a Voucher; staff cancels tell the Customer.
   - `phase-6/hub-schedule-tools`: another Slot or address for an Order, hand an Order to another Rider, a Substitution answered by phone, cash corrections, Riders see Order Notes, Hub status (a Shop Notice, GCash and card paused, days closed) and a System page; status changes retry a lost deadlock.
@@ -21,7 +22,7 @@ Resume here: read this section, then the batch named first under Next.
   - `phase-6/page-weight`: English pages no longer carry the Filipino dictionary (7 KB less each).
   - `phase-6/stop-links`: stop links carry their purpose and expire.
   - `phase-5/filipino-messages`: emails and texts in the Customer's language; sign-in, delivery areas and the referral link in Filipino ([ADR 0021](adr/0021-messages-in-the-customers-language.md)).
-- 27 and 28 Oct, committed locally on five branches after `design/pass`, each built on the one before (not yet pushed):
+- 27 and 28 Oct, on five branches after `design/pass`, each built on the one before (merged into `main` with PR #22 on 1 Nov):
   - `phase-4/dry-run`: a simulated Hub day (`npm run db:dry-run`, `e2e/dry-run.spec.ts`, the owner's checklist in [docs/dry-run.md](dry-run.md)). 20 Orders picked, sent out, delivered with each PIN and the cash counted, with three shorts, two Substitutions and a weighed line; every status in every history. It found and fixed: the pick list showed no Customer or item count, "1 pcs" and "1000 g", weighed lines that claimed a substitute was possible, a cash count field pre-filled with the expected amount (now blind), and "Delivered without the PIN" that could not save a different cash amount.
   - `phase-6/load-and-backup`: the load test ([docs/load-test.md](load-test.md)), a restore drill ([docs/backup-restore.md](backup-restore.md)) and an alerting health check (`/api/health?deep=1`).
   - `phase-6/security-a11y`: the security review and its fixes, with abuse tests ([docs/security-review.md](security-review.md)); every channel of a notice is tried even when the email fails; an axe sweep of every page (`e2e/a11y-sweep.spec.ts`).
@@ -38,15 +39,15 @@ Resume here: read this section, then the batch named first under Next.
 - Test accounts (Admin, Technical, Client) and one-click `/dev/sign-in`; Phase 3 closed on the stand-in provider; Batch 4.1 staff areas, order queue with notes, refunds to check, staff management and audit log (PR #15).
 - Batch 4.2 (PR #16): the Picker view, Substitutions with the Customer's yes or no by SMS link ([ADR 0010](adr/0010-picking-and-substitutions.md)), and the Final Total from what was picked.
 - Batch 4.3 (PR #17): dispatch with Riders, the Delivery PIN, failed deliveries, cash per Order and per Rider ([ADR 0011](adr/0011-dispatch-pin-and-cash.md)).
-- General checkup and design pass (branches `checkup/general` and `design/pass`, committed locally, not yet pushed): roadmap section 9 and [ADR 0018](adr/0018-design-pass.md).
-- Batch 5.5 (branch `phase-5/pwa-language-analytics`, committed locally, not yet pushed): Filipino pages at `/fil`, the installable app with offline basics, and a privacy-first shopping funnel in the daily report ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). Every Phase 5 batch is built.
-- Batch 5.4 (branch `phase-5/claims`, committed locally, not yet pushed): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
+- General checkup and design pass (branches `checkup/general` and `design/pass`, merged with PR #22): roadmap section 9 and [ADR 0018](adr/0018-design-pass.md).
+- Batch 5.5 (branch `phase-5/pwa-language-analytics`, merged with PR #22): Filipino pages at `/fil`, the installable app with offline basics, and a privacy-first shopping funnel in the daily report ([ADR 0017](adr/0017-filipino-pwa-and-funnel.md)). Every Phase 5 batch is built.
+- Batch 5.4 (branch `phase-5/claims`, merged with PR #22): Freshness Claims, reviewed by staff and paid back by refund or Voucher ([ADR 0016](adr/0016-freshness-claims.md)).
 - Batch 5.3 (PR #21): Promotions, Vouchers and Referrals ([ADR 0015](adr/0015-promotions-vouchers-referrals.md)); Merchandisers run them without code.
 - Batch 5.2 (PR #20): Reorder, Shopping Lists, "Buy again", Cart Reminders with consent and Stock Alerts ([ADR 0014](adr/0014-reorder-lists-reminders-stock-alerts.md)).
 - Batch 5.1 (PR #19): Recipes and Articles, written by a new Content Editor role without code ([ADR 0013](adr/0013-recipes-articles-and-content-editors.md)). Also fixes a first-sign-in race that could leave the admin menu empty.
 - Batch 4.4 (PR #18): stock taken at `picked` and returned on a late cancel, the stock screens, the weekly Slot schedule and Zone fees, the daily report, the pick sheet and delivery receipt ([ADR 0012](adr/0012-stock-slots-reports-receipts.md)). Every Phase 4 batch is built.
 
-**Where the code lives:** no git host for now, so no remote and no pull requests. The code moves between computers as one file in Google Drive, `hoshimono.bundle` with every branch (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11). `main` is at `6477f88` (Phases 0 to 4 and Batches 5.1 to 5.3). These branches wait to be merged into `main`, each built on the one before, in this order: `phase-5/claims` (Batch 5.4), `phase-5/pwa-language-analytics` (Batch 5.5), `checkup/general`, `design/pass`, `phase-4/dry-run`, `phase-6/load-and-backup`, `phase-6/security-a11y`, `phase-6/policies-and-docs`, `phase-5/filipino-rest`, `phase-6/privacy`, `phase-6/hub-money-tools`, `phase-6/hub-schedule-tools`, `phase-6/correctness`, `phase-6/security-2`, `phase-6/page-weight`, `phase-6/stop-links`, `phase-5/filipino-messages`, `phase-6/staff-gaps`. The newest, `phase-6/staff-gaps`, holds all of them. The CI run on `6477f88` never reported; a local production build and the full test suites passed on the same code.
+**Where the code lives:** GitHub again (`origin`, github.com/xtiannjose/Hoshimono). On 1 Nov the owner merged the stacked branches through PR #22 (`phase-6/staff-gaps`), so `main` (`4e64be6`) holds every branch listed above except `phase-6/staff-gaps-2` ([ADR 0023](adr/0023-money-given-back-outside-the-app.md)), which goes in by its own pull request. The Google Drive bundle (`npm run backup`, [06-SETUP.md](06-SETUP.md) section 11) stays as a second copy.
 
 **Current phase:** 6, Launch hardening: everything that needs no outside account is done. Phase 5 is done. Phase 4 waits on the dry run with people (the simulated one passed). Phase 3 closed on 21 Oct against the stand-in provider; its PayMongo test-mode run moved to Batch 6.3.
 
@@ -61,7 +62,7 @@ Resume here: read this section, then the batch named first under Next.
 
 **Waiting on the owner**
 
-- At the end of each work session: commit, `npm run backup`, and upload `hoshimono.bundle` to the Hoshimono folder in Google Drive if Google Drive for desktop is not installed ([06-SETUP.md](06-SETUP.md) section 11).
+- At the end of each work session: commit and push the branch to GitHub; `npm run backup` keeps the Google Drive copy current (upload `hoshimono.bundle` by hand if Google Drive for desktop is not installed, [06-SETUP.md](06-SETUP.md) section 11).
 - PayMongo test account: `PAYMONGO_SECRET_KEY` and the webhook endpoint's secret as `PAYMONGO_WEBHOOK_SECRET` (no "Hold then Capture" needed: ADR 0008 charges the estimate). Start PayMongo business verification now: it takes weeks and blocks live payments.
 - Delete the stale branches `phase-1/close-out` and `phase-2/pricing-core` (agents may not delete branches).
 - The accountant and owner questions in ADR 0007 (VAT registration, Tax Class per Category, real Zone fees, Senior Citizen and PWD discount).
@@ -136,7 +137,7 @@ Checked against `package.json` and the code on 2026-10-28. "Now" is what the cod
 3. **Build** the slice end to end; UI work starts with `design-taste-frontend` and the v2 mockup; animation with `motion` and `apple-design`.
 4. **See it run:** `run` skill or `playwright-cli` screenshots at 1440 and 390 px, light and dark; axe check on new pages.
 5. **Review:** `code-review` and `simplify`; `security-review` for anything touching auth, payments or personal data.
-6. **Ship:** one branch; with no git host for now, run the CI checks by hand (`npm run check`, `npm run build`, `E2E_PROD=1 npx playwright test`); tick the items here; `npm run backup`. Pull requests (`pr` skill) and CI return with a git host.
+6. **Ship:** one branch, pushed to GitHub with a pull request (`pr` skill); CI (`.github/workflows/ci.yml`) runs on it, and the same checks run by hand (`npm run check`, `npm run build`, `E2E_PROD=1 npx playwright test`); tick the items here; `npm run backup`.
 
 ## 4. Decisions due along the way
 

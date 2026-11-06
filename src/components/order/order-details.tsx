@@ -109,9 +109,7 @@ export function OrderDetails({
             )}
           {order.refundedCents > 0 && (
             <div className="flex justify-between">
-              <dt>
-                {t.refund(order.paymentMethod === "card" ? "card" : "gcash")}
-              </dt>
+              <dt>{t.refund(order.paymentMethod ?? "cod")}</dt>
               <dd>{formatMoney(order.refundedCents)}</dd>
             </div>
           )}

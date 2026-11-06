@@ -546,8 +546,11 @@ export const en = {
     estimatedTotal: "Estimated total",
     total: "Total",
     finalTotal: "Final total, as packed",
-    refund: (method: "card" | "gcash") =>
-      `Refund to your ${method === "card" ? "card" : "GCash"}`,
+    // Cash on delivery: money staff gave back by hand (ADR 0023).
+    refund: (method: "card" | "gcash" | "cod") =>
+      method === "cod"
+        ? "Given back to you"
+        : `Refund to your ${method === "card" ? "card" : "GCash"}`,
     vat: (amount: string) => `VAT included (${amount}).`,
     weighedNote:
       " Items sold by weight are charged for the weight we pack, so the final amount may change a little.",

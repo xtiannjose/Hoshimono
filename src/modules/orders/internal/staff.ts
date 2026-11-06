@@ -4,10 +4,12 @@ import type {
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
+  RefundReason,
   RefundStatus,
 } from "@/generated/prisma/enums";
 import { db, type Client } from "@/lib/db";
 import { normalizePhone } from "@/lib/phone";
+import { recordStaffRefund, type StaffRefundInput } from "@/modules/payments";
 
 import { getOrderByNumber, type OrderDetail } from "./read";
 import { nextStatuses } from "./status";
@@ -111,10 +113,12 @@ export type StaffOrderDetail = OrderDetail & {
   notes: { text: string; at: Date; staffName: string }[];
   refunds: {
     amountCents: number;
-    reason: string;
+    reason: RefundReason;
     status: RefundStatus;
     /** The provider's refund id, once sent. */
     providerRef: string | null;
+    /** How staff paid it back outside the provider (ADR 0023). */
+    paidBackBy: string | null;
   }[];
   customerId: string;
   hubId: string;
@@ -182,6 +186,7 @@ export async function getOrderForStaff(
               reason: true,
               status: true,
               providerRef: true,
+              paidBackBy: true,
             },
           },
         },
@@ -276,4 +281,26 @@ const VIA_DISPATCH: OrderStatus[] = [
 export function staffMoves(status: OrderStatus): OrderStatus[] {
   if (status === "pending_payment") return [];
   return nextStatuses(status).filter((s) => !VIA_DISPATCH.includes(s));
+}
+
+/**
+ * Money already given back outside the app, recorded on the Order (ADR
+ * 0023): a refund made in PayMongo's dashboard, or cash or a transfer.
+ * Paid online, the Order's payment status follows. Audited by the caller.
+ */
+export async function recordRefundByStaff(
+  orderId: string,
+  input: StaffRefundInput
+) {
+  return db.$transaction(async (tx) => {
+    const result = await recordStaffRefund(tx, orderId, input);
+    if (!result.ok) return result;
+    if (result.online) {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { paymentStatus: result.status },
+      });
+    }
+    return { ok: true as const };
+  });
 }

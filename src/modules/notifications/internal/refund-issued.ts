@@ -19,13 +19,16 @@ export type RefundNotice = {
   /** Formatted, such as "₱134.50". */
   amount: string;
   method: "gcash" | "card";
-  reason: "cancelled" | "picked" | "late_payment";
+  reason: "cancelled" | "picked" | "late_payment" | "staff";
+  /** Staff record several refunds per Order (ADR 0023): each told once. */
+  refundId?: string;
   trackingUrl: string;
 };
 
 /**
  * Refund email and SMS (ADR 0008), once per refund: an Order has at most
- * one refund per reason, so the reason names the template.
+ * one refund per reason, so the reason names the template, except those
+ * staff record, named by their id too.
  */
 export async function sendRefundIssued(
   notice: RefundNotice,
@@ -40,12 +43,16 @@ export async function sendRefundIssued(
   const when = t.when[notice.method];
   const template = `refund_${notice.reason}`;
   const { orderId } = notice;
+  const about =
+    notice.reason === "staff"
+      ? { orderId, ref: `refund:${notice.refundId}` }
+      : { orderId };
 
   const email = notice.email;
   await sendAll([
     () =>
       email &&
-      sendOnce({ template, channel: "email", orderId, recipient: email }, () =>
+      sendOnce({ template, channel: "email", ...about, recipient: email }, () =>
         (providers.email ?? emailProvider()).send({
           to: email,
           subject: t.subject(notice.orderNo),
@@ -54,7 +61,7 @@ export async function sendRefundIssued(
       ),
     () =>
       sendOnce(
-        { template, channel: "sms", orderId, recipient: notice.phone },
+        { template, channel: "sms", ...about, recipient: notice.phone },
         () =>
           (providers.sms ?? smsProvider()).send({
             to: notice.phone,

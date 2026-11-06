@@ -1,6 +1,7 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { addDays, addMinutes } from "@/lib/dates";
 import { db, type Client } from "@/lib/db";
+import { isUuid } from "@/lib/uuid";
 
 /** Give up after this many tries; the row stays with its last error. */
 export const MAX_ATTEMPTS = 5;
@@ -151,6 +152,20 @@ export async function cronStatus(
     lastAt,
     stopped: !lastAt || now.getTime() - lastAt.getTime() > 5 * 60_000,
   };
+}
+
+/**
+ * A job that gave up runs again from the next tick, with all its tries
+ * (System page). Its last error stays until it runs. False when it is
+ * done or still trying on its own.
+ */
+export async function retryJob(id: string, now = new Date()): Promise<boolean> {
+  if (!isUuid(id)) return false;
+  const { count } = await db.job.updateMany({
+    where: { id, doneAt: null, attempts: { gte: MAX_ATTEMPTS } },
+    data: { attempts: 0, runAt: now },
+  });
+  return count === 1;
 }
 
 /** Jobs not done yet, oldest first: waiting, retrying or given up. */

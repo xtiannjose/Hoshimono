@@ -10,6 +10,7 @@ export type { PlaceOrderInput, PlaceOrderResult } from "./internal/place-order";
 export {
   abandonPayment,
   cancelOrder,
+  cancelUnpaidByStaff,
   confirmPaidOrder,
   expireUnpaidOrders,
   ORDER_CANCELLED_JOB,
@@ -51,6 +52,7 @@ export {
   getOrderForStaff,
   listOrdersForStaff,
   MAX_ORDER_NOTE_LENGTH,
+  recordRefundByStaff,
   staffMoves,
 } from "./internal/staff";
 export type { QueueRow, StaffOrderDetail } from "./internal/staff";

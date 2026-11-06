@@ -8,7 +8,7 @@ What to do when something goes wrong at Hoshimono. Written for three people:
 
 Every scenario has the same five parts: how you notice, what to check first, the steps, what to tell the Customer, and when to call the technical person.
 
-Status: written 27 Oct 2026 against the code on the latest local branch (Batch 5.5, the checkup and the design pass), and updated 29 Oct for the staff tools of 28 and 29 Oct (ADR 0022). Real accounts do not exist yet for PayMongo, the SMS sender, Resend, Vercel, Neon or Sentry. Steps that happen in one of their dashboards are marked **(dashboard only)**. Check them during the PayMongo test-mode run and the go-live setup (Batch 6.3), and fix this page where the real screens differ.
+Status: written 27 Oct 2026 against the code on the latest local branch (Batch 5.5, the checkup and the design pass), and updated 29 Oct for the staff tools of 28 and 29 Oct (ADR 0022 and ADR 0023). Real accounts do not exist yet for PayMongo, the SMS sender, Resend, Vercel, Neon or Sentry. Steps that happen in one of their dashboards are marked **(dashboard only)**. Check them during the PayMongo test-mode run and the go-live setup (Batch 6.3), and fix this page where the real screens differ.
 
 > **Today, the app sends no real email or SMS.** It only has console senders, which write `[email]` and `[sms]` lines to the server log, and a production build refuses to send without a real provider. Everything below about texts and emails assumes Resend and the SMS sender are connected before launch.
 
@@ -97,6 +97,8 @@ The Order page can also send a text: under **Customer contact**, type it in "Tex
 | `sent`             | Sent            |
 | `needs_review`     | Needs a check   |
 
+A refund paid back another way (recorded by staff, or cleared at **Refunds to check**) shows "Paid back: <how>" instead of its status.
+
 ### Where the technical person looks
 
 - **Health check:** `GET https://<domain>/api/health` answers `{"ok":true}`. It answers `{"ok":false}` with HTTP 503 when the app cannot reach the database. Point the uptime monitor here.
@@ -108,7 +110,7 @@ The Order page can also send a text: under **Customer contact**, type it in "Tex
   - `[checkout]`: a hosted checkout could not open;
   - `[health]`: the database is unreachable.
 - **Sentry is not wired in yet.** Errors reach only the host logs.
-- **System** (`/admin/system`, Admins): when the cron last ran, every job not done with its last error, and the newest payment events.
+- **System** (`/admin/system`, Admins): when the cron last ran, every job not done with its last error, a **Try again** button on each job that gave up, and the newest payment events.
 - **The database:** use read-only queries first. Useful queries are under each scenario.
 
 ---
@@ -125,7 +127,7 @@ Background (docs/03 section 8, ADR 0003):
   - An online Order waits 15 minutes from when it was placed.
   - On the first cron tick after that, the app asks PayMongo to close the checkout, then cancels the Order. Stock and the Slot place go back, and the Order's lines return to the Customer's Cart.
   - If PayMongo refuses to close the checkout because it is paid or a payment is still going through, the app leaves the Order alone and waits for the webhook. **The app never cancels an Order that PayMongo says is paid.**
-- **Money after cancellation:** if money arrives after the Order was cancelled, the app refunds all of it on its own (refund reason "late payment").
+- **Money after cancellation:** if money arrives after the Order was cancelled, the app refunds all of it on its own (the **Refunds** box shows "Paid after cancellation").
 
 ### How you notice
 
@@ -140,26 +142,31 @@ Background (docs/03 section 8, ADR 0003):
 2. Read the status line at the top, then **History**. The first line shows when the Order was placed.
 3. Use this table:
 
-| What you see                                                                                                         | What it means                                                   | Go to                                                        |
-| -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Confirmed**, Payment: **Paid**                                                                                     | It worked. The Customer may be looking at an old page           | Tell them it is confirmed                                    |
-| **Waiting for payment**, under 15 minutes old                                                                        | Normal. The webhook usually lands in seconds                    | Ask them to wait a few minutes                               |
-| **Waiting for payment**, over 20 minutes old                                                                         | The webhook did not arrive or was refused                       | [1a](#1a-paid-but-still-waiting-for-payment)                 |
-| **Cancelled**, History says "Not paid within 15 minutes" or "Payment not finished", **Refunds** shows "late payment" | Money arrived after the cancel and is being refunded on its own | [1b](#1b-paid-after-the-payment-window-closed)               |
-| **Cancelled**, no refund, Customer says they paid                                                                    | PayMongo may have taken money the app never matched             | [1c](#1c-charged-twice-or-money-the-app-does-not-know-about) |
-| Two Orders for the same Customer, both **Paid**                                                                      | They checked out twice                                          | [1c](#1c-charged-twice-or-money-the-app-does-not-know-about) |
+| What you see                                                                                                                    | What it means                                                   | Go to                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Confirmed**, Payment: **Paid**                                                                                                | It worked. The Customer may be looking at an old page           | Tell them it is confirmed                                    |
+| **Waiting for payment**, under 15 minutes old                                                                                   | Normal. The webhook usually lands in seconds                    | Ask them to wait a few minutes                               |
+| **Waiting for payment**, over 20 minutes old                                                                                    | The webhook did not arrive or was refused                       | [1a](#1a-paid-but-still-waiting-for-payment)                 |
+| **Cancelled**, History says "Not paid within 15 minutes" or "Payment not finished", **Refunds** shows "Paid after cancellation" | Money arrived after the cancel and is being refunded on its own | [1b](#1b-paid-after-the-payment-window-closed)               |
+| **Cancelled**, no refund, Customer says they paid                                                                               | PayMongo may have taken money the app never matched             | [1c](#1c-charged-twice-or-money-the-app-does-not-know-about) |
+| Two Orders for the same Customer, both **Paid**                                                                                 | They checked out twice                                          | [1c](#1c-charged-twice-or-money-the-app-does-not-know-about) |
 
 ### 1a. Paid, but still "Waiting for payment"
 
 Steps (Dispatcher or Admin):
 
-1. Do not cancel the Order and do not ask the Customer to pay again. **Staff cannot move or cancel an Order that is "Waiting for payment".** The Order page says: "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on."
+1. Do not cancel the Order and do not ask the Customer to pay again. **Next step** cannot move or cancel an Order that is "Waiting for payment". The Order page says: "Waiting for the Customer to pay. The payment, or the 15-minute Payment Window, moves it on." The only way to close it by hand is step 4, when PayMongo took a different amount.
 2. **(dashboard only)** In the PayMongo dashboard, find the payment by the Order Number, the Customer's email or the amount. We send the Order Number as the checkout's reference and "Hoshimono order SW-..." as its description. An Admin also sees the checkout id on the Order page, under the status line: "In PayMongo: checkout `<id>`". Note whether it is paid and for how much.
 3. If PayMongo shows it paid for the Order's amount, an Admin records it on the Order page:
    1. Under **Paid in PayMongo?**, paste the payment id (`pay_...`) into "PayMongo payment id".
    2. Tick "PayMongo shows ₱... paid", then press **Record the payment**. The page says "Recorded."
    3. The Order is confirmed and the Customer gets the confirmation text, as if the webhook had arrived. If the Order had closed meanwhile, the money goes back as a refund instead.
-4. If PayMongo shows a different amount, do not record it. Call the technical person. Stock and the Slot place stay held meanwhile, so nothing is lost by waiting.
+4. If PayMongo shows a different amount, do not record it. The app will never confirm it, so an Admin closes the Order:
+   1. **(dashboard only)** Refund that payment in full in the PayMongo dashboard.
+   2. On the Order page, under **PayMongo took a different amount?**, type "What happened (for the History)", such as "PayMongo took ₱500.00, refunded in its dashboard".
+   3. Tick "I refunded it in PayMongo's dashboard", then press **Cancel the Order**. The page says "Cancelled. The Customer is told, and the items are back in their Cart."
+   4. Stock and the Slot place go back. If the right amount arrives later, the app refunds it on its own.
+   5. The app's cancel notice says money paid online comes back, but no refund text follows for a dashboard refund. Text the Customer yourself (the second text below).
 5. Add an Order Note on the Order page so the next person knows: under **Notes**, type in "Add a note for the team", then press **Add note**.
 6. If several Orders are stuck at once, call the technical person too: the webhook is probably failing for everyone.
 
@@ -190,18 +197,8 @@ What the technical person does:
 
    - Fix the setting in the hosting dashboard and redeploy **(dashboard only)**. Then get PayMongo to deliver the event again, if its dashboard can resend events (to confirm in test mode). Once it is delivered, the Order confirms on its own and the Customer gets the confirmation text.
 3. **A paid event with `processed_at` empty.** This is a mismatch: PayMongo reported a different amount from the Payment's `amount_cents`, so the app refused to confirm. The log line says `paid X, Payment Y expects Z`.
-   - Do not confirm it by hand. Refund the money in the PayMongo dashboard **(dashboard only)**.
-   - Then release the Order through the app's own path:
-
-     ```sql
-     UPDATE payments SET status = 'failed'
-     WHERE id = '<payments.id>' AND status = 'unpaid';
-     ```
-
-   - The next cron tick sees the closed Payment and cancels the Order the normal way. Stock and the Slot place go back, and the lines return to the Cart. Its History will say "Not paid within 15 minutes", so add an Order Note saying what really happened.
-4. **The Order cannot be confirmed for another reason.** Use the same two steps: refund in the dashboard, then mark the Payment `failed`. Tell the Customer to order again.
-
-> **Not possible in the app yet:** staff confirming or cancelling an Order "Waiting for payment" when PayMongo took a different amount. It needs the technical person (their step 3 above).
+   - Do not confirm it by hand. An Admin refunds it in the PayMongo dashboard and cancels the Order from the Order page (step 4 above).
+4. **The Order cannot be confirmed for another reason.** Use the same two steps: refund in the dashboard, then **Cancel the Order** under **PayMongo took a different amount?**. Tell the Customer to order again.
 
 **Tell the Customer** (while it is being sorted out):
 
@@ -220,12 +217,12 @@ Hoshimono: Hi! Sorry po, we couldn't confirm your payment for order <Order Numbe
 The app handles this on its own:
 
 - The Order stays **Cancelled**.
-- **Refunds** on the Order page shows "late payment" for the full amount.
+- **Refunds** on the Order page shows "Paid after cancellation" for the full amount.
 - The refund job sends it, and the Customer gets the app's text: "Your payment for order ... arrived after the order was cancelled, so we refunded all ₱... to your GCash."
 
 Steps:
 
-1. Open the Order. Check that **Refunds** shows "late payment" with **Sent**.
+1. Open the Order. Check that **Refunds** shows "Paid after cancellation" with **Sent**.
 2. If it says **Waiting to send** for more than a few minutes, see [5. Cron not running](#5-cron-not-running).
 3. If it says **Needs a check**, see [2c](#2c-a-refund-in-refunds-to-check).
 4. The Order's lines went back to the Customer's Cart when it was cancelled, so they can check out again.
@@ -253,7 +250,7 @@ Steps:
    4. This works until the Order is delivered: **Confirmed**, **Picking**, **Ready for the Rider**, **On the way** (call the Rider first) or **Delivery failed**.
 3. **One Order, but PayMongo shows two payments (dashboard only):** an Admin sees the payment the app knows on the Order page, under the status line: "In PayMongo: checkout `<id>`, payment `<id>`". The other one is the extra, and it is not in the app. Refund it in the PayMongo dashboard. Then add an Order Note with its PayMongo payment id and the amount.
 
-> **Not possible in the app yet:** recording a refund made in the PayMongo dashboard. It does not show on the Order.
+> **Do not use "Record money given back" for this extra payment.** That form counts the refund against the payment the app knows, so the Order would show as refunded while it is still paid. The Order Note is the record.
 
 **Tell the Customer:**
 
@@ -285,15 +282,17 @@ Background (ADR 0008, docs/03 section 8):
 
   | Reason (as shown on the Order page) | When                                                             | How much                        |
   | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------- |
-  | cancelled                           | A paid Order is cancelled                                        | All that is left of the payment |
-  | picked                              | Picking finishes and the Final Total is lower than what was paid | The difference                  |
-  | late payment                        | Money arrives after the Order was cancelled                      | All of it                       |
-  | claim                               | An approved Freshness Claim                                      | The approved amount             |
+  | Paid Order cancelled                | A paid Order is cancelled                                        | All that is left of the payment |
+  | Packed less than paid               | Picking finishes and the Final Total is lower than what was paid | The difference                  |
+  | Paid after cancellation             | Money arrives after the Order was cancelled                      | All of it                       |
+  | Freshness Claim                     | An approved Freshness Claim                                      | The approved amount             |
+
+- **Money given back outside the app:** an Admin records it on the Order page as "Recorded by staff" ([2a](#2a-too-little-was-refunded)). The app sends no money for it. It keeps the record, and texts the Customer only when it was a PayMongo refund.
 
 - **The Final Total follows what was packed.** It is never above the checkout amount: a heavier pack is on Hoshimono.
 - **The ledger:**
   - Each refund is recorded first, then sent by a job.
-  - There is one refund per Payment and reason, or one per Freshness Claim.
+  - There is one refund per Payment and reason, or one per Freshness Claim. Refunds recorded by staff can be as many as were paid back.
   - The database never lets refunds add up to more than was paid.
 - **A refund is sent at most once:**
   - If PayMongo clearly says no (a 4xx answer), the job tries again later.
@@ -324,12 +323,24 @@ Once the Order is **Delivered**, file a Freshness Claim for the Customer. It wor
 2. Choose the "Item", set "What was wrong" to Missing, and fill in "How many" and "What the Customer said".
 3. Press **File the claim**. The claim's page opens.
 4. Approve it there (see [section 9](#9-a-freshness-claim-dispute)). Paid with GCash or card, the money goes back by refund through the normal ledger. Paid in cash, it becomes a Voucher.
-5. If that item already has a claim, an Admin gives the difference as a Voucher from the Order page instead (see [section 9](#9-a-freshness-claim-dispute), "Goodwill Voucher"), or refunds it in the PayMongo dashboard **(dashboard only)**. Add an Order Note saying what you did and why.
+5. If that item already has a claim, an Admin gives the difference as a Voucher from the Order page instead (see [section 9](#9-a-freshness-claim-dispute), "Goodwill Voucher"), or refunds it in the PayMongo dashboard **(dashboard only)** and records it (below). Add an Order Note saying why.
 
-> **Not possible in the app yet:**
->
-> - Adding a refund to an Order other than through a Freshness Claim.
-> - Recording a refund made in the PayMongo dashboard. It does not show on the Order.
+**Record money given back outside the app** (Admins). Use it after the money went back: a refund made in the PayMongo dashboard, or cash or a GCash transfer by hand.
+
+1. On the Order page, under **Refunds**, open "Record money given back outside the app".
+2. Type "Amount given back (₱)".
+3. Say how it went back:
+   - **Paid with GCash or card:** paste the refund id into "PayMongo refund id, if refunded in its dashboard". Or, if it went back another way, fill in "Or how it was paid back", such as "GCash sent by hand, ref 1234". Fill in only one: with both, the app sends no text.
+   - **Cash on delivery:** fill in "How the cash was given back", such as "Cash with the next delivery".
+4. Press **Record it**.
+   - **A PayMongo refund id:** the page says "Recorded. A PayMongo refund is texted to the Customer; for another way, text them yourself." The Customer gets the app's refund text.
+   - **Another way, or a cash Order:** the app sends nothing, so text the Customer yourself. For a cash Order the page says "Recorded. Text the Customer yourself."
+5. **Refunds** lists it as "Recorded by staff", with "Paid back: <how>" or the PayMongo refund id. An Order Note says "Recorded ₱... given back: <how>."
+   - A GCash or card Order's payment shows "Partly refunded" or "Refunded".
+   - A cash Order stays "Cash collected", and the Rider's cash day does not change.
+6. It cannot go past what is left: "Up to ₱... is left to give back." Like any refund, it cannot be undone in the app, so record it only after the money went.
+
+> **Not possible in the app yet:** sending a refund through PayMongo from the app for anything other than a cancel, a pick or a Freshness Claim. Refund in the PayMongo dashboard, then record it as above.
 
 **Tell the Customer:**
 
@@ -373,13 +384,12 @@ Steps (Admin):
    - **The payout balance cannot cover it:** wait for the balance to fill, then press **It did not: send again**.
    - **The refund window has passed:** cards allow 60 days, GCash 180 days. It will never go through.
      1. Pay the Customer another way, such as a bank or GCash transfer, or a Voucher from the Order page ([section 9](#9-a-freshness-claim-dispute), "Goodwill Voucher").
-     2. Text the Customer how you paid them.
-     3. Type how you paid into "PayMongo refund id, or how it was paid back (optional)", such as "GCash sent by hand, ref 1234", and press **It went through**. It leaves the list.
+     2. Type how you paid into "Or paid back another way: how?", such as "GCash sent by hand, ref 1234". It is required: "Say how it was paid back."
+     3. Press **Paid back another way**. It leaves the list. The page says: "Paid back another way, the app sends no refund message: text the Customer from the Order page."
+     4. Text the Customer how you paid them.
 5. If the screen says "This refund was already settled. Reload.", someone else already answered it.
 
 > **Never press "It did not: send again" without checking the PayMongo dashboard first.** If the first try did go through, a second send refunds the Customer twice.
-
-> **Not possible in the app yet:** clearing a refund paid another way without the app's usual refund text. **It went through** still texts the Customer that the money went back to their GCash or card, so text them first. A Freshness Claim refund sends no such text.
 
 **Tell the Customer** (while you check):
 
@@ -391,7 +401,7 @@ Hoshimono: Hi! Your <amount> refund for order <Order Number> is taking longer th
 
 - Several refunds land in **Refunds to check** at once. PayMongo is probably down or the key is wrong: see [4a](#4a-paymongo-gcash-and-card-is-down).
 - A refund stays **Waiting to send** or **Sending** for more than 15 minutes. The jobs may not be running: see [5](#5-cron-not-running).
-- An Order that is not cancelled shows a "late payment" refund. That should not happen: the technical person checks the Order's Payment Events.
+- An Order that is not cancelled shows a "Paid after cancellation" refund. That should not happen: the technical person checks the Order's Payment Events.
 
 ---
 
@@ -557,7 +567,7 @@ Hoshimono: Hi! Sorry po, GCash and card payments are down on our side right now.
 | **Sign-in by text code**                              | Codes do not arrive. Each number can ask for 3 codes per 15 minutes                                                      | Tell Customers to sign in with their email link, or Google if it is switched on. Staff sign in by email or Google anyway                                                    |
 | **Substitution texts** ("pick a similar item")        | The Customer never hears about the swap. Their 10-minute Substitution Window still runs, and **silence counts as a yes** | Pickers: press **Offer substitute**, then call the Customer from the Hub phone. Under "They answered by phone?" on the line, press **Yes, pack it** or **No, leave it out** |
 | **Delivery PIN texts**                                | The Customer may not have the PIN. It is also in their email and on their order page while the Order is "On the way"     | See below                                                                                                                                                                   |
-| **Order confirmed, refund and "we missed you" texts** | They retry 4 more times over about 30 minutes, then stop                                                                 | The technical person retries them once SMS is back (see below)                                                                                                              |
+| **Order confirmed, refund and "we missed you" texts** | They retry 4 more times over about 30 minutes, then stop                                                                 | An Admin retries them from **System** once SMS is back (see below)                                                                                                          |
 
 **Delivery PIN when SMS is down:**
 
@@ -597,7 +607,7 @@ Order notices still go out by text: the app tries every channel, and the job tri
 | **Customer sign-in by email link**                                             | Tell Customers to sign in with a text code                                                                                                                                          |
 | **Staff sign-in**                                                              | Staff are linked by email: they sign in with the email link or Google. Staff already signed in stay signed in. Do not sign out until email is back, unless Google sign-in is set up |
 | **Order notices**                                                              | Texts still go out. Nothing to do unless SMS is down too ([4b](#4b-sms-is-down))                                                                                                    |
-| **Freshness Claim decisions, Cart Reminders, Stock Alerts, Referral Vouchers** | They wait. The technical person retries them once email is back                                                                                                                     |
+| **Freshness Claim decisions, Cart Reminders, Stock Alerts, Referral Vouchers** | They wait. An Admin retries them from **System** once email is back                                                                                                                 |
 
 ### 4d. The database or hosting is down
 
@@ -635,7 +645,7 @@ Hoshimono: Hi! Sorry po, our website is down for a bit and we're fixing it now. 
 
 Always, for 4a to 4d. Staff can only work around an outage; the fix is theirs.
 
-Once a provider is back, the technical person retries the notices that gave up (see [section 5](#5-cron-not-running), "Retry jobs that gave up").
+Once a provider is back, an Admin retries the notices that gave up: **Try again** on **System** (see [section 5](#5-cron-not-running), "Retry jobs that gave up").
 
 ---
 
@@ -687,7 +697,7 @@ curl -sS -i -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/ti
 
 ### Steps
 
-The technical person does all of these.
+The technical person does steps 1 to 4. An Admin can do step 5.
 
 1. **The scheduler is not calling.** In the Vercel project's Cron Jobs page **(dashboard only)**, check:
    - the cron is listed and enabled;
@@ -697,6 +707,11 @@ The technical person does all of these.
 3. **A step fails:** fix the cause from the error. The other steps keep running meanwhile.
 4. **Until it is fixed:** call the tick by hand, or from any scheduler that can send the header, at least every few minutes. Every step is safe to repeat.
 5. **Retry jobs that gave up.** A job tries 5 times in all, 1, 4, 9 and 16 minutes apart, then stops with its last error. After the cause is fixed:
+   1. Open **System** (Admins). Under **Jobs not done**, a job that gave up has a **Try again** button.
+   2. Press **Try again** on each one. It runs again from the next cron tick, with all its tries. Its last error stays until it runs.
+   3. If the cron is still not running, call the tick by hand once (step 4).
+
+   For many jobs at once, the technical person can use the database instead:
 
    ```sql
    -- Jobs not done yet, oldest first
@@ -708,7 +723,7 @@ The technical person does all of these.
    WHERE done_at IS NULL AND attempts >= 5;
    ```
 
-   Then run the tick. This is safe:
+   Then run the tick. Either way, this is safe:
    - each message is logged once sent, so only what is missing goes out;
    - a refund job sends only a refund still waiting to send;
    - a substitute question whose 10 minutes have passed is skipped.
@@ -720,8 +735,6 @@ Nothing in general. A Customer whose unpaid Order is still "Waiting for payment"
 ### When to call the technical person
 
 As soon as any of the signs above show. Delivery days run out within a week.
-
-> **Not possible in the app yet:** retrying the jobs that gave up. **System** shows them, but only the technical person can let them try again (step 5).
 
 ---
 
@@ -757,19 +770,23 @@ How cash works (ADR 0011):
    - a Customer short of cash;
    - money kept apart for fuel;
    - a wrong amount typed at the door.
-3. **A wrong amount typed at the door:** fix it before you count. Open "Correct one Order's cash", choose the "Order", type the right "Cash taken (₱)" and "Why it changes", then press **Save the correction**.
+3. **A wrong amount typed at the door:** fix it, before or after you count.
+   1. Open "Correct one Order's cash", choose the "Order", and type the right "Cash taken (₱)" and "Why it changes".
+   2. Press **Save the correction**.
+   3. If the day is already counted, the count's recorded total follows, so the short or over line updates on its own.
+   4. It cannot go below cash already given back to the Customer: "₱... was given back: enter at least that."
 4. **Record the count.**
    1. Type "Cash counted (₱)".
    2. If cash is missing, the note is required: "₱... is missing. Say what happened." Write what you found.
    3. Press **Record count**.
 5. **The count was wrong:** open "Correct the count" under the Rider's count. Type the right "Cash counted (₱)" and "Why it changes", then press **Save the correction**.
 6. **A Customer underpaid:** contact them (text below). If they pay later, add an Order Note.
-7. **A Customer overpaid**, such as handing over the estimate: return the difference on the next delivery or by GCash transfer, or an Admin gives a Voucher from the Order page ([section 9](#9-a-freshness-claim-dispute), "Goodwill Voucher"). Add an Order Note.
-
-> **Not possible in the app yet:**
->
-> - Correcting one Order's cash after the day is counted. Correct the count instead.
-> - Recording cash given back to a Customer. Use an Order Note.
+7. **A Customer overpaid**, such as handing over the estimate: return the difference on the next delivery or by GCash transfer, or an Admin gives a Voucher from the Order page ([section 9](#9-a-freshness-claim-dispute), "Goodwill Voucher").
+8. **Once the money is given back** (not a Voucher), an Admin records it on the Order page:
+   1. Under **Refunds**, open "Record money given back outside the app".
+   2. Type "Amount given back (₱)" and "How the cash was given back", such as "Cash with the next delivery".
+   3. Press **Record it**. The page says "Recorded. Text the Customer yourself."
+   4. It adds an Order Note. The Order stays "Cash collected", and the Rider's cash day and its count do not change.
 
 ### Tell the Customer
 
@@ -841,12 +858,15 @@ If the cash is different from what was due, say why in "If the cash is different
      - The items go back on the shelf count.
 6. **Wrong address:** call the Customer before sending it out again.
    - **Another of their saved addresses:** on the Order page, under **Delivery**, choose it in "Deliver to another of their addresses" and press **Change the address**. It works for any address the same Hub delivers to, in any of its Zones. The page says "Changed. The Delivery Fee stays as placed."
-   - **An address they have not saved:** ask them to add it to their account first, then change it as above.
-   - **Only another Hub delivers there:** the page says "Another Hub delivers there: cancel, and the Customer orders again."
+   - **An address they have not saved** (Dispatchers and Admins): type it in for them.
+     1. Under **Delivery**, open "Or type a new address they give you".
+     2. Fill in "House or unit number and street", "City", "Barangay" and "Landmark". "City" lists only the cities a Zone delivers to.
+     3. "Name for it" starts as "Other". Change it if the Customer names it, such as "Office".
+     4. Press **Save and deliver there**. The page says "Saved to their addresses. The Delivery Fee stays as placed." The Customer finds it among their addresses next time.
+     5. If the page says "The Customer has 10 addresses: change to one of them.", choose one of their saved addresses as above.
+   - **Only another Hub delivers there:** the page says "Another Hub delivers there: cancel, and the Customer orders again." For a typed address: "Saved to their addresses, but another Hub delivers there: cancel, and the Customer orders again."
    - **The same address, a better landmark:** add an Order Note. The Rider sees it on **My deliveries**, under "From the Hub".
    - The address can change only while the Order is at the Hub: **Confirmed**, **Picking**, **Ready for the Rider** or **Delivery failed**.
-
-> **Not possible in the app yet:** typing a new address for the Customer. Only their saved addresses can be chosen.
 
 ### Tell the Customer
 
@@ -1011,7 +1031,7 @@ How Freshness Claims work (ADR 0016):
 2. Press **Give the Voucher**. The page says "Given, and the Customer is told."
 3. The Customer gets the code by text and email. It is for them only, with no minimum spend, for 90 days. The reason goes in the Order's notes.
 
-> **Not possible in the app yet:** changing an approved claim, or refunding more to GCash or the card than an approved claim gave. For that, refund in the PayMongo dashboard **(dashboard only)**. It does not show in the app, so add an Order Note.
+> **Not possible in the app yet:** changing an approved claim, or sending more to GCash or the card from the app than an approved claim gave. For that, refund in the PayMongo dashboard **(dashboard only)**, then record it on the Order page ([2a](#2a-too-little-was-refunded), "Record money given back outside the app").
 
 ### Tell the Customer
 
@@ -1051,25 +1071,30 @@ After a restore, data written since the backup is gone. Before reopening:
 
 The steps above use these tools. This is the quick list.
 
-| Situation                                                                                                                | Where                                                                                              | What it does                                                                                                                                                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PayMongo shows an Order paid, but it still waits ([1a](#1a-paid-but-still-waiting-for-payment))                          | Order page, **Paid in PayMongo?** (Admins)                                                         | Records the payment the way a verified webhook would: the Order is confirmed, or, if it had closed, the money goes back as a refund                                                                                         |
-| A refund was paid back some other way ([2c](#2c-a-refund-in-refunds-to-check))                                           | **Refunds to check**, "It went through", with how it was paid in the box                           | Clears it from the list (the Customer still gets the app's refund text)                                                                                                                                                     |
-| Make up for a bad Order                                                                                                  | Order page, **Customer contact**, Voucher (Admins)                                                 | A personal Voucher up to ₱2,000, and a text and email with the code                                                                                                                                                         |
-| Tell the Customer something                                                                                              | Order page, **Text the Customer**                                                                  | Texts their number on the Order; the text goes in the notes                                                                                                                                                                 |
-| Cancel an Order packed and ready                                                                                         | Order page, **Next step**, Cancel                                                                  | What was picked goes back on the shelf; the Customer is told; a paid Order is refunded                                                                                                                                      |
-| Deliver later, or to another address                                                                                     | Order page, **Delivery**                                                                           | Moves it to another Slot with room (the Customer gets the new time), or to another saved address (in another Zone since 29 Oct)                                                                                             |
-| A Rider cannot finish the round                                                                                          | **Dispatch**, **Out now**, "Hand to another Rider"                                                 | The other Rider takes it; the PIN stays; the Customer is told who is coming                                                                                                                                                 |
-| The Customer answered a substitute by phone                                                                              | **Picking**, the line's "They answered by phone?"                                                  | Same as their answer by link                                                                                                                                                                                                |
-| Cash recorded wrong                                                                                                      | **Cash**: "Correct one Order's cash" before the count, "Correct the count" after                   | Saves the right amount and why                                                                                                                                                                                              |
-| Close the Hub, or take cash only                                                                                         | **Zones and Slots**, **Hub status** (Admins)                                                       | A notice on every shop page until a time you choose; GCash and card off (unpaid Orders still expire); whole days closed to new Orders                                                                                       |
-| Is the cron running? What failed?                                                                                        | **System** (Admins)                                                                                | When the cron last ran, every job not done with its last error, and the newest payment events                                                                                                                               |
-| Cancel an Order On the way (29 Oct) ([3](#3-a-hub-shutdown))                                                             | Order page, **Next step**, "Cancel the Order (refunds a paid Order in full)", with a Reason        | Call the Rider first: they bring it back. What was picked goes back on the shelf; cash becomes "Not paid", a paid Order is refunded in full; the Customer gets the cancel notice. The Rider can no longer mark it delivered |
-| A Customer called or wrote in about a delivered item (29 Oct) ([9](#9-a-freshness-claim-dispute))                        | Order page of a Delivered Order, **Freshness Claims**, **File the claim** (Admins and Dispatchers) | Files a claim any time after delivery, no photo; it opens on its own page to approve or reject. Audited as `file_for_customer`                                                                                              |
-| A rejected claim deserves another look (29 Oct) ([9](#9-a-freshness-claim-dispute))                                      | The claim's page, **Reopen for another look**                                                      | Back to "Waiting for review", to approve; the Customer gets the new decision too. An approved claim cannot be reopened                                                                                                      |
-| The shelf has fewer than Orders reserved (29 Oct) ([8](#8-stock-is-wrong))                                               | **Stock**, the Product, **After a physical count**                                                 | Takes any number. The Product stops selling, **Stock** shows "N short", and the count settles as Pickers mark those lines Short                                                                                             |
-| Deliver to an address in another Zone (29 Oct) ([7](#7-the-customer-cannot-give-the-delivery-pin-or-the-delivery-fails)) | Order page, **Delivery**, **Change the address**                                                   | Any saved address the same Hub delivers to; the Delivery Fee stays as placed. Another Hub is refused                                                                                                                        |
-| Find an Order's payment in PayMongo (29 Oct) ([1c](#1c-charged-twice-or-money-the-app-does-not-know-about))              | Order page, under the status line, and **Refunds** (Admins)                                        | "In PayMongo: checkout `<id>`, payment `<id>`", and each sent refund's PayMongo refund id                                                                                                                                   |
+| Situation                                                                                                                                                            | Where                                                                                                                | What it does                                                                                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PayMongo shows an Order paid, but it still waits ([1a](#1a-paid-but-still-waiting-for-payment))                                                                      | Order page, **Paid in PayMongo?** (Admins)                                                                           | Records the payment the way a verified webhook would: the Order is confirmed, or, if it had closed, the money goes back as a refund                                                                                                                                                   |
+| Make up for a bad Order                                                                                                                                              | Order page, **Customer contact**, Voucher (Admins)                                                                   | A personal Voucher up to ₱2,000, and a text and email with the code                                                                                                                                                                                                                   |
+| Tell the Customer something                                                                                                                                          | Order page, **Text the Customer**                                                                                    | Texts their number on the Order; the text goes in the notes                                                                                                                                                                                                                           |
+| Cancel an Order packed and ready                                                                                                                                     | Order page, **Next step**, Cancel                                                                                    | What was picked goes back on the shelf; the Customer is told; a paid Order is refunded                                                                                                                                                                                                |
+| Deliver later, or to another address                                                                                                                                 | Order page, **Delivery**                                                                                             | Moves it to another Slot with room (the Customer gets the new time), or to another saved address (in another Zone since 29 Oct)                                                                                                                                                       |
+| A Rider cannot finish the round                                                                                                                                      | **Dispatch**, **Out now**, "Hand to another Rider"                                                                   | The other Rider takes it; the PIN stays; the Customer is told who is coming                                                                                                                                                                                                           |
+| The Customer answered a substitute by phone                                                                                                                          | **Picking**, the line's "They answered by phone?"                                                                    | Same as their answer by link                                                                                                                                                                                                                                                          |
+| Cash recorded wrong                                                                                                                                                  | **Cash**: "Correct one Order's cash", and "Correct the count" once counted                                           | Saves the right amount and why                                                                                                                                                                                                                                                        |
+| Close the Hub, or take cash only                                                                                                                                     | **Zones and Slots**, **Hub status** (Admins)                                                                         | A notice on every shop page until a time you choose; GCash and card off (unpaid Orders still expire); whole days closed to new Orders                                                                                                                                                 |
+| Is the cron running? What failed?                                                                                                                                    | **System** (Admins)                                                                                                  | When the cron last ran, every job not done with its last error, and the newest payment events                                                                                                                                                                                         |
+| Cancel an Order On the way (29 Oct) ([3](#3-a-hub-shutdown))                                                                                                         | Order page, **Next step**, "Cancel the Order (refunds a paid Order in full)", with a Reason                          | Call the Rider first: they bring it back. What was picked goes back on the shelf; cash becomes "Not paid", a paid Order is refunded in full; the Customer gets the cancel notice. The Rider can no longer mark it delivered                                                           |
+| A Customer called or wrote in about a delivered item (29 Oct) ([9](#9-a-freshness-claim-dispute))                                                                    | Order page of a Delivered Order, **Freshness Claims**, **File the claim** (Admins and Dispatchers)                   | Files a claim any time after delivery, no photo; it opens on its own page to approve or reject. Audited as `file_for_customer`                                                                                                                                                        |
+| A rejected claim deserves another look (29 Oct) ([9](#9-a-freshness-claim-dispute))                                                                                  | The claim's page, **Reopen for another look**                                                                        | Back to "Waiting for review", to approve; the Customer gets the new decision too. An approved claim cannot be reopened                                                                                                                                                                |
+| The shelf has fewer than Orders reserved (29 Oct) ([8](#8-stock-is-wrong))                                                                                           | **Stock**, the Product, **After a physical count**                                                                   | Takes any number. The Product stops selling, **Stock** shows "N short", and the count settles as Pickers mark those lines Short                                                                                                                                                       |
+| Deliver to an address in another Zone (29 Oct) ([7](#7-the-customer-cannot-give-the-delivery-pin-or-the-delivery-fails))                                             | Order page, **Delivery**, **Change the address**                                                                     | Any saved address the same Hub delivers to; the Delivery Fee stays as placed. Another Hub is refused                                                                                                                                                                                  |
+| Find an Order's payment in PayMongo (29 Oct) ([1c](#1c-charged-twice-or-money-the-app-does-not-know-about))                                                          | Order page, under the status line, and **Refunds** (Admins)                                                          | "In PayMongo: checkout `<id>`, payment `<id>`", and each sent refund's PayMongo refund id                                                                                                                                                                                             |
+| Money given back outside the app: a PayMongo dashboard refund, cash or a transfer (29 Oct) ([2a](#2a-too-little-was-refunded), [6](#6-a-riders-cash-does-not-match)) | Order page, **Refunds**, "Record money given back outside the app", **Record it** (Admins)                           | Records it as "Recorded by staff", never past what is left, with an Order Note. A PayMongo refund id gets the app's refund text; another way gets none, so text the Customer. A cash Order stays "Cash collected" and the Rider's cash day is unchanged. Audited as `refund_recorded` |
+| A refund to check was paid back another way (29 Oct) ([2c](#2c-a-refund-in-refunds-to-check))                                                                        | **Refunds to check**, "Or paid back another way: how?", **Paid back another way**                                    | Clears it with how it was paid, and the app sends no refund message: text the Customer. **It went through** and **It did not: send again** work as before. Audited as `refund_paid_elsewhere`                                                                                         |
+| Fix one Order's cash after the day is counted (29 Oct) ([6](#6-a-riders-cash-does-not-match))                                                                        | **Cash**, "Correct one Order's cash"                                                                                 | The count's recorded total follows, so the short or over line updates. Never below what was given back                                                                                                                                                                                |
+| PayMongo took a different amount (29 Oct) ([1a](#1a-paid-but-still-waiting-for-payment))                                                                             | Order page of an Order "Waiting for payment", **PayMongo took a different amount?**, **Cancel the Order** (Admins)   | After you refund it in the PayMongo dashboard: cancels it, with what happened in the History. The Customer is told and the items go back to their Cart. The right amount arriving later is refunded on its own                                                                        |
+| A new address given by phone (29 Oct) ([7](#7-the-customer-cannot-give-the-delivery-pin-or-the-delivery-fails))                                                      | Order page, **Delivery**, "Or type a new address they give you", **Save and deliver there** (Dispatchers and Admins) | Saves it to the Customer's addresses and delivers there; the Delivery Fee stays as placed. Another Hub's area is saved but refused                                                                                                                                                    |
+| A job gave up (29 Oct) ([5](#5-cron-not-running))                                                                                                                    | **System**, **Try again** (Admins)                                                                                   | Runs it again from the next cron tick, with all its tries. Audited as `retry`                                                                                                                                                                                                         |
 
 ## Things the app cannot do yet
 
@@ -1077,11 +1102,6 @@ Listed where they come up above. Collected here for the backlog:
 
 1. Error alerts: Sentry is not wired in. Until it is, the alerting check (`/api/health?deep=1`, see "Where the technical person looks") names failed jobs, a stopped cron, unmatched payment events, refunds to check and full Slots.
 2. Charge a Customer more after checkout, or take back a refund ([2b](#2b-too-much-was-refunded)).
-3. Change an Order's Hub (cancel, and the Customer orders again).
-4. Record a refund made in the PayMongo dashboard ([1c](#1c-charged-twice-or-money-the-app-does-not-know-about), [2a](#2a-too-little-was-refunded)).
-5. Add a refund to an Order other than through a Freshness Claim, or change an approved claim ([2a](#2a-too-little-was-refunded), [9](#9-a-freshness-claim-dispute)).
-6. Confirm or cancel an Order "Waiting for payment" when PayMongo took a different amount ([1a](#1a-paid-but-still-waiting-for-payment)).
-7. Clear a refund paid another way without the app's GCash or card refund text ([2c](#2c-a-refund-in-refunds-to-check)).
-8. Retry jobs that gave up from the admin ([5](#5-cron-not-running)).
-9. Correct one Order's cash after the day is counted, or record cash given back ([6](#6-a-riders-cash-does-not-match)).
-10. Type a new address for a Customer; only their saved addresses can be chosen ([7](#7-the-customer-cannot-give-the-delivery-pin-or-the-delivery-fails)).
+3. Change an Order's Hub (cancel, and the Customer orders again) ([7](#7-the-customer-cannot-give-the-delivery-pin-or-the-delivery-fails)).
+4. Send a refund through PayMongo from the app for another reason than a cancel, a pick or a Freshness Claim, or change an approved claim. This is a business rule to decide. Until then, refund in the PayMongo dashboard and record it on the Order ([2a](#2a-too-little-was-refunded), [9](#9-a-freshness-claim-dispute)).
+5. Record a second PayMongo payment for one Order, or its refund. The app knows one payment per Order, so the extra one stays in an Order Note ([1c](#1c-charged-twice-or-money-the-app-does-not-know-about)).

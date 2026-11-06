@@ -8,11 +8,14 @@ import type { OrderStatus } from "@/generated/prisma/enums";
 
 import {
   addNoteAction,
+  cancelUnpaidAction,
   changeAddressAction,
   giveVoucherAction,
   moveSlotAction,
   moveOrderAction,
+  newAddressAction,
   recordPaymentAction,
+  recordRefundAction,
   textCustomerAction,
   type OrderFormState,
 } from "../actions";
@@ -329,5 +332,184 @@ export function ChangeAddressForm({
       submit="Change the address"
       done="Changed. The Delivery Fee stays as placed."
     />
+  );
+}
+
+/**
+ * Money already given back outside the app (ADR 0023): a refund made in
+ * PayMongo's dashboard, or cash or a transfer by hand.
+ */
+export function RecordRefundForm({
+  orderId,
+  orderNo,
+  online,
+}: {
+  orderId: string;
+  orderNo: string;
+  /** Paid with GCash or card: a PayMongo refund id is possible. */
+  online: boolean;
+}) {
+  const [state, action, pending] = useActionState(
+    recordRefundAction.bind(null, orderId, orderNo),
+    initial
+  );
+  return (
+    <form key={formKey(state)} action={action} className="grid gap-2">
+      <label className="grid gap-1 text-sm font-semibold">
+        Amount given back (₱)
+        <input
+          name="amount"
+          inputMode="decimal"
+          defaultValue={state.values?.amount}
+          className={FIELD}
+        />
+      </label>
+      {online && (
+        <label className="grid gap-1 text-sm font-semibold">
+          PayMongo refund id, if refunded in its dashboard
+          <input
+            name="providerRef"
+            placeholder="ref_..."
+            defaultValue={state.values?.providerRef}
+            className={FIELD}
+          />
+        </label>
+      )}
+      <label className="grid gap-1 text-sm font-semibold">
+        {online ? "Or how it was paid back" : "How the cash was given back"}
+        <input
+          name="paidBackBy"
+          placeholder="Cash with the next delivery, GCash sent by hand..."
+          defaultValue={state.values?.paidBackBy}
+          className={FIELD}
+        />
+      </label>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={pending}
+        className="justify-self-start"
+      >
+        Record it
+      </Button>
+      <Result
+        state={state}
+        done={
+          online
+            ? "Recorded. A PayMongo refund is texted to the Customer; for another way, text them yourself."
+            : "Recorded. Text the Customer yourself."
+        }
+      />
+    </form>
+  );
+}
+
+/** PayMongo charged a different amount (runbook 1a): close the Order. */
+export function CancelUnpaidForm({
+  orderId,
+  orderNo,
+}: {
+  orderId: string;
+  orderNo: string;
+}) {
+  const [state, action, pending] = useActionState(
+    cancelUnpaidAction.bind(null, orderId, orderNo),
+    initial
+  );
+  return (
+    <form key={formKey(state)} action={action} className="grid gap-2">
+      <label className="grid gap-1 text-sm font-semibold">
+        What happened (for the History)
+        <input
+          name="reason"
+          placeholder="PayMongo took ₱..., refunded in its dashboard"
+          className={FIELD}
+        />
+      </label>
+      <label className="flex min-h-11 items-center gap-3 text-sm">
+        <input type="checkbox" name="refunded" className="accent-ink size-5" />I
+        refunded it in PayMongo&apos;s dashboard
+      </label>
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={pending}
+        className="justify-self-start"
+      >
+        Cancel the Order
+      </Button>
+      <Result
+        state={state}
+        done="Cancelled. The Customer is told, and the items are back in their Cart."
+      />
+    </form>
+  );
+}
+
+/**
+ * A new address the Customer gives by phone (ADR 0023): saved to their
+ * addresses, and the Order goes there.
+ */
+export function NewAddressForm({
+  orderId,
+  orderNo,
+  cities,
+}: {
+  orderId: string;
+  orderNo: string;
+  /** The cities a Zone delivers to. */
+  cities: string[];
+}) {
+  const [state, action, pending] = useActionState(
+    newAddressAction.bind(null, orderId, orderNo),
+    initial
+  );
+  const field = (name: string, label: string, value = "") => (
+    <label className="grid gap-1 text-sm font-semibold">
+      {label}
+      <input
+        name={name}
+        defaultValue={state.values?.[name] ?? value}
+        className={FIELD}
+      />
+    </label>
+  );
+  return (
+    <details>
+      <summary className="cursor-pointer text-sm font-semibold">
+        Or type a new address they give you
+      </summary>
+      <form key={formKey(state)} action={action} className="mt-3 grid gap-2">
+        {field("line1", "House or unit number and street")}
+        <label className="grid gap-1 text-sm font-semibold">
+          City
+          <select
+            name="city"
+            defaultValue={state.values?.city ?? ""}
+            className={FIELD}
+          >
+            <option value="">Choose the city</option>
+            {cities.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+        {field("barangay", "Barangay")}
+        {field("landmark", "Landmark")}
+        {field("label", "Name for it", "Other")}
+        <Button
+          type="submit"
+          variant="secondary"
+          disabled={pending}
+          className="justify-self-start"
+        >
+          Save and deliver there
+        </Button>
+        <Result
+          state={state}
+          done="Saved to their addresses. The Delivery Fee stays as placed."
+        />
+      </form>
+    </details>
   );
 }
