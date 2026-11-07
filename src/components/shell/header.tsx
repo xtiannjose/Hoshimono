@@ -34,20 +34,25 @@ export function Header({ lang }: { lang: Lang }) {
         {/* One SearchBox: its own row on phones, between logo and actions
             on wider screens, so it hydrates once. */}
         <div className="wrap grid grid-cols-[auto_1fr] grid-rows-[72px_auto] items-center gap-x-4 md:grid-cols-[auto_minmax(0,560px)_1fr] md:grid-rows-[72px]">
-          <BrandLogo />
+          {/* A smaller wordmark and no language button on phones, so the top
+              row fits 360 px with 8 px between targets; the footer keeps the
+              language link in full words. */}
+          <BrandLogo className="max-md:text-[22px]" />
           <SearchBox
             id="q"
             className="col-span-2 row-start-2 mb-3 md:col-span-1 md:col-start-2 md:row-start-1 md:mb-0"
           />
-          <div className="col-start-2 row-start-1 flex items-center gap-1 justify-self-end sm:gap-2 md:col-start-3">
+          <div className="col-start-2 row-start-1 flex items-center gap-2 justify-self-end md:col-start-3">
             <Suspense fallback={<DeliveryButton lang={lang} />}>
               <DeliverySlot lang={lang} />
             </Suspense>
             <Link href="/account" aria-label={t.account} className={ROUND}>
               <UserIcon size={24} aria-hidden />
             </Link>
-            <Suspense fallback={<LanguageLink className={ROUND} />}>
-              <LanguageSwitch className={ROUND} />
+            <Suspense
+              fallback={<LanguageLink className={`${ROUND} max-md:hidden`} />}
+            >
+              <LanguageSwitch className={`${ROUND} max-md:hidden`} />
             </Suspense>
             <ThemeToggle />
             <Suspense fallback={<CartButton />}>
