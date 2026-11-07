@@ -1,5 +1,33 @@
 import { expect, test } from "@playwright/test";
 
+// 360 px is the narrowest common Android width, 390 px an iPhone 12 to 15.
+for (const width of [360, 390]) {
+  test(`the header fits a ${width} px phone with 8 px between its buttons`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth)
+    ).toBeLessThanOrEqual(width);
+    const boxes = await page
+      .locator("header")
+      .getByRole("link")
+      .or(page.locator("header").getByRole("button"))
+      .evaluateAll((els) =>
+        els
+          .map((el) => el.getBoundingClientRect())
+          .filter((r) => r.width > 0 && r.top < 72)
+          .sort((a, b) => a.left - b.left)
+          .map((r) => ({ left: r.left, right: r.right }))
+      );
+    for (const [a, b] of boxes.slice(1).map((box, i) => [boxes[i], box])) {
+      expect(b.left - a.right).toBeGreaterThanOrEqual(8);
+    }
+    expect(boxes.at(-1)!.right).toBeLessThanOrEqual(width - 16);
+  });
+}
+
 test("home page loads", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.ok()).toBe(true);
